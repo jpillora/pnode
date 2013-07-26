@@ -1,0 +1,26 @@
+{
+  "name": "hnode",
+  "version": "0.1.0",
+  "description": "dnode over http",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpillora/hnode"
+  },
+  "author": "Jaime Pillora <dev@jpillora.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jpillora/hnode/issues"
+  },
+  "dependencies": {
+    "upnode": "~0.4.3",
+    "dnode": "~1.0.5"
+  },
+  "gruntSource": {
+    "source": "~/.grunt-sources/node",
+    "repo": "https://github.com/jpillora/grunt-source-node.git"
+  }
+}
