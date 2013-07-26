@@ -12,7 +12,7 @@ pem.createCertificate({days:1, selfSigned:true}, function(err, keys){
 
     console.log('connection', req.url);
 
-    var d = this.dnode = dnode({
+    var d = dnode({
       hi: function(cb) { cb("HI FROM DA SERVER"); }
     });
 
