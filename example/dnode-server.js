@@ -1,29 +1,60 @@
-// curl -k https://localhost:8000/
-var https = require('https');
-var pem = require('pem');
 var dnode = require('dnode');
+var net = require('net');
+// var upnode = require('./upnode');
 
+var server = net.createServer(function(c) {
 
-pem.createCertificate({days:1, selfSigned:true}, function(err, keys){
+  var d = dnode(function(remote, conn) {
 
-  var opts = {key: keys.serviceKey, cert: keys.certificate};
-
-  https.createServer(opts, function(req, res){
-
-    console.log('connection', req.url);
-
-    var d = dnode({
-      hi: function(cb) { cb("HI FROM DA SERVER"); }
+    conn.on('remote', function() {
+      console.log("found client...");
     });
 
-    d.on('remote', function (remote, d) {
-      console.log('remote', remote);
+    conn.on('end', function() {
+      console.log("server lost connection to '%s'", remote.id);
     });
 
-    req.pipe(d).pipe(res);
-
-  }).listen(8000, function() {
-    console.log("listening");
+    return {
+      s: function () {
+        console.log("server hit, hitting '%s' back!", remote.id);
+        remote.c();
+      }
+    };
   });
 
-});
+  c.pipe(d).pipe(c);
+
+}).listen(5004);
+
+console.log("listening...");
+
+
+// var https = require('https');
+// var pem = require('pem');
+// var tap = require('./tap');
+// var dnode = require('dnode');
+// var duplex = require('duplexer');
+
+
+// pem.createCertificate({days:1, selfSigned:true}, function(err, keys){
+
+//   var opts = {key: keys.serviceKey, cert: keys.certificate};
+
+//   https.createServer(opts, function(req, res){
+
+//     var d = dnode(function(remote, d) {
+
+//       this.s = 'S!';
+//       setInterval(function() {
+//         console.log(remote);
+//       }, 1000)
+//     });
+
+//     req.pipe(d).pipe(res);
+
+//   }).listen(7000, function() {
+//     console.log("listening");
+//   });
+
+// });
+

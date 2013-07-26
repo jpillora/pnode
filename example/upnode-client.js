@@ -1,50 +1,23 @@
 var https = require('https');
-var upnode = require('upnode');
 var duplex = require('duplexer');
 var stream = require('stream');
 
-var options = {
-  hostname: 'localhost',
-  port: 8000,
-  path: '/',
-  method: 'PATCH',
-  rejectUnauthorized: false,
-  headers: {
-    'transfer-encoding': 'chunked',
-    'expect': '100-continue'
-  }
-};
+var upnode = require('upnode');
+var net = require('net');
 
-var res = null;
-var req = https.request(options, function(_res) {
-  res = _res;
-  console.log("statusCode: ", res.statusCode);
-  console.log("headers: ", res.headers);
+var upStub = upnode({
+  id: '!'
 });
 
-req.on('error', function(e) {
-  console.error(e);
+
+var up = upStub.connect({
+    createStream : net.connect.bind(null, 7000)
 });
 
-setTimeout(function() {
-
-  var up = upnode.connect({
-    createStream : function() {
-      return duplex(req, res);
-    }
-  });
-
-  setInterval(function () {
-      console.log('connect...')
-      up(function (remote) {
-        console.log('remote', remote)
+setInterval(function () {
+    up(function (remote) {
         remote.time(function (t) {
             console.log('time = ' + t);
         });
-      });
-  }, 1000);
-
-}, 1000)
-
-
-
+    });
+}, 1000);

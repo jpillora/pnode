@@ -1,28 +1,23 @@
-// curl -k https://localhost:8000/
-var https = require('https');
-var pem = require('pem');
+
 var upnode = require('upnode');
-var duplex = require('duplexer');
+var net = require('net');
 
+var server = net.createServer(function(c) {
 
-pem.createCertificate({days:1, selfSigned:true}, function(err, keys){
+  var up = upnode(function (client, conn) {
+    
+    conn.on('remote', function() {
+      console.log('client', client)
 
-  var opts = {key: keys.serviceKey, cert: keys.certificate};
-
-  https.createServer(opts, function(req, res){
-
-    console.log('connection', req.url);
-
-    var up = upnode(function (client, conn) {
-      this.time = function (cb) {
-        cb(new Date().toString());
-      };
     });
 
-    up.pipe(duplex(res, res)).pipe(up);
 
-  }).listen(8000, function() {
-    console.log("listening");
+    this.time = function (cb) { cb(new Date().toString()) };
   });
 
+  up.pipe(c).pipe(up);
+});
+
+server.listen(7000, function() { //'listening' listener
+  console.log('server bound');
 });

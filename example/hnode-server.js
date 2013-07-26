@@ -1,26 +1,26 @@
 
 
-var hnode = require('hnode');
+var hnode = require('../');
 
-var server = hnode.server({
-
-});
+var server = hnode.server({});
 
 server.expose({
-  hi: function() {}
+  ho: function(remote) {
+    console.log('ho!', remote.hi());
+  }
 });
 
-
-https.createServer(opts, function(req, res){
-
-  server.handle(req, res);
-  server.handle(stream);
-
-});
+server.http.listen(8000);
 
 
-server.http(80);
-
-server.https(80);
-
-server.tls(80);
+// var https = require('https');
+// var pem = require('pem');
+// pem.createCertificate({days:1, selfSigned:true}, function(err, keys){
+//   var opts = {key: keys.serviceKey, cert: keys.certificate};
+  // https.createServer(opts, function(req, res) {
+  //   console.log("connection");
+  //   server.handle(req, res);
+  // }).listen(8000, function() {
+  //   console.log("listening");
+  // });
+// });
