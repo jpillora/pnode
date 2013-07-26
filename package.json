@@ -2,7 +2,7 @@
   "name": "hnode",
   "version": "0.1.0",
   "description": "dnode over http",
-  "main": "lib/index.js",
+  "main": "out/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,10 +17,15 @@
   },
   "dependencies": {
     "upnode": "~0.4.3",
-    "dnode": "~1.0.5"
+    "dnode": "~1.0.5",
+    "duplexer": "~0.1.1"
   },
   "gruntSource": {
     "source": "~/.grunt-sources/node",
     "repo": "https://github.com/jpillora/grunt-source-node.git"
+  },
+  "devDependencies": {
+    "rsa-json": "~0.1.0",
+    "pem": "~1.2.2"
   }
 }
