@@ -23,15 +23,13 @@ exports.connect = (port) ->
   opts =
     hostname: 'localhost'
     port: port
-    path: '/hnode'
+    path: '/'+pkg.name
     rejectUnauthorized: false
     headers:
-      'user-agent': 'hnode/'+pkg.version
+      'user-agent': pkg.name+'/'+pkg.version
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
   @onConnect (passRead, passWrite) ->
     @log 'connecting to ' + port
-    req = https.request opts, (res) =>
-      passRead(res)
-    passWrite(req)
+    passWrite https.request opts, passRead
