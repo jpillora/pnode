@@ -9,36 +9,38 @@ class Server extends Base
   defaults:
     hello: 42
 
-  constructor: (@opts = {})->
+  constructor: ->
+    super
     @clients = {}
-    @exposed = {
-      name: 'server'
-    }
-
+    #add helpers for a few types of transports
     for name, transport of @transports
       @[name] = { listen: transport.listen.bind(@) }
-
-    _.defaults @opts, @defaults
-    _.bindAll @
+    
 
   expose: (obj) ->
     _.extend @exposed, obj
 
   handle: (read, write = read) ->
 
-    @checkStreams read, write
+    @err "Invalid read stream" unless read.readable
+    @err "Invalid write stream" unless write.writable
 
     d = dnode @exposed
-    d.on 'remote', @setRemote
-    d.on 'end', => @log "lost '#{remote?.name}'" 
+    d.once 'remote', @onRemote
+    read.once 'close', d.end
 
     read.pipe(d).pipe(write)
 
-  setRemote: (remote, d) ->
-    @log 'set remote', _.keys remote
-    if(remote.name)
-      @clients[remote.name] = remote
-    @emit 'remote', remote, d
+  onRemote: (remote, conn) ->
+    @log 'connected', _.keys remote
+    @emit 'remote', remote
+    
+    if(remote.id)
+      @clients[remote.id] = remote
+      conn.once 'end', =>
+        @clients[remote.id] = null
+
+
 
 module.exports = (opts) ->
   new Server opts

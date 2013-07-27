@@ -2,6 +2,7 @@
 {EventEmitter} = require 'events'
 fs = require 'fs'
 path = require 'path'
+_ = require 'lodash'
 
 transports = {}
 fs.readdirSync(path.join(__dirname,'transports')).forEach (file) ->
@@ -12,13 +13,17 @@ module.exports = class Base extends EventEmitter
   name: 'Base'
   
   transports: transports
-  
-  checkStreams: (read, write) ->
-    @log "read (#{read.readable}, #{read.writable}) write (#{write.readable}, #{write.writable})"
-    # if read.readable isnt true
-    #   @err "Invalid 'read' stream (#{read.readable})"
-    # if write.writable isnt true
-    #   @err "Invalid 'write' stream (#{write.writable})"
+
+  constructor: (@opts = {})->
+    _.defaults @opts, @defaults
+    _.bindAll @
+
+    @exposed = {
+      _ping: @ping
+    }
+
+  ping: (cb) ->
+    cb true
 
   log: ->
     console.log.apply console, [@.toString()].concat([].slice.call(arguments))

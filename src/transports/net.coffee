@@ -5,6 +5,8 @@ exports.listen = (port) ->
     @log 'listening on ' + port
 
 exports.connect = (port) ->
-  @onConnect (callback) ->
+  @onConnect (passRead, passWrite) ->
     @log 'connecting to ' + port
-    callback net.connect(port)
+    c = net.connect(port)
+    passRead(c)
+    passWrite(c)

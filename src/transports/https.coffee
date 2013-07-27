@@ -1,4 +1,5 @@
-http = require 'http'
+https = require 'https'
+pem = require 'pem'
 pkg = require '../../package.json'
 
 exports.listen = (opts, port, callback) ->
@@ -12,8 +13,9 @@ exports.listen = (opts, port, callback) ->
   if typeof opts is 'number'
     callback = port
     port = opts
-    opts = {}
-    useOpts()
+    pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
+      opts = {key: keys.serviceKey, cert: keys.certificate};
+      useOpts()
   else
     useOpts()
 
@@ -22,6 +24,7 @@ exports.connect = (port) ->
     hostname: 'localhost'
     port: port
     path: '/hnode'
+    rejectUnauthorized: false
     headers:
       'user-agent': 'hnode/'+pkg.version
       'transfer-encoding': 'chunked'
@@ -29,6 +32,6 @@ exports.connect = (port) ->
 
   @onConnect (passRead, passWrite) ->
     @log 'connecting to ' + port
-    req = http.request httpReqOpts, (res) =>
+    req = https.request opts, (res) =>
       passRead(res)
     passWrite(req)
