@@ -12,9 +12,7 @@ class Client extends Base
     interval: 2000
 
   statuses:
-    up: 1
-    down: 2
-    connecting: 3
+    ['up', 'down', 'connecting']
 
   constructor: ->
     super
@@ -22,14 +20,17 @@ class Client extends Base
     if @opts.timeout >= @opts.interval
       @err "'timeout' must be less than 'interval'"
 
-    @ping = 0
-    @retry = 0
+    @stat =
+      ping: 0
+      retry: 0
+    
     @status = 'down'
 
     #add helpers for a few types of transports
     for name, transport of @transports
       @[name] = { connect: transport.connect.bind(@) }
 
+    #limit ping interval
     @check = _.throttle @check, @opts.interval
 
     _.extend @get, @
@@ -38,32 +39,47 @@ class Client extends Base
   expose: (obj) ->
     _.extend @exposed, obj
 
-  onConnect: (fn) ->
-    @getConnection = fn
+  createConnection: (fn) ->
+    unless typeof fn is 'function'
+      @err "must be a function"
+    unless fn.length is 1 or fn.length is 2
+      @err "must have arity 1 or 2"
+    @getConnectionFn = fn
 
   get: (callback) ->
-    if @status is 'down'
+    unless @getConnectionFn
+      @err "no create connection method defined"
+
+    if @status is 'up'
+      callback @remote
+      return
+    else if @status is 'down'
       @setStatus 'connecting'
 
       @d = dnode @exposed
       @d.once 'remote', @onRemote
       @d.once 'end', @onEnd
+      @d.once 'error', @onError
       
-      @getConnection (read) =>
-        @err "Invalid read stream" unless read.readable
-        read.pipe(@d)
-      , (write) =>
-        @err "Invalid write stream" unless write.writable
-        @d.pipe(write)
-        write.on 'error', (e) =>
-          # @log "write error: #{e}"
-          @check()
-
-      @once 'remote', callback
-    else if @status is 'up'
-      callback @remote
-    else
-      @once 'remote', callback
+      switch @getConnectionFn.length
+        #user providing a duplex stream
+        when 1
+          @getConnectionFn (stream) =>
+            @err "Invalid duplex stream" unless stream.read and stream.write
+            stream.on 'error', @onStreamError
+            stream.pipe(@d).pipe(stream)
+        #user providing a read stream and a write stream
+        when 2
+          @getConnectionFn (read) =>
+            @err "Invalid read stream" unless read.read
+            read.on 'error', @onStreamError
+            read.pipe(@d)
+          , (write) =>
+            @err "Invalid write stream" unless write.write
+            write.on 'error', @onStreamError
+            @d.pipe(write)
+    
+    @once 'remote', callback
 
   unget: (callback) ->
     @removeListener 'remote', callback
@@ -74,6 +90,13 @@ class Client extends Base
     @emit 'remote', remote
     @check()
 
+  onError: (err) ->
+    @log "error: #{err}"
+
+  onStreamError: (err) ->
+    @log "stream error: #{err}"
+    @check()
+
   onEnd: ->
     @log "lost connection to server"
     @setStatus 'down'
@@ -81,29 +104,33 @@ class Client extends Base
 
   check: ->
 
-    if @retry >= @opts.retries
+    if @stat.retry >= @opts.retries
       @setStatus 'down'
       return
 
     t = null
-    @ping++
-    p = @ping
-    @retry++
+    @stat.ping++
+    p = @stat.ping
+    @stat.retry++
     # @log "ping: ##{@ping}, fails: ##{@retry}"
 
     #grab remote 
     callback = (remote) =>
       clearTimeout t
 
-      unless remote._ping
-        @err "Missing '_ping' function"
+      meta = remote._multi
+      unless meta
+        @log "not a multinode server"
+        return
+      unless meta.ping
+        @err "server missing '_ping' function"
         @setStatus 'down'
         @check()
         return
 
-      remote._ping (ok) =>
+      meta.ping (ok) =>
         if ok is true
-          @retry = 0
+          @stat.retry = 0
         @check()
 
     #start timeout
@@ -117,7 +144,7 @@ class Client extends Base
     @get callback
 
   setStatus: (s) ->
-    return unless @statuses[s] and s isnt @status
+    return unless s in @statuses and s isnt @status
     @log "#{@status} -> #{s}"
     @status = s
     @emit s

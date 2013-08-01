@@ -1,12 +1,10 @@
 net = require 'net'
 
-exports.listen = (port) ->
-  net.createServer(@handle).listen port, =>
-    @log 'listening on ' + port
+exports.listen = (port, callback) ->
+  net.createServer(@handle).listen port, callback
 
 exports.connect = (port) ->
-  @onConnect (passRead, passWrite) ->
+
+  @createConnection (streamCallback) ->
     @log 'connecting to ' + port
-    c = net.connect(port)
-    passRead(c)
-    passWrite(c)
+    streamCallback net.connect(port)

@@ -16,6 +16,8 @@ class Server extends Base
     for name, transport of @transports
       @[name] = { listen: transport.listen.bind(@) }
     
+    _.extend @get, @
+    return @get
 
   expose: (obj) ->
     _.extend @exposed, obj
@@ -32,15 +34,23 @@ class Server extends Base
     read.pipe(d).pipe(write)
 
   onRemote: (remote, conn) ->
-    @log 'connected', _.keys remote
-    @emit 'remote', remote
+    meta = remote._multi
+    unless meta
+      @log "closing connection, not a multinode client"
+      conn.end()
+      return
     
-    if(remote.id)
-      @clients[remote.id] = remote
-      conn.once 'end', =>
-        @clients[remote.id] = null
+    @clients[remote.id] = {remote, conn}
+    @log 'connected to client', meta.id
+    @emit 'remote', remote
+    conn.once 'end', =>
+      @log 'disconnected from client', meta.id
+      @clients[meta.id] = null
 
-
+  get: (id, callback) ->
+    unless @clients[id]
+      return callback null
+    callback @clients[id].remote
 
 module.exports = (opts) ->
   new Server opts

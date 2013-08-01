@@ -1,8 +1,17 @@
+
+***In progress***
+
+--------------
+
 # <name>multinode</end>
 
-## Summary
-
 <description>dnode over anything</end>
+
+<!--
+[![Build Status](https://travis-ci.org/visionmedia/jade.png?branch=master)](https://travis-ci.org/visionmedia/jade)
+[![Dependency Status](https://gemnasium.com/visionmedia/jade.png)](https://gemnasium.com/visionmedia/jade)
+-->
+[![NPM version](https://nodei.co/npm/multinode.png)](https://npmjs.org/package/multinode)
 
 ## Features
 
@@ -68,6 +77,8 @@ setInterval(function() {
 
 ## Advanced Usage
 
+### `server.handle`
+
 Instead of `server.[transport].listen()`, you can
 provide the streams for the `server` to `handle`:
 
@@ -83,13 +94,21 @@ bar(function(stream) {
 });
 ```
 
-Instead of `client.[transport].connect()`, you can
+### `client.createConnection`
+
+Instead of `client.[transport].connect()`, you can asynchronously 
 provide a function to create the connection streams:
 
 ``` javascript
-client.onConnection(function(passRead, passWrite) {
-  passRead(foo.createReadStream());
-  passWrite(bar.createWriteStream());
+// create a read and a write stream
+client.createConnection(function(readCallback, writeCallback) {
+  readCallback(foo.createReadStream());
+  writeCallback(bar.createWriteStream());
+});
+// OR
+// create a duplex stream
+client.createConnection(function(streamCallback) {
+  streamCallback(bar.createStream());
 });
 ```
 
@@ -101,7 +120,8 @@ examples [here](src/transports)
 
 ## Todo
 
-* Websockets example (sockjs)
+* Websockets transport (using browserify and shoe)
+* Peer mode (A Peer class which is both client and server)
 
 <license()>
 #### MIT License
