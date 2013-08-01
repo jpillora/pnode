@@ -1,9 +1,9 @@
-var multinode = require('../');
+var multinode = require('../../../');
 var server = multinode.server();
 
 server.expose({
-  ho: function(date) {
-    console.log('ho at ' + date);
+  say: function(date) {
+    console.log('client says ' + date);
   }
 });
 

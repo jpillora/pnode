@@ -27,12 +27,12 @@ npm install multinode
 ```
 </end>
 
-## Quick Usage
+## Basic Usage
 
 **As well as `http`; `https`, `net` and `tls` are avaiable**
 
 Server:
-<showFile("example/http-server.js")>
+<showFile("example/basic/https-server.js")>
 ``` javascript
 var multinode = require('../');
 var server = multinode.server();
@@ -50,7 +50,7 @@ server.https.listen(8000, function(){
 </end>
 
 Client:
-<showFile("example/http-client.js")>
+<showFile("example/basic/https-client.js")>
 ``` javascript
 var multinode = require('../');
 var client = multinode.client();

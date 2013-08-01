@@ -30,6 +30,6 @@ exports.connect = (port) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  @onConnect (passRead, passWrite) ->
+  @createConnection (readCallback, writeCallback) ->
     @log 'connecting to ' + port
-    passWrite https.request opts, passRead
+    writeCallback https.request opts, readCallback

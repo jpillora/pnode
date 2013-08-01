@@ -1,15 +1,14 @@
-var multinode = require('../');
-var client = multinode.client('2');
+var multinode = require('../../');
+var client = multinode.client('two');
 
 client.expose({
-  hi: function() {
-    client.log('hi!');
+  say: function(msg) {
+    console.log('server says: ' + msg);
   }
 });
 
 client.net.connect(8000);
 
 client(function(remote) {
-  console.log('calling ho...');
-  remote.ho(d);
+  remote.say('client two says hi');
 });

@@ -1,6 +1,7 @@
 _ = require 'lodash'
 dnode = require 'dnode'
 Base = require './base'
+transports = require './transports'
 
 class Client extends Base
 
@@ -27,7 +28,7 @@ class Client extends Base
     @status = 'down'
 
     #add helpers for a few types of transports
-    for name, transport of @transports
+    for name, transport of transports
       @[name] = { connect: transport.connect.bind(@) }
 
     #limit ping interval
@@ -50,6 +51,7 @@ class Client extends Base
     unless @getConnectionFn
       @err "no create connection method defined"
 
+    @stat.retry = 0
     if @status is 'up'
       callback @remote
       return
@@ -94,6 +96,7 @@ class Client extends Base
     @log "error: #{err}"
 
   onStreamError: (err) ->
+    # ignore stream errors, just retry
     @log "stream error: #{err}"
     @check()
 
@@ -104,15 +107,13 @@ class Client extends Base
 
   check: ->
 
-    if @stat.retry >= @opts.retries
-      @setStatus 'down'
-      return
+    return if @stat.retry >= @opts.retries
 
     t = null
     @stat.ping++
     p = @stat.ping
     @stat.retry++
-    # @log "ping: ##{@ping}, fails: ##{@retry}"
+    # @log "ping: ##{@stat.ping}, fails: ##{@stat.retry}"
 
     #grab remote 
     callback = (remote) =>
@@ -123,7 +124,7 @@ class Client extends Base
         @log "not a multinode server"
         return
       unless meta.ping
-        @err "server missing '_ping' function"
+        @err "server missing ping function"
         @setStatus 'down'
         @check()
         return
@@ -136,6 +137,7 @@ class Client extends Base
     #start timeout
     t = setTimeout =>
       @unget callback
+      @log 'TIMEOUT'
       @setStatus 'down'
       @check()
     , @opts.timeout
