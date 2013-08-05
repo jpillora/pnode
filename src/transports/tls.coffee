@@ -22,6 +22,5 @@ exports.listen = (opts, port, callback) ->
 
 exports.connect = (port, host, opts, callback) ->
   @createConnection (streamCallback) ->
-    @log 'connecting to ' + port
     # { secureProtocol: 'TLSv1_client_method' }
     streamCallback tls.connect port, host, opts, callback

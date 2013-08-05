@@ -28,5 +28,4 @@ exports.connect = (port, hostname) ->
       'expect': '100-continue'
 
   @onConnect (passRead, passWrite) ->
-    @log 'connecting to ' + port
     passWrite https.request opts, passRead

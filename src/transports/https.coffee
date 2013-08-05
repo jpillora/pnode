@@ -31,5 +31,4 @@ exports.connect = (port, hostname) ->
       'expect': '100-continue'
 
   @createConnection (readCallback, writeCallback) ->
-    @log 'connecting to ' + port
     writeCallback https.request opts, readCallback
