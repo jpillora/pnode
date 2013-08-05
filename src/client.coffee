@@ -8,32 +8,26 @@ class Client extends Base
   name: 'Client'
 
   defaults:
-    retries: 3
-    timeout: 1000
-    interval: 2000
-
-  statuses:
-    ['up', 'down', 'connecting']
+    retries: Infinity
+    timeout: 10000
+    interval: 1000
 
   constructor: ->
     super
 
-    if @opts.timeout >= @opts.interval
-      @err "'timeout' must be less than 'interval'"
-
-    @stat =
-      ping: 0
-      retry: 0
-    
+    @count = { ping: 0, pong: 0, retry: 0 }
     @status = 'down'
+    @connecting = false
 
-    #add helpers for a few types of transports
+    #add helpers for various transports
     for name, transport of transports
       @[name] = { connect: transport.connect.bind(@) }
 
-    #limit ping interval
-    @check = _.throttle @check, @opts.interval
+    #handle the ups and downs
+    @on 'up', @onUp
+    @on 'down', @onDown
 
+    #return @get function extended by this instance
     _.extend @get, @
     return @get
 
@@ -47,22 +41,25 @@ class Client extends Base
       @err "must have arity 1 or 2"
     @getConnectionFn = fn
 
-  get: (callback) ->
+  get: (callback, forceRetry = false) ->
+
+    #check connection function
     unless @getConnectionFn
-      @err "no create connection method defined"
+      return @err "no create connection method defined"
 
-    @stat.retry = 0
     if @status is 'up'
-      callback @remote
-      return
-    else if @status is 'down'
-      @setStatus 'connecting'
+      @count.retry = 0
+      return callback @remote
 
+    else if @status is 'down' and (not @connecting or forceRetry) 
+      @connecting = true
+      @d.removeAllListeners().end() if @d
       @d = dnode @exposed
       @d.once 'remote', @onRemote
       @d.once 'end', @onEnd
       @d.once 'error', @onError
       
+      #get stream and splice in
       switch @getConnectionFn.length
         #user providing a duplex stream
         when 1
@@ -81,72 +78,96 @@ class Client extends Base
             write.on 'error', @onStreamError
             @d.pipe(write)
     
+    #wait forever until remote arrives
     @once 'remote', callback
 
   unget: (callback) ->
     @removeListener 'remote', callback
 
-  onRemote: (@remote) ->
-    @log 'connected', _.keys remote
-    @setStatus 'up'
-    @emit 'remote', remote
-    @check()
 
+  #up events
+  onRemote: (remote) ->
+    #ensure it's a multinode remote
+    meta = remote._multi
+    unless meta and meta.ping
+      return @err "Invalid multinode host"
+    
+    @remote = remote
+    @setStatus 'up'
+
+  onUp: ->
+    @emit 'remote', @remote
+    @queuePing()
+
+  queuePing: ->
+    @ping.t = setTimeout @ping, @opts.interval
+
+  #ping while 'up'
+  ping: ->
+    #ping/pong mismatch check...
+    @count.ping++
+    @timeout(true)
+    @remote._multi.ping (ok) =>
+      @count.pong++ if ok is true
+      @timeout(false)
+      @queuePing()
+
+  #timeout method
+  timeout: (cb = ->) ->
+
+    if cb is false
+      clearTimeout @timeout.t
+      return
+
+    setTimeout, =>
+      @setStatus 'down'
+      cb()
+    , @opts.timeout
+
+  #down events
   onError: (err) ->
     @log "error: #{err}"
+    @emit "error", err
+    @setStatus 'down'
 
   onStreamError: (err) ->
     # ignore stream errors, just retry
     @log "stream error: #{err}"
-    @check()
+    @emit "error", err
+    @setStatus 'down'
 
   onEnd: ->
     @log "lost connection to server"
     @setStatus 'down'
-    @check()
 
-  check: ->
+  onDown: ->
+    #stop pinging
+    clearTimeout @ping.t
+    @retry()
 
-    return if @stat.retry >= @opts.retries
+  #retry while 'down'
+  retry: ->
+    clearTimeout @ping.t
 
-    t = null
-    @stat.ping++
-    p = @stat.ping
-    @stat.retry++
-    # @log "ping: ##{@stat.ping}, fails: ##{@stat.retry}"
+    if @count.retry >= @opts.retries
+      return
 
-    #grab remote 
-    callback = (remote) =>
-      clearTimeout t
+    @count.retry++
+    # @log "ping: ##{@count.ping}, fails: ##{@count.retry}"
 
-      meta = remote._multi
-      unless meta
-        @log "not a multinode server"
-        return
-      unless meta.ping
-        @err "server missing ping function"
-        @setStatus 'down'
-        @check()
-        return
-
-      meta.ping (ok) =>
-        if ok is true
-          @stat.retry = 0
-        @check()
+    #on remote 
+    callback = (remote) => @timeout(false)
 
     #start timeout
-    t = setTimeout =>
+    @timeout =>
       @unget callback
-      @log 'TIMEOUT'
-      @setStatus 'down'
-      @check()
-    , @opts.timeout
+      @retry()
 
     #make call
     @get callback
 
   setStatus: (s) ->
-    return unless s in @statuses and s isnt @status
+    return unless s in ['up', 'down'] and s isnt @status
     @log "#{@status} -> #{s}"
     @status = s
     @emit s

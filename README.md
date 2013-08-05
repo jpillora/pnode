@@ -32,7 +32,7 @@ npm install multinode
 **As well as `http`; `https`, `net` and `tls` are avaiable**
 
 Server:
-<showFile("example/basic/https-server.js")>
+<showFile("example/basic/https/server.js")>
 ``` javascript
 var multinode = require('../');
 var server = multinode.server();
@@ -50,7 +50,7 @@ server.https.listen(8000, function(){
 </end>
 
 Client:
-<showFile("example/basic/https-client.js")>
+<showFile("example/basic/https/client.js")>
 ``` javascript
 var multinode = require('../');
 var client = multinode.client();
@@ -77,7 +77,7 @@ setInterval(function() {
 
 ## Advanced Usage
 
-### `server.handle`
+#### `server.handle`
 
 Instead of `server.[transport].listen()`, you can
 provide the streams for the `server` to `handle`:
@@ -94,7 +94,7 @@ bar(function(stream) {
 });
 ```
 
-### `client.createConnection`
+#### `client.createConnection`
 
 Instead of `client.[transport].connect()`, you can asynchronously 
 provide a function to create the connection streams:

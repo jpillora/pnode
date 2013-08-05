@@ -17,9 +17,9 @@ exports.listen = (opts, port, callback) ->
   else
     useOpts()
 
-exports.connect = (port) ->
+exports.connect = (port, hostname) ->
   opts =
-    hostname: 'localhost'
+    hostname: hostname
     port: port
     path: '/'+pkg.name
     headers:
