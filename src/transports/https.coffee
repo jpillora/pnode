@@ -1,6 +1,6 @@
 https = require 'https'
-pem = require 'pem'
 pkg = require '../../package.json'
+pem = require 'pem'
 
 exports.listen = (opts, port, callback) ->
   useOpts = =>

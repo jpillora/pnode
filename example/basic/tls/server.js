@@ -1,5 +1,3 @@
-console.log("TLS ISN'T WORKING YET...");
-
 var multinode = require('../../../');
 var fs = require('fs');
 var server = multinode.server();

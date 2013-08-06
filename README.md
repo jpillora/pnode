@@ -29,7 +29,7 @@ npm install multinode
 
 ## Basic Usage
 
-**As well as `http`; `https`, `net` and `tls` are avaiable**
+**As well as `https`, you can use `http` and `net`. `tls` is in progress**
 
 Server:
 <showFile("example/basic/https/server.js")>
@@ -114,6 +114,18 @@ client.createConnection(function(streamCallback) {
 
 This will get called to whenever <name>multinode</end>
 needs to re-establish a connection
+
+#### TCP Example
+
+``` js
+//handle tcp connections
+net.createServer(server.handle).listen(port, callback);
+
+//create new tcp connections
+client.createConnection(function(streamCallback) {
+  streamCallback(net.connect(port));
+});
+```
 
 See how each transport is implemented for more
 examples [here](src/transports)

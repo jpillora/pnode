@@ -3,6 +3,8 @@ pem = require 'pem'
 
 exports.listen = (opts, port, callback) ->
 
+  console.log "TLS IS NOT WORKING YET"
+
   useOpts = =>
     if typeof callback isnt 'function'
       callback = ->

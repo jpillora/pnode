@@ -19,11 +19,13 @@ class Client extends Base
     @connecting = false
     @status = 'down'
 
-    @on 'down', @cancelPing
-
     #add helpers for various transports
     for name, transport of transports
       @[name] = { connect: transport.connect.bind(@) }
+
+    #throttle reconnects and pings
+    @connect = _.throttle @connect, @opts.interval
+    @ping = _.throttle @ping, @opts.interval
 
     #return @get function extended by this instance
     _.extend @get, @
@@ -38,6 +40,7 @@ class Client extends Base
     unless fn.length is 1 or fn.length is 2
       @err "must have arity 1 or 2"
     @getConnectionFn = fn
+    @connect()
 
   get: (callback) ->
     #check connection function
@@ -58,15 +61,14 @@ class Client extends Base
     @removeListener 'remote', callback
 
   connect: ->
-    clearTimeout @ping.t
-
-    if @connecting or
+    if @status is 'up' or
+       @connecting or
        @count.attempt >= @opts.maxRetries
       return
 
     @count.attempt++
     @connecting = true
-    # @log "connection attempt #{@count.attempt}!"
+    @log "connection attempt #{@count.attempt}!"
 
     @d.removeAllListeners().end() if @d
     @d = dnode @exposed
@@ -79,6 +81,7 @@ class Client extends Base
       @d.removeAllListeners().end()
       @reconnect()
 
+    @log 'connecting'
     @emit 'connecting'
     #get stream and splice in
     switch @getConnectionFn.length
@@ -100,7 +103,11 @@ class Client extends Base
           @d.pipe(write)
 
   reconnect: ->
-    setTimeout @connect, @opts.interval
+    return if @reconnect.t
+    @reconnect.t = setTimeout =>
+      @reconnect.t = 0
+      @connect()
+    , @opts.interval
 
   #connection failed
   onStreamError: (err) ->
@@ -130,23 +137,18 @@ class Client extends Base
     @emit 'remote', @remote
     @setStatus 'up'
     @count.attempt = 0
-    @queuePing()
-
-  queuePing: ->
-    @ping.t = setTimeout @ping, @opts.interval
-
-  cancelPing: ->
-    clearTimeout @ping.t
+    @ping()
 
   #ping while 'up'
   ping: ->
+    return if @status is 'down'
     @count.ping++
     @timeout(true)
-    # @log "ping #{@count.ping}!"
+    @log "ping #{@count.ping}!"
     @remote._multi.ping (ok) =>
       @count.pong++ if ok is true
       @timeout(false)
-      @queuePing()
+      @ping()
 
   #timeout method
   timeout: (cb) ->
@@ -167,7 +169,7 @@ class Client extends Base
     #status change
     @connecting = false
     return unless s in ['up', 'down'] and s isnt @status
-    @log "#{@status} -> #{s}"
+    @log s
     @status = s
     @emit s
 

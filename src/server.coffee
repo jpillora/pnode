@@ -22,7 +22,7 @@ class Server extends Base
 
   handle: (read, write) ->
 
-    if read.write and not write.write
+    if read.write and not write?.write
       write = read
 
     @err "Invalid read stream" unless read.readable
