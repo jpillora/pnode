@@ -8,7 +8,7 @@ class Server extends Base
   name: 'Server'
 
   defaults:
-    hello: 42
+    wait: 5000
 
   constructor: ->
     super
@@ -27,9 +27,6 @@ class Server extends Base
       @err "Transport: '#{transport}' not found"
 
     obj.listen.apply @, args
-
-  expose: (obj) ->
-    _.extend @exposed, obj
 
   handle: (read, write) ->
 
@@ -55,12 +52,30 @@ class Server extends Base
     @clients[meta.id] = {remote, d}
 
     @log 'connected to client', meta.id
-    @emit 'remote', remote
+    @emit 'remote', meta.id, remote
     d.once 'end', =>
       @log 'disconnected from client', meta.id
-      @clients[meta.id] = null
+      delete @clients[meta.id]
 
-  client: (id) ->
+  client: (id, callback) ->
+    rem = @clientSync id
+    return callback(rem) if rem
+
+    t = setTimeout =>
+      # @log "timeout waiting for #{id}"
+      @removeListener 'remote', cb
+    , @opts.wait
+
+    cb = =>
+      rem = @clientSync id
+      return unless rem
+      clearTimeout t
+      @removeListener 'remote', cb
+      callback rem
+
+    @on 'remote', cb
+
+  clientSync: (id) ->
     if _.isString id
       return @clients[id]?.remote
     else if _.isNumber id
@@ -68,11 +83,12 @@ class Server extends Base
       for id, client of @clients
         return client.remote if i-- is 0
       return null
-    @err "invalid arguments"
+    else
+      @err "invalid arguments"
 
   disconnect: ->
-    if @server
-      @server.close()
+    client.d.end() for id, client of @clients
+    @server.close() if @server
 
   # clients: ->
   #   _.map @clients, (c) -> c.remote

@@ -1,8 +1,9 @@
 var multinode = require('../../../');
 var client = multinode.client();
 
+client.connect('https', 8000, 'localhost');
+// OR
 // client.connect('https://localhost:8000');
-client.connect('https',8000,'localhost');
 
 setInterval(function() {
 

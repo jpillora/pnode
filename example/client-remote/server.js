@@ -1,6 +1,6 @@
 var multinode = require('../../');
 var server = multinode.server({
-  wait: 1000
+  wait: 5000
 });
 
 server.expose({
@@ -9,16 +9,16 @@ server.expose({
   }
 });
 
-server.net.listen(8000, function(){
+server.listen('net', 8000, function(){
   server.log('listening on 8000');
 });
 
 //0th client
 server.client(0, function(remote) {
-  client.say('hi!');
+  remote.say('hi!');
 });
 
 //client with id 'two'
 server.client('two', function(remote) {
-  client.say('hi!');
+  remote.say('hi!');
 });

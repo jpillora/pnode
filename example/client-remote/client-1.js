@@ -7,7 +7,7 @@ client.expose({
   }
 });
 
-client.net.connect(8000);
+client.connect('tcp://localhost:8000');
 
 client(function(remote) {
   remote.say('client one says hi');

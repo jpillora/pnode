@@ -9,8 +9,9 @@ var peer = multinode.peer({
   autoJoin: true
 });
 
-//net - handle + createConnection
-peer.net.join(7000, ['myhost.com','myotherhost.com']);
+peer.listen('tcp', 7000, 'cas-dev.think.edu.au');
+peer.listen('http', 7001);
+// peer.connect(['tcp://localhost:8000','http://localhost:8000']);
 
 //equivalent to:
 // net.createServer(peer.handle).listen(7000);
@@ -21,14 +22,14 @@ peer.net.join(7000, ['myhost.com','myotherhost.com']);
 //   streamCallback(net.connect('myotherhost.com', 7000));
 // });
 
-peer.peer('one', function(remote) {
-  remote.sum(1,2,3, function(err, result) {
-    console.log(result); //6
-  });
-});
+// peer.peer('one', function(remote) {
+//   remote.sum(1,2,3, function(err, result) {
+//     console.log(result); //6
+//   });
+// });
 
-peer.all(function(remote) {
-  remote.sum(1,2,3, function(err, results) {
-    console.log(result); //[ 6, 6 ] 
-  });
-});
+// peer.all(function(remote) {
+//   remote.sum(1,2,3, function(err, results) {
+//     console.log(result); //[ 6, 6 ] 
+//   });
+// });

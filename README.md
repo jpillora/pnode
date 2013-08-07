@@ -25,9 +25,11 @@ npm install multinode
 ```
 </end>
 
+***Note: Only node `v0.10.x` is currently supported***
+
 ## Basic Usage
 
-**As well as `https`, you can use `http` and `net`. `tls` is in progress**
+**As well as `https`, you can use `http` and `tcp` (`tls` is in progress)**
 
 Server:
 <showFile("example/basic/https/server.js")>
@@ -41,7 +43,7 @@ server.expose({
   }
 });
 
-server.https.listen(8000, function(){
+server.listen('https', 8000, function(){
   console.log('listening on 8000');
 });
 ```
@@ -53,7 +55,8 @@ Client:
 var multinode = require('../../../');
 var client = multinode.client();
 
-client.connect('https', 8000);
+// client.connect('https://localhost:8000');
+client.connect('https',8000,'localhost');
 
 setInterval(function() {
 
@@ -63,6 +66,7 @@ setInterval(function() {
   });
 
 }, 1000);
+
 ```
 </end>
 
@@ -70,7 +74,7 @@ setInterval(function() {
 
 #### `server.handle`
 
-Instead of `server.[transport].listen()`, you can
+Instead of `server.listen()`, you can
 provide the streams for the `server` to `handle`:
 
 ``` javascript
@@ -85,10 +89,14 @@ bar(function(stream) {
 });
 ```
 
+Each call to `server.handle()` will be seen as a new
+client by the server.
+
 #### `client.createConnection`
 
-Instead of `client.[transport].connect()`, you can asynchronously 
-provide a function to create the connection streams:
+Instead of `client.connect()`, you can provide a
+function which will asynchronously create 
+connection streams:
 
 ``` javascript
 // create a read and a write stream
@@ -104,7 +112,7 @@ client.createConnection(function(streamCallback) {
 ```
 
 This will get called to whenever <name>multinode</end>
-needs to re-establish a connection
+needs to restablish a connection.
 
 #### TCP Example
 

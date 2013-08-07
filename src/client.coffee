@@ -38,7 +38,6 @@ class Client extends Base
 
     parsed = @parseOrigin transport
     if parsed
-      console.log parsed
       transport = parsed.protocol
       args.unshift parsed.hostname
       args.unshift parsed.port or @opts.port
@@ -51,9 +50,6 @@ class Client extends Base
 
     @count.attempt = 0
     obj.connect.apply @, args
-
-  expose: (obj) ->
-    _.extend @exposed, obj
 
   createConnection: (fn) ->
     unless typeof fn is 'function'
@@ -89,7 +85,6 @@ class Client extends Base
 
     @count.attempt++
     @connecting = true
-    @log "connection attempt #{@count.attempt}!"
 
     @reset()
     @d = dnode @exposed
@@ -102,7 +97,7 @@ class Client extends Base
       @reset()
       @reconnect()
 
-    @log 'connecting'
+    # @log "connection attempt #{@count.attempt}!"
     @emit 'connecting'
     #get stream and splice in
     switch @getConnectionFn.length
@@ -157,7 +152,7 @@ class Client extends Base
     return if @status is 'down'
     @count.ping++
     @timeout(true)
-    @log "ping #{@count.ping}!"
+    # @log "ping #{@count.ping}!"
     @remote._multi.ping (ok) =>
       @count.pong++ if ok is true
       @timeout(false)
