@@ -11,6 +11,7 @@ class Client extends Base
     maxRetries: 5
     timeout: 5000
     interval: 1000
+    port: 7337
 
   constructor: ->
     super
@@ -19,17 +20,37 @@ class Client extends Base
     @connecting = false
     @status = 'down'
 
-    #add helpers for various transports
-    for name, transport of transports
-      @[name] = { connect: transport.connect.bind(@) }
-
     #throttle reconnects and pings
-    @connect = _.throttle @connect, @opts.interval
+    @reconnect = _.throttle @reconnect, @opts.interval, {leading:true}
     @ping = _.throttle @ping, @opts.interval
 
     #return @get function extended by this instance
     _.extend @get, @
     return @get
+
+  #premade connection creators
+  connect: ->
+    args = Array::slice.call arguments
+    transport = args.shift()
+
+    unless transport
+      @err "Transport missing"
+
+    parsed = @parseOrigin transport
+    if parsed
+      console.log parsed
+      transport = parsed.protocol
+      args.unshift parsed.hostname
+      args.unshift parsed.port or @opts.port
+    else if /[^a-z]/.test transport
+      @err "Invalid transport name: '#{transport}'"
+
+    obj = transports.get transport
+    unless obj
+      @err "Transport: '#{transport}' not found"
+
+    @count.attempt = 0
+    obj.connect.apply @, args
 
   expose: (obj) ->
     _.extend @exposed, obj
@@ -40,7 +61,7 @@ class Client extends Base
     unless fn.length is 1 or fn.length is 2
       @err "must have arity 1 or 2"
     @getConnectionFn = fn
-    @connect()
+    @reconnect()
 
   get: (callback) ->
     #check connection function
@@ -52,7 +73,7 @@ class Client extends Base
 
     else if @status is 'down' and not @connecting
       @count.attempt = 0
-      @connect()      
+      @reconnect()      
 
     #call back when remote arrives
     @once 'remote', callback
@@ -60,7 +81,7 @@ class Client extends Base
   unget: (callback) ->
     @removeListener 'remote', callback
 
-  connect: ->
+  reconnect: ->
     if @status is 'up' or
        @connecting or
        @count.attempt >= @opts.maxRetries
@@ -70,7 +91,7 @@ class Client extends Base
     @connecting = true
     @log "connection attempt #{@count.attempt}!"
 
-    @d.removeAllListeners().end() if @d
+    @reset()
     @d = dnode @exposed
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
@@ -78,7 +99,7 @@ class Client extends Base
     @d.once 'fail', @onStreamError
 
     @timeout =>
-      @d.removeAllListeners().end()
+      @reset()
       @reconnect()
 
     @log 'connecting'
@@ -101,13 +122,6 @@ class Client extends Base
           @err "Invalid write stream" unless write.write
           write.on 'error', @onStreamError
           @d.pipe(write)
-
-  reconnect: ->
-    return if @reconnect.t
-    @reconnect.t = setTimeout =>
-      @reconnect.t = 0
-      @connect()
-    , @opts.interval
 
   #connection failed
   onStreamError: (err) ->
@@ -136,7 +150,6 @@ class Client extends Base
     @remote = remote
     @emit 'remote', @remote
     @setStatus 'up'
-    @count.attempt = 0
     @ping()
 
   #ping while 'up'
@@ -172,6 +185,14 @@ class Client extends Base
     @log s
     @status = s
     @emit s
+
+  reset: ->
+    @d.removeAllListeners().end() if @d
+
+  disconnect: ->
+    @count.attempt = 0
+    @reset()
+
 
 module.exports = (opts) ->
   new Client opts

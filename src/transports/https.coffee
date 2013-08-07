@@ -2,24 +2,39 @@ https = require 'https'
 pkg = require '../../package.json'
 pem = require 'pem'
 
-exports.listen = (opts, port, callback) ->
-  useOpts = =>
-    if typeof callback isnt 'function'
-      callback = ->
-    https.createServer(opts, (req, res) =>
-      @handle(req, res)
-    ).listen port, callback
+exports.listen = ->
 
-  if typeof opts is 'number'
-    callback = port
-    port = opts
-    pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
-      opts = {key: keys.serviceKey, cert: keys.certificate};
-      useOpts()
-  else
-    useOpts()
+  args = Array::slice.call arguments
+  opts = null
+
+  getOpts = =>
+    if typeof args[0] is 'object'
+      opts = args.shift()
+      checkPort()
+    else
+      pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
+        @err err if err
+        opts = {key: keys.serviceKey, cert: keys.certificate}
+        checkPort()
+
+  checkPort = =>
+    if typeof args[0] isnt 'number'
+      args.unshift @opts.port
+    gotOpts()
+
+  gotOpts = =>
+    @server = https.createServer opts, @handle
+    @server.listen.apply @server, args
+
+  #start
+  getOpts()
 
 exports.connect = (port, hostname) ->
+
+  if typeof port is 'string'
+    hostname = port
+    port = @opts.port
+
   opts =
     hostname: hostname
     port: port

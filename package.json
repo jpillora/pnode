@@ -23,5 +23,10 @@
   "gruntSource": {
     "source": "~/.grunt-sources/node",
     "repo": "https://github.com/jpillora/grunt-source-node.git"
+  },
+  "devDependencies": {
+    "chai": "~1.7.2",
+    "mocha": "~1.12.0",
+    "coffee-script": "~1.6.3"
   }
 }

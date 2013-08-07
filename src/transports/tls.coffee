@@ -5,24 +5,33 @@ exports.listen = (opts, port, callback) ->
 
   console.log "TLS IS NOT WORKING YET"
 
-  useOpts = =>
-    if typeof callback isnt 'function'
-      callback = ->
-    unless opts
-      opts = {}
-    # opts.secureProtocol = 'TLSv1_server_method'
-    tls.createServer(opts, @handle).listen port, callback
+  args = Array::slice.call arguments
+  opts = null
 
-  if typeof opts is 'number'
-    callback = port
-    port = opts
-    pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
-      opts = {key: keys.serviceKey, cert: keys.certificate};
-      useOpts()
-  else
-    useOpts()
+  getOpts = =>
+    if typeof args[0] is 'object'
+      opts = args.shift()
+      checkPort()
+    else
+      pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
+        @err err if err
+        opts = {key: keys.serviceKey, cert: keys.certificate}
+        checkPort()
 
-exports.connect = (port, host, opts, callback) ->
+  checkPort = =>
+    if typeof args[0] isnt 'number'
+      args.unshift @opts.port
+    gotOpts()
+
+  gotOpts = =>
+    @server = tls.createServer opts, @handle
+    @server.listen.apply @server, args
+
+  #start
+  getOpts()
+
+exports.connect = ->
+  args = arguments
   @createConnection (streamCallback) ->
     # { secureProtocol: 'TLSv1_client_method' }
-    streamCallback tls.connect port, host, opts, callback
+    streamCallback tls.connect.apply tls, args

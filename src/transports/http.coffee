@@ -1,23 +1,22 @@
 http = require 'http'
 pkg = require '../../package.json'
 
-exports.listen = (opts, port, callback) ->
-  useOpts = =>
-    if typeof callback isnt 'function'
-      callback = ->
-    https.createServer(opts, (req, res) =>
-      @handle(req, res)
-    ).listen port, callback
+exports.listen = ->
 
-  if typeof opts is 'number'
-    callback = port
-    port = opts
-    opts = {}
-    useOpts()
-  else
-    useOpts()
+  args = Array::slice.call arguments
+
+  if typeof args[0] isnt 'number'
+    args.unshift @opts.port
+
+  @server = http.createServer @handle
+  @server.listen.apply @server, args
 
 exports.connect = (port, hostname) ->
+
+  if typeof port is 'string'
+    hostname = port
+    port = @opts.port
+
   opts =
     hostname: hostname
     port: port
@@ -27,5 +26,5 @@ exports.connect = (port, hostname) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  @onConnect (passRead, passWrite) ->
-    passWrite https.request opts, passRead
+  @createConnection (readCallback, writeCallback) ->
+    writeCallback http.request opts, readCallback

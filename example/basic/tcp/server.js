@@ -7,6 +7,6 @@ server.expose({
   }
 });
 
-server.net.listen(8000, function(){
+server.listen('tcp', 8000, function(){
   console.log('listening on 8000');
 });

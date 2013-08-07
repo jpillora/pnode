@@ -12,17 +12,19 @@ module.exports = class Base extends EventEmitter
       @opts = { id:@opts }
     _.defaults @opts, @defaults
 
-    if @opts.id
-      @id = @opts.id
-    else
-      @id = guid()
-
+    @id = @opts.id or guid()
     _.bindAll @
 
     @exposed =
       _multi:
         id: @id
         ping: (cb) -> cb true
+
+  #extract protocol, hostname, port from string
+  parseOrigin: (str) ->
+    if typeof str is 'string' and /^([a-z]+):\/\/([^\/]+?)(:(\d+))?$/.test str
+      return { protocol: RegExp.$1, hostname: RegExp.$2, port: parseInt RegExp.$4, 10 }
+    return null
 
   log: ->
     console.log.apply console, [@.toString()].concat([].slice.call(arguments))

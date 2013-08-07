@@ -7,11 +7,9 @@
 
 <description>dnode over anything</end>
 
-<!--
-[![Build Status](https://travis-ci.org/visionmedia/jade.png?branch=master)](https://travis-ci.org/visionmedia/jade)
-[![Dependency Status](https://gemnasium.com/visionmedia/jade.png)](https://gemnasium.com/visionmedia/jade)
--->
-[![NPM version](https://nodei.co/npm/multinode.png)](https://npmjs.org/package/multinode)
+[![NPM version](https://nodei.co/npm/multinode.png?compact=true)](https://npmjs.org/package/multinode)
+
+[![Build Status](https://travis-ci.org/jpillora/multinode.png)](https://travis-ci.org/jpillora/multinode)
 
 ## Features
 
@@ -34,12 +32,12 @@ npm install multinode
 Server:
 <showFile("example/basic/https/server.js")>
 ``` javascript
-var multinode = require('../');
+var multinode = require('../../../');
 var server = multinode.server();
 
 server.expose({
-  ho: function(date) {
-    console.log('ho at ' + date);
+  say: function(date) {
+    console.log('client says ' + date);
   }
 });
 
@@ -52,23 +50,16 @@ server.https.listen(8000, function(){
 Client:
 <showFile("example/basic/https/client.js")>
 ``` javascript
-var multinode = require('../');
+var multinode = require('../../../');
 var client = multinode.client();
 
-client.expose({
-  hi: function() {
-    console.log('hi!');
-  }
-});
-
-client.https.connect(8000);
+client.connect('https', 8000);
 
 setInterval(function() {
 
   var d = new Date().toString();
   client(function(remote) {
-    console.log('calling ho...');
-    remote.ho(d);
+    remote.say(d);
   });
 
 }, 1000);

@@ -13,9 +13,20 @@ class Server extends Base
   constructor: ->
     super
     @clients = {}
-    #add helpers for a few types of transports
-    for name, transport of transports
-      @[name] = { listen: transport.listen.bind(@) }
+
+  #premade handlers
+  listen: ->
+    args = Array::slice.call arguments
+    transport = args.shift()
+
+    if /[^a-z]/.test transport
+      @err "Invalid transport name: '#{transport}'"
+
+    obj = transports.get transport
+    unless obj
+      @err "Transport: '#{transport}' not found"
+
+    obj.listen.apply @, args
 
   expose: (obj) ->
     _.extend @exposed, obj
@@ -25,8 +36,8 @@ class Server extends Base
     if read.write and not write?.write
       write = read
 
-    @err "Invalid read stream" unless read.readable
-    @err "Invalid write stream" unless write.writable
+    @err "Invalid read stream" unless read.read
+    @err "Invalid write stream" unless write.write
 
     d = dnode @exposed
     d.once 'remote', @onRemote
@@ -34,17 +45,18 @@ class Server extends Base
 
     read.pipe(d).pipe(write)
 
-  onRemote: (remote, conn) ->
+  onRemote: (remote, d) ->
     meta = remote._multi
     unless meta
       @log "closing connection, not a multinode client"
-      conn.end()
+      d.end()
       return
     
-    @clients[meta.id] = {remote, conn}
+    @clients[meta.id] = {remote, d}
+
     @log 'connected to client', meta.id
     @emit 'remote', remote
-    conn.once 'end', =>
+    d.once 'end', =>
       @log 'disconnected from client', meta.id
       @clients[meta.id] = null
 
@@ -54,9 +66,13 @@ class Server extends Base
     else if _.isNumber id
       i = id
       for id, client of @clients
-        return client.remote if i-- is 0 
-    else
-      @err "invalid arguments"
+        return client.remote if i-- is 0
+      return null
+    @err "invalid arguments"
+
+  disconnect: ->
+    if @server
+      @server.close()
 
   # clients: ->
   #   _.map @clients, (c) -> c.remote
