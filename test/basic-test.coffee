@@ -5,8 +5,8 @@ port = 5000
 
 run = (transport, done) ->
 
-  server = multinode.server()
-  client = multinode.client()
+  server = multinode.server("#{transport}-server")
+  client = multinode.client("#{transport}-client")
 
   server.expose
     foo: (callback) -> callback 42
