@@ -4,7 +4,9 @@
   "description": "dnode over anything",
   "main": "out/index.js",
   "scripts": {
-    "test": "node node_modules/mocha/bin/mocha"
+    "test": "npm run-script prepublish && node node_modules/mocha/bin/mocha",
+    "start": "node node_modules/coffee-script/bin/coffee -w -b -c -o out/ src/",
+    "prepublish": "node node_modules/coffee-script/bin/coffee -b -c -o out/ src/"
   },
   "repository": {
     "type": "git",

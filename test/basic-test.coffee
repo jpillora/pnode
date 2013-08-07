@@ -22,6 +22,8 @@ run = (transport, done) ->
       client.disconnect()
       server.disconnect()
 
+      console.log ">>> #{transport} test complete"
+
       expect(result).to.equal(42)
       done()
 

@@ -187,6 +187,7 @@ class Client extends Base
     @emit s
 
   reset: ->
+    @setStatus 'down'
     @d.removeAllListeners().end() if @d
 
   disconnect: ->
