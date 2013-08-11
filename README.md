@@ -1,5 +1,5 @@
 
-***In progress***
+***In progress - API Unstable!***
 
 --------------
 
@@ -16,6 +16,20 @@
 * Simplified `dnode` API
 * Autoreconnects and buffering like `upnode`
 * Easily splice in different transports
+* Client function call timeouts
+
+## Future Features
+
+* Browser version using WebSockets ([shoe](https://www.github.com/substack/shoe))
+* Peer-to-Peer API
+  * Both listens and connects
+* Authentication
+  * Password
+  * Certificates
+  * [ACL](http://en.wikipedia.org/wiki/Access_control_list)
+* Proxying RPC
+  * For example `client` can communicate with `server2 via `server1` - `client <-> server1 <-> server2`
+  * Achived by `expose()`ing another `server`/`client`
 
 ## Download
 
@@ -25,7 +39,7 @@ npm install multinode
 ```
 </end>
 
-***Note: Only node `v0.10.x` is currently supported***
+***Note: Only node `v0.10.x` is supported***
 
 ## Basic Usage
 
@@ -75,7 +89,7 @@ setInterval(function() {
 #### `server.handle`
 
 Instead of `server.listen()`, you can
-provide the streams for the `server` to `handle`:
+provide the streams to `server.handle()`:
 
 ``` javascript
 // handle a read and write stream
