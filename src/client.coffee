@@ -34,7 +34,7 @@ class Client extends Base
     transport = args.shift()
 
     unless transport
-      @err "Transport missing"
+      @err "Transport argument missing"
 
     parsed = @parseOrigin transport
     if parsed

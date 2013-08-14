@@ -37,8 +37,15 @@ class Server extends Base
     @err "Invalid write stream" unless write.write
 
     d = dnode @exposed
+
     d.once 'remote', @onRemote
+
+    d.on 'error', (err) => @log 'handle error', err
+    d.on 'fail', (err) => @log 'handle fail', err
+    
     read.once 'close', d.end
+
+    @log 'handle stream'
 
     read.pipe(d).pipe(write)
 

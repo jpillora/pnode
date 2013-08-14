@@ -9,9 +9,11 @@ server.expose({
 });
 
 server.listen('tls', {
-  key: fs.readFileSync('./keys/key.pem'),
-  cert: fs.readFileSync('./keys/cert.pem'),
-  csr: fs.readFileSync('./keys/csr.pem')
+  key:  fs.readFileSync('certs/agent1-key.pem'),
+  cert: fs.readFileSync('certs/agent1-cert.pem'),
+  ca:   fs.readFileSync('certs/ca1-cert.pem'),
+  requestCert: true,
+  rejectUnauthorized: false
 }, 8000, function(){
   console.log('listening on 8000');
 });
