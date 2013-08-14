@@ -48,6 +48,5 @@ gen-agent () {
 
 gen-agent agent1 ca1
 gen-agent agent2 ca1
-
 gen-agent agent3 ca2
 

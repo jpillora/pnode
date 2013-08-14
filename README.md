@@ -20,9 +20,10 @@
 
 ## Future Features
 
+* Integrates with [cluster](http://nodejs.org/api/cluster.html)
 * Browser version using WebSockets ([shoe](https://www.github.com/substack/shoe))
 * Peer-to-Peer API
-  * Both listens and connects
+  * Each instance is a server and many clients
 * Authentication
   * Password
   * Certificates
