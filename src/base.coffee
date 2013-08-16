@@ -28,6 +28,7 @@ module.exports = class Base extends EventEmitter
     @exposed =
       _multi:
         id: @id
+        guid: @guid
         ips: ips
         ping: (cb) -> cb true
 
@@ -40,7 +41,7 @@ module.exports = class Base extends EventEmitter
 
   #debugging
   log: ->
-    if @debug
+    if @opts.debug
       console.log.apply console, [@.toString()].concat([].slice.call(arguments))
 
   err: (str) ->

@@ -58,7 +58,7 @@ class Server extends Base
     @clients[meta.id] = {remote, d}
 
     @log 'connected to client', meta.id
-    @emit 'remote', meta.id, remote
+    @emit 'remote', remote
     d.once 'end', =>
       @log 'disconnected from client', meta.id
       delete @clients[meta.id]
