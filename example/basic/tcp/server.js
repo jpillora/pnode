@@ -1,5 +1,5 @@
-var multinode = require('../../../');
-var server = multinode.server();
+var pnode = require('../../../');
+var server = pnode.server();
 
 server.expose({
   say: function(date) {

@@ -125,9 +125,9 @@ class Client extends Base
 
     @timeout(false)
 
-    #ensure it's a multinode remote
+    #ensure it's a pnode remote
     unless remote._multi?.ping
-      return @err "Invalid multinode host"
+      return @err "Invalid pnode host"
     
     @remote = remote
     @emit 'remote', @remote

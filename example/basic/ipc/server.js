@@ -1,5 +1,5 @@
-var multinode = require('../../../');
-var server = multinode.server();
+var pnode = require('../../../');
+var server = pnode.server();
 
 server.expose({
   say: function(date) {
@@ -7,6 +7,6 @@ server.expose({
   }
 });
 
-server.bind('ipc://multinode.sock', function(){
-  console.log('bound to ./multinode.sock');
+server.bind('ipc://pnode.sock', function(){
+  console.log('bound to ./pnode.sock');
 });

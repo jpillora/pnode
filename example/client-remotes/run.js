@@ -1,15 +1,15 @@
 
-var multinode = require('../../');
+var pnode = require('../../');
 
 //START SERVER
-var server = multinode.server();
+var server = pnode.server();
 
 server.bind('tcp://0.0.0.0:8000', function(){
   console.log('bound to all interfaces on port 8000');
 });
 
 //START CLIENT 1
-var client1 = multinode.client({
+var client1 = pnode.client({
   id: 'client-1'
 });
 
@@ -22,7 +22,7 @@ client1.expose({
 client1.bind('tcp://localhost:8000');
 
 //START CLIENT 2
-var client2 = multinode.client({
+var client2 = pnode.client({
   id: 'client-2'
 });
 

@@ -3,12 +3,12 @@
 
 --------------
 
-# <name>multinode</end>
+# <name>pnode</end>
 
-<description>dnode over anything</end>
+<description>peer-to-peer dnode over anything!</end>
 
-[![NPM version](https://nodei.co/npm/multinode.png?compact=true)](https://npmjs.org/package/multinode)
-[![Build Status](https://travis-ci.org/jpillora/multinode.png)](https://travis-ci.org/jpillora/multinode)
+[![NPM version](https://nodei.co/npm/pnode.png?compact=true)](https://npmjs.org/package/pnode)
+[![Build Status](https://travis-ci.org/jpillora/pnode.png)](https://travis-ci.org/jpillora/pnode)
 
 ## Features
 
@@ -36,7 +36,7 @@
 
 <codeBlock("npm install " + name)>
 ```
-npm install multinode
+npm install pnode
 ```
 </end>
 
@@ -47,8 +47,8 @@ npm install multinode
 Server:
 <showFile("example/basic/https/server.js")>
 ``` javascript
-var multinode = require('../../../');
-var server = multinode.server();
+var pnode = require('../../../');
+var server = pnode.server();
 
 server.expose({
   say: function(date) {
@@ -65,8 +65,8 @@ server.bind('https://0.0.0.0:8000', function(){
 Client:
 <showFile("example/basic/https/client.js")>
 ``` javascript
-var multinode = require('../../../');
-var client = multinode.client();
+var pnode = require('../../../');
+var client = pnode.client();
 
 client.bind('https://localhost:8000');
 
@@ -90,7 +90,7 @@ See examples [here](example/basic)
 
 ## API
 
-### `multinode.`[`server`/`client`]`(options)`
+### `pnode.`[`server`/`client`]`(options)`
 
 `options` must be an object, if it's a string it'll be converted to `{ id: options }`
 
@@ -108,7 +108,7 @@ if `transport` is a URI `://` then it will parse `host` and `port` from it which
 
 `args` will be passed directly into the transport's `bindServer()`/`bindClient()` method (minus the `transport` string)
 
-### `multinode.addTransport(transport)`
+### `pnode.addTransport(transport)`
 
 `transport` must implement:
 
@@ -118,20 +118,20 @@ if `transport` is a URI `://` then it will parse `host` and `port` from it which
 #### The TCP Transport
 
 <showFile("src/transports/tcp.coffee")>
-``` coffee-script
+```
 net = require 'net'
 
-exports.bindServer = (args...) ->
+exports.bindServer = (args...) -&gt;
   server = @
   s = net.createServer server.handle
   s.listen.apply s, args
   return {
-    unbind: -> s.close()
+    unbind: -&gt; s.close()
   }
 
-exports.bindClient = (args...) ->
+exports.bindClient = (args...) -&gt;
   client = @
-  client.createConnection (callback) ->
+  client.createConnection (callback) -&gt;
     callback net.connect.apply null, args
 ```
 </end>
@@ -180,7 +180,7 @@ client.createConnection(function(streamCallback) {
 });
 ```
 
-This will get called to whenever <name>multinode</end>
+This will get called to whenever <name>pnode</end>
 needs to restablish a connection.
 
 <license()>

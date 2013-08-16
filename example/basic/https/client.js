@@ -1,5 +1,5 @@
-var multinode = require('../../../');
-var client = multinode.client();
+var pnode = require('../../../');
+var client = pnode.client();
 
 client.bind('https://localhost:8000');
 

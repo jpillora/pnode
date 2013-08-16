@@ -51,7 +51,7 @@ class Server extends Base
   onRemote: (remote, d) ->
     meta = remote._multi
     unless meta
-      @log "closing connection, not a multinode client"
+      @log "closing connection, not a pnode client"
       d.end()
       return
     

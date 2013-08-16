@@ -1,8 +1,21 @@
 {
-  "name": "multinode",
+  "name": "pnode",
   "version": "0.1.4",
-  "description": "dnode over anything",
+  "description": "peer-to-peer dnode over anything!",
   "main": "out/index.js",
+  "keywords": [
+    "dnode",
+    "p2p",
+    "peer",
+    "peer-to-peer",
+    "rpc",
+    "http",
+    "https",
+    "tcp",
+    "tls",
+    "ipc",
+    "inter-process-communication"
+  ],
   "scripts": {
     "test": "npm run-script prepublish && node node_modules/mocha/bin/mocha",
     "start": "node node_modules/coffee-script/bin/coffee -w -b -c -o out/ src/",

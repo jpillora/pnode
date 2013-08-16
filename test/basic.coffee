@@ -1,6 +1,6 @@
 {expect} = require "chai"
 _ = require "lodash"
-multinode = require "../"
+pnode = require "../"
 
 #list of client and server configurations that *should* work 
 tests =
@@ -8,8 +8,8 @@ tests =
     client: ['tcp://127.0.0.1:8000']
     server: ['tcp://0.0.0.0:8000']
   ipc:
-    client: ['ipc://multinode.sock']
-    server: ['ipc://multinode.sock']
+    client: ['ipc://pnode.sock']
+    server: ['ipc://pnode.sock']
   tls:
     client: ['tls://127.0.0.1:8000']
     server: ['tls://0.0.0.0:8000']
@@ -22,12 +22,12 @@ tests =
 
 run = (name, test, done) ->
 
-  server = multinode.server("#{name}-server")
+  server = pnode.server("#{name}-server")
   server.expose
     foo: (callback) -> callback 42
   server.bind.apply server, test.server
 
-  client = multinode.client("#{name}-client")
+  client = pnode.client("#{name}-client")
   client.bind.apply client, test.client
 
   client (remote) ->

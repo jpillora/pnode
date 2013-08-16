@@ -1,7 +1,7 @@
-var multinode = require('../../');
-var client = multinode.client();
+var pnode = require('../../');
+var client = pnode.client();
 
-client.bind('http://multinode-1.herokuapp.com:80');
+client.bind('http://pnode-1.herokuapp.com:80');
 
 client(function(remote) {
 

@@ -1,8 +1,8 @@
 //this is already running on heroku!
 //see client.js
 
-var multinode = require('multinode');
-var server = multinode.server();
+var pnode = require('pnode');
+var server = pnode.server();
 
 server.expose({
   evaluate: function(code, callback) {

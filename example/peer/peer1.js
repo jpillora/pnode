@@ -1,8 +1,8 @@
 
 //API Prototype
 
-var multinode = require('../../');
-var peer = multinode.peer('one');
+var pnode = require('../../');
+var peer = pnode.peer('one');
 
 
 peer.join('net', 6000);

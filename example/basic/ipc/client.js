@@ -1,7 +1,7 @@
-var multinode = require('../../../');
-var client = multinode.client();
+var pnode = require('../../../');
+var client = pnode.client();
 
-client.bind('ipc://multinode.sock');
+client.bind('ipc://pnode.sock');
 
 client(function(remote) {
   remote.say(new Date());

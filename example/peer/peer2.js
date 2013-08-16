@@ -1,9 +1,9 @@
 
 //API Prototype
 
-var multinode = require('../../');
+var pnode = require('../../');
 
-var peer = multinode.peer({
+var peer = pnode.peer({
   id: 'two',
   autoShare: true,
   autoJoin: true
