@@ -8,18 +8,18 @@
 <description>dnode over anything</end>
 
 [![NPM version](https://nodei.co/npm/multinode.png?compact=true)](https://npmjs.org/package/multinode)
-
 [![Build Status](https://travis-ci.org/jpillora/multinode.png)](https://travis-ci.org/jpillora/multinode)
 
 ## Features
 
 * Simplified `dnode` API
 * Autoreconnects and buffering like `upnode`
-* Easily splice in different transports
-* Client function call timeouts
+* Easily utilise different transports
 
 ## Future Features
 
+* Websockets transport
+* Client function call timeouts
 * Integrates with [cluster](http://nodejs.org/api/cluster.html)
 * Browser version using WebSockets ([shoe](https://www.github.com/substack/shoe))
 * Peer-to-Peer API
@@ -29,7 +29,7 @@
   * Certificates
   * [ACL](http://en.wikipedia.org/wiki/Access_control_list)
 * Proxying RPC
-  * For example `client` can communicate with `server2 via `server1` - `client <-> server1 <-> server2`
+  * For example `client` can communicate with `server2` via `server1` - `client-server1-server2`
   * Achived by `expose()`ing another `server`/`client`
 
 ## Download
@@ -44,8 +44,6 @@ npm install multinode
 
 ## Basic Usage
 
-**As well as `https`, you can use `http` and `tcp` (`tls` is in progress)**
-
 Server:
 <showFile("example/basic/https/server.js")>
 ``` javascript
@@ -58,8 +56,8 @@ server.expose({
   }
 });
 
-server.listen('https', 8000, function(){
-  console.log('listening on 8000');
+server.bind('https://0.0.0.0:8000', function(){
+  console.log('bound to all interfaces on port 8000');
 });
 ```
 </end>
@@ -70,20 +68,76 @@ Client:
 var multinode = require('../../../');
 var client = multinode.client();
 
-// client.connect('https://localhost:8000');
-client.connect('https',8000,'localhost');
+client.bind('https://localhost:8000');
 
-setInterval(function() {
-
-  var d = new Date().toString();
-  client(function(remote) {
-    remote.say(d);
-  });
-
-}, 1000);
+client(function(remote) {
+  remote.say(new Date());
+});
 
 ```
 </end>
+
+You can use a different transport by simply changing the URI. Currently,
+the following transports are avaiable:
+
+* `tcp`
+* `tls`
+* `http`
+* `https`
+* `ipc` (sockets)
+
+See examples [here](example/basic)
+
+## API
+
+### `multinode.`[`server`/`client`]`(options)`
+
+`options` must be an object, if it's a string it'll be converted to `{ id: options }`
+
+returns a `server`/`client` instance
+
+#### [`server`/`client`]`.expose(object)`
+
+each property of `object` will be publically exposed to all remote connections
+
+#### [`server`/`client`]`.bind(transport, args...)`
+
+`transport` must be a string representing an avaiable transport
+
+if `transport` is a URI `://` then it will parse `host` and `port` from it which will then be prepended to the arguments. So, `server.bind('tcp://my-server.com:3000', 'a', 'b')` is equivalent to `server.bind('tcp', 3000, 'my-server.com', 'a', 'b')`.
+
+`args` will be passed directly into the transport's `bindServer()`/`bindClient()` method (minus the `transport` string)
+
+### `multinode.addTransport(transport)`
+
+`transport` must implement:
+
+1. a `bindServer` method, which should `server.handle()` each new incoming connection. It can optionally return another object with an `unbind()` method.
+1. a `bindClient` method, which should define a `client.createConnection()` function to create new outgoing connections.
+
+#### The TCP Transport
+
+<showFile("src/transports/tcp.coffee")>
+``` coffee-script
+net = require 'net'
+
+exports.bindServer = (args...) ->
+  server = @
+  s = net.createServer server.handle
+  s.listen.apply s, args
+  return {
+    unbind: -> s.close()
+  }
+
+exports.bindClient = (args...) ->
+  client = @
+  client.createConnection (callback) ->
+    callback net.connect.apply null, args
+```
+</end>
+
+See how each transport is implemented for more
+examples [here](src/transports)
 
 ## Advanced Usage
 
@@ -128,26 +182,6 @@ client.createConnection(function(streamCallback) {
 
 This will get called to whenever <name>multinode</end>
 needs to restablish a connection.
-
-#### TCP Example
-
-``` js
-//handle tcp connections
-net.createServer(server.handle).listen(port, callback);
-
-//create new tcp connections
-client.createConnection(function(streamCallback) {
-  streamCallback(net.connect(port));
-});
-```
-
-See how each transport is implemented for more
-examples [here](src/transports)
-
-## Todo
-
-* Websockets transport (using browserify and shoe)
-* Peer mode (A Peer class which is both client and server)
 
 <license()>
 #### MIT License

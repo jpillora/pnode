@@ -1,15 +1,14 @@
 net = require 'net'
 
-exports.listen = ->
-  args = Array::slice.call arguments
+exports.bindServer = (args...) ->
+  server = @
+  s = net.createServer server.handle
+  s.listen.apply s, args
+  return {
+    unbind: -> s.close()
+  }
 
-  if typeof args[0] isnt 'number'
-    args.unshift @opts.port
-
-  @server = net.createServer @handle
-  @server.listen.apply @server, args
-
-exports.connect = ->
-  args = arguments
-  @createConnection (streamCallback) ->
-    streamCallback net.connect.apply net, args
+exports.bindClient = (args...) ->
+  client = @
+  client.createConnection (callback) ->
+    callback net.connect.apply null, args

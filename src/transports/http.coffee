@@ -1,30 +1,32 @@
 http = require 'http'
 pkg = require '../../package.json'
 
-exports.listen = ->
+exports.bindServer = (args...) ->
+  server = @
+  s = http.createServer server.handle
+  s.listen.apply s, args
+  return {
+    unbind: -> s.close()
+  }
 
-  args = Array::slice.call arguments
+exports.bindClient = (args...) ->
 
-  if typeof args[0] isnt 'number'
-    args.unshift @opts.port
-
-  @server = http.createServer @handle
-  @server.listen.apply @server, args
-
-exports.connect = (port, hostname) ->
-
-  if typeof port is 'string'
-    hostname = port
-    port = @opts.port
+  client = @
 
   opts =
-    hostname: hostname
-    port: port
     path: '/'+pkg.name
     headers:
       'user-agent': pkg.name+'/'+pkg.version
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  @createConnection (readCallback, writeCallback) ->
+  if typeof args[0] is 'number'
+    opts.port = args.shift()
+  else
+    client.err "bind failed: missing port"
+
+  if typeof args[0] is 'string'
+    opts.hostname = args.shift()
+
+  client.createConnection (readCallback, writeCallback) ->
     writeCallback http.request opts, readCallback

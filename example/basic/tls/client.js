@@ -1,20 +1,8 @@
 var multinode = require('../../../');
-var fs = require('fs');
 var client = multinode.client();
 
-client.connect('tls://localhost:8000', {
-  key:  fs.readFileSync('certs/agent3-key.pem'),
-  cert: fs.readFileSync('certs/agent3-cert.pem'),
-  ca:   fs.readFileSync('certs/ca2-cert.pem'),
-  requestCert: true,
-  rejectUnauthorized: false
+client.bind('tls://127.0.0.1:8000');
+
+client(function(remote) {
+  remote.say(new Date());
 });
-
-setInterval(function() {
-
-  var d = new Date().toString();
-  client(function(remote) {
-    remote.say(d);
-  });
-
-}, 1000);

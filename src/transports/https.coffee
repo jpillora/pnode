@@ -2,42 +2,31 @@ https = require 'https'
 pkg = require '../../package.json'
 pem = require 'pem'
 
-exports.listen = ->
+exports.bindServer = (args..., opts) ->
 
-  args = Array::slice.call arguments
-  opts = null
+  server = @
 
-  getOpts = =>
-    if typeof args[0] is 'object'
-      opts = args.shift()
-      checkPort()
-    else
-      pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
-        @err err if err
-        opts = {key: keys.serviceKey, cert: keys.certificate}
-        checkPort()
-
-  checkPort = =>
-    if typeof args[0] isnt 'number'
-      args.unshift @opts.port
-    gotOpts()
-
-  gotOpts = =>
-    @server = https.createServer opts, @handle
-    @server.listen.apply @server, args
+  start = =>
+    s = https.createServer opts, server.handle
+    s.listen.apply s, args
+    si.unbind = -> s.close()
 
   #start
-  getOpts()
+  if typeof opts is 'object'
+    start()
+  else
+    pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
+      server.err err if err
+      opts = {key: keys.serviceKey, cert: keys.certificate}
+      start()
 
-exports.connect = (port, hostname) ->
+  return si = {}
 
-  if typeof port is 'string'
-    hostname = port
-    port = @opts.port
+exports.bindClient = (args...) ->
+
+  client = @
 
   opts =
-    hostname: hostname
-    port: port
     path: '/'+pkg.name
     rejectUnauthorized: false
     headers:
@@ -45,5 +34,13 @@ exports.connect = (port, hostname) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  @createConnection (readCallback, writeCallback) ->
+  if typeof args[0] is 'number'
+    opts.port = args.shift()
+  else
+    client.err "bind failed: missing port"
+
+  if typeof args[0] is 'string'
+    opts.hostname = args.shift()
+
+  client.createConnection (readCallback, writeCallback) ->
     writeCallback https.request opts, readCallback

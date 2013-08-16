@@ -33,19 +33,15 @@ module.exports = class Base extends EventEmitter
 
   expose: (obj) ->
     _.merge @exposed, obj
-  
-  #extract protocol, hostname, port from string
-  parseOrigin: (str) ->
-    if typeof str is 'string' and /^([a-z]+):\/\/([^\/]+?)(:(\d+))?$/.test str
-      return { protocol: RegExp.$1, hostname: RegExp.$2, port: parseInt RegExp.$4, 10 }
-    return null
+
 
   #get all ip on the nic
   ips: -> ips
 
   #debugging
   log: ->
-    console.log.apply console, [@.toString()].concat([].slice.call(arguments))
+    if @debug
+      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
 
   err: (str) ->
     throw new Error "#{@} #{str}"

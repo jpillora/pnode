@@ -7,6 +7,6 @@ server.expose({
   }
 });
 
-server.bind('tcp://0.0.0.0:8000', function(){
-  console.log('bound to all interfaces on port 8000');
+server.bind('ipc://multinode.sock', function(){
+  console.log('bound to ./multinode.sock');
 });

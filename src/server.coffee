@@ -2,12 +2,14 @@ _ = require 'lodash'
 dnode = require 'dnode'
 Base = require './base'
 transports = require './transports'
+servers = []
 
 class Server extends Base
 
   name: 'Server'
 
   defaults:
+    debug: false
     wait: 5000
 
   constructor: ->
@@ -15,18 +17,15 @@ class Server extends Base
     @clients = {}
 
   #premade handlers
-  listen: ->
-    args = Array::slice.call arguments
-    transport = args.shift()
+  bind: ->
+    @si = transports.bind @, arguments
 
-    if /[^a-z]/.test transport
-      @err "Invalid transport name: '#{transport}'"
-
-    obj = transports.get transport
-    unless obj
-      @err "Transport: '#{transport}' not found"
-
-    obj.listen.apply @, args
+  unbind: ->
+    client.d.end() for id, client of @clients
+    try
+      @si.unbind() if typeof @si?.unbind is 'function'
+    catch e
+      #ignore if already closed
 
   handle: (read, write) ->
 
@@ -93,15 +92,20 @@ class Server extends Base
     else
       @err "invalid arguments"
 
-  disconnect: ->
-    client.d.end() for id, client of @clients
-    @server.close() if @server
-
   # clients: ->
   #   _.map @clients, (c) -> c.remote
 
 
 module.exports = (opts) ->
-  new Server opts
+  server = new Server opts
+  servers.push server
+  return server
 
+#unbind all servers on exit
+process.on 'exit', ->
+  for server in servers
+    server.unbind()
+
+process.on 'SIGINT', ->
+  process.exit()
 

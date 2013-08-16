@@ -8,6 +8,7 @@ class Client extends Base
   name: 'Client'
 
   defaults:
+    debug: false
     maxRetries: 5
     timeout: 5000
     interval: 1000
@@ -29,27 +30,13 @@ class Client extends Base
     return @get
 
   #premade connection creators
-  connect: ->
-    args = Array::slice.call arguments
-    transport = args.shift()
-
-    unless transport
-      @err "Transport argument missing"
-
-    parsed = @parseOrigin transport
-    if parsed
-      transport = parsed.protocol
-      args.unshift parsed.hostname
-      args.unshift parsed.port or @opts.port
-    else if /[^a-z]/.test transport
-      @err "Invalid transport name: '#{transport}'"
-
-    obj = transports.get transport
-    unless obj
-      @err "Transport: '#{transport}' not found"
-
+  bind: ->
     @count.attempt = 0
-    obj.connect.apply @, args
+    transports.bind @, arguments
+
+  unbind: ->
+    @count.attempt = 0
+    @reset()
 
   createConnection: (fn) ->
     unless typeof fn is 'function'
@@ -184,11 +171,6 @@ class Client extends Base
   reset: ->
     @setStatus 'down'
     @d.removeAllListeners().end() if @d
-
-  disconnect: ->
-    @count.attempt = 0
-    @reset()
-
 
 module.exports = (opts) ->
   new Client opts

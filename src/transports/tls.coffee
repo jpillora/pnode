@@ -1,34 +1,48 @@
 tls = require 'tls'
+fs = require 'fs'
+pem = require 'pem'
+_ = require 'lodash'
 
-exports.listen = ->
+exports.bindServer = (args..., opts) ->
 
-  args = Array::slice.call arguments
-  opts = null
+  server = @
+  si = {}
 
-  if typeof args[0] is 'object'
-    opts = args.shift()
+  start = =>
+    s = tls.createServer opts, (stream) -> server.handle stream
+    s.listen.apply s, args
+    si.unbind = -> s.close()
+
+  #start
+  if typeof opts is 'object'
+    start()
   else
-    throw "Missing options object"
+    pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
+      server.err err if err
+      opts =
+        key: keys.serviceKey
+        cert: keys.certificate
+        rejectUnauthorized: false
+      start()
 
-  console.log 'listen', args
-  @server = tls.createServer opts, @handle
-  @server.listen.apply @server, args
+  return si
 
-exports.connect = ->
-  args = arguments
+exports.bindClient = (args...) ->
 
-  @createConnection (streamCallback) ->
+  opts = {}
+  if typeof args[0] is 'number'
+    opts.port = args.shift()
+  if typeof args[0] is 'string'
+    opts.hostname = args.shift()
+  if typeof args[0] is 'object'
+    _.merge opts, args.shift()
 
-    console.log 'connect'
-    stream = tls.connect.apply tls, args
+  if opts.rejectUnauthorized is `undefined`
+    opts.rejectUnauthorized = false
 
-    stream.on 'secureConnect', -> stream.emit 'connect'
-    stream.on 'clientError', ->   stream.emit 'error'
-
-    stream.on 'data', (c) ->   console.log 'TLS DATA', c.toString()
-    stream.on 'close', ->   console.log 'disconnect'
-
-    streamCallback stream
+  client = @
+  client.createConnection (callback) ->
+    callback tls.connect.call null, opts
 
 
 

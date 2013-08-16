@@ -8,12 +8,7 @@ server.expose({
   }
 });
 
-server.listen('tls', {
-  key:  fs.readFileSync('certs/agent1-key.pem'),
-  cert: fs.readFileSync('certs/agent1-cert.pem'),
-  ca:   fs.readFileSync('certs/ca1-cert.pem'),
-  requestCert: true,
-  rejectUnauthorized: false
-}, 8000, function(){
-  console.log('listening on 8000');
+//Note: tls uses the last argument as the 'createServer' options
+server.bind('tls://0.0.0.0:8000', function() {
+  console.log('bound to all interfaces on port 8000');
 });
