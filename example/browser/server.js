@@ -16,7 +16,7 @@ var httpServer = http.createServer(function(req, res) {
   if(req.url === '/')
     response = fs.readFileSync('./index.html');
   else if (req.url === '/bundle.js')
-    response = fs.readFileSync('../../browser/out/bundle.js');
+    response = fs.readFileSync('../../browser/dist/bundle.js');
   else if (req.url === '/client.js')
     response = fs.readFileSync('./client.js');
 

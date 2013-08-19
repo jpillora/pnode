@@ -1,5 +1,5 @@
 {expect} = require "chai"
-_ = require "lodash"
+_ = require "../lib/lodash"
 pnode = require "../"
 
 #list of client and server configurations that *should* work 
