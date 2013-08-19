@@ -11,6 +11,5 @@ module.exports = http.createServer (req, res) ->
     
   res.writeHead if response then 200 else 404
   res.end response
-.listen 8000, "0.0.0.0", ->
-  console.log "bound to all interfaces on port 8000"
+.listen 8000, "0.0.0.0"
 

@@ -1,7 +1,6 @@
 {assert, expect} = require "chai"
 phantom = require "phantom"
 pnode = require "../"
-httpServer = require "./ws/static-file-server"
 
 #init phantomjs
 phantom = null
@@ -15,11 +14,13 @@ after ->
 
 #tests
 describe "websockets", ->
-  it.only "simple call", (done) ->
+  it "simple call", (done) ->
+
+    httpServer = require "./ws/static-file-server"
 
     server = pnode.server("ws-server")
     server.expose
-      foo: (callback) -> callback 42
+      foo: (n, callback) -> callback n+42
 
     #bind to server object under the path '/pnode-ws'
     server.bind "ws", httpServer, "/pnode-ws-test"
@@ -33,7 +34,8 @@ describe "websockets", ->
             if result.error
               assert.fail result.error
             else if result.response
-              expect(result.response).to.equal(42)
+              expect(result.response).to.equal(49)
+              httpServer.close()
               done()
             else
               check()

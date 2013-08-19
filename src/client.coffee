@@ -9,7 +9,7 @@ class Client extends Base
   name: 'Client'
 
   defaults:
-    debug: false
+    debug: true
     maxRetries: 5
     timeout: 5000
     interval: 1000

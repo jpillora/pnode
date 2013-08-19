@@ -1,9 +1,7 @@
-var client = pnode.client({
-  id: 'browser',
-  debug: true
-});
+var client = pnode.client('browser');
 
-client.bind('ws:///pnode-ws');
+//cross domain!
+client.bind('ws://localhost:8001/pnode-ws');
 
 client(function(remote) {
   remote.time(function(str) {

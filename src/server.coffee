@@ -9,7 +9,7 @@ class Server extends Base
   name: 'Server'
 
   defaults:
-    debug: false
+    debug: true
     wait: 5000
 
   constructor: ->
@@ -43,8 +43,6 @@ class Server extends Base
     d.on 'fail', (err) => @log 'handle fail', err
     
     read.once 'close', d.end
-
-    @log 'handle stream'
 
     read.pipe(d).pipe(write)
 

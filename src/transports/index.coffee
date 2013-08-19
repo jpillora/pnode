@@ -3,7 +3,18 @@ fs = require 'fs'
 path = require 'path'
 helper = require '../helper'
 
+re = /^([a-z]+):\/\//
 transports = {}
+
+#extract protocol, hostname, port from string
+exports.parse = (str) ->
+  args = []
+  if typeof str is 'string' and /^(.+?)(:(\d+))?$/.test str
+    hostname = RegExp.$1
+    port = parseInt RegExp.$3, 10
+    args.push(port) if port
+    args.push(hostname)
+  return args
 
 #transport args must be in the format:
 #   transport, ...rest
@@ -18,17 +29,24 @@ exports.bind = (context, args) ->
   unless transport
     context.err "Transport argument missing"
 
-  parsed = helper.parseOrigin transport
-  if parsed
-    transport = parsed.protocol
-    args.unshift parsed.hostname
-    args.unshift parsed.port if parsed.port
+  if re.test transport
+    name = RegExp.$1
+    obj = exports.get name
+    uri = transport.replace re, ''
+  else
+    name = transport
+    obj = exports.get name
 
-  obj = exports.get transport
   unless obj
     context.err "Transport: '#{transport}' not found"
+  #get a parse function
+  parseFn = obj.parse or exports.parse
 
-  obj['bind'+context.name].apply context, args
+  #prepend parsed args
+  args = parseFn(uri).concat(args)
+
+  fn = obj["bind#{context.name}"]
+  fn.apply context, args
 
 exports.add = (name, obj) ->
   if typeof obj.bindServer isnt 'function' or

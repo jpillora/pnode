@@ -84,9 +84,10 @@ the following transports are avaiable:
 * `tls`
 * `http`
 * `https`
-* `ipc` (sockets)
+* `ipc` (unix sockets)
+* `ws` (websockets)
 
-See examples [here](example/basic)
+See examples [here](example/)
 
 ## API
 

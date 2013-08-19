@@ -9,6 +9,7 @@ exports.bindServer = (args...) ->
   }
 
 exports.bindClient = (args...) ->
+
   client = @
   client.createConnection (callback) ->
     callback net.connect.apply null, args
