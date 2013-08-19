@@ -44,7 +44,8 @@
   "devDependencies": {
     "chai": "~1.7.2",
     "mocha": "~1.12.0",
-    "coffee-script": "~1.6.3"
+    "coffee-script": "~1.6.3",
+    "phantom": "~0.5.2"
   },
   "browser": {
     "os": false,

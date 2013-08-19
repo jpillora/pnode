@@ -1,6 +1,6 @@
 
 {EventEmitter} = require 'events'
-_ = require '../lib/lodash'
+_ = require '../vendor/lodash'
 
 os = require "os"
 

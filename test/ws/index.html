@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>ws test</title>
+  </head>
+  <body>
+    <script type="text/javascript" src="bundle.js"></script>
+    <script>
+    //return variables
+    var error, response;
+
+    var client = pnode.client({
+      id: 'browser-test',
+      debug: true
+    });
+
+    client.on('error', function(err) {
+      error = err;
+    })
+
+    client.bind('ws:///pnode-ws-test');
+
+    client(function(remote) {
+      remote.foo(function(resp) {
+        response = resp
+      });
+    });
+
+    </script>
+  </body>
+</html>

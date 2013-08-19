@@ -1,4 +1,4 @@
-_ = require '../lib/lodash'
+_ = require '../vendor/lodash'
 dnode = require 'dnode'
 Base = require './base'
 helper = require './helper'

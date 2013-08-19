@@ -1,4 +1,4 @@
-_ = require '../lib/lodash'
+_ = require '../vendor/lodash'
 pnode = require './index'
 Base = require './base'
 locals = []
