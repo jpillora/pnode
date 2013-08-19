@@ -1,6 +1,6 @@
 {
   "name": "pnode",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "peer-to-peer dnode over anything!",
   "main": "out/index.js",
   "keywords": [
@@ -14,7 +14,8 @@
     "tcp",
     "tls",
     "ipc",
-    "inter-process-communication"
+    "inter-process-communication",
+    "browser"
   ],
   "scripts": {
     "test": "npm run-script prepublish && node node_modules/mocha/bin/mocha",
@@ -32,8 +33,9 @@
   },
   "dependencies": {
     "dnode": "~1.0.5",
-    "lodash": "~1.3.1",
-    "pem": "~1.2.2"
+    "pem": "~1.2.2",
+    "sockjs": "~0.3.7",
+    "shoe": "0.0.13"
   },
   "gruntSource": {
     "source": "~/.grunt-sources/node",
@@ -43,5 +45,9 @@
     "chai": "~1.7.2",
     "mocha": "~1.12.0",
     "coffee-script": "~1.6.3"
+  },
+  "browser": {
+    "os": false,
+    "lodash": false
   }
 }

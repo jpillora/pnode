@@ -1,7 +1,7 @@
 tls = require 'tls'
 fs = require 'fs'
 pem = require 'pem'
-_ = require 'lodash'
+_ = require '../../lib/lodash'
 
 exports.bindServer = (args..., opts) ->
 

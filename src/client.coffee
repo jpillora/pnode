@@ -1,6 +1,7 @@
-_ = require 'lodash'
+_ = require '../lib/lodash'
 dnode = require 'dnode'
 Base = require './base'
+helper = require './helper'
 transports = require './transports'
 
 class Client extends Base
@@ -91,17 +92,18 @@ class Client extends Base
       #user providing a duplex stream
       when 1
         @getConnectionFn (stream) =>
-          @err "Invalid duplex stream" unless stream.read and stream.write
+          @err "Invalid duplex stream (not readable)" unless helper.isReadable stream
+          @err "Invalid duplex stream (not writable)" unless helper.isWritable stream
           stream.on 'error', @onStreamError
           stream.pipe(@d).pipe(stream)
       #user providing a read stream and a write stream
       when 2
         @getConnectionFn (read) =>
-          @err "Invalid read stream" unless read.read
+          @err "Invalid read stream" unless helper.isReadable read
           read.on 'error', @onStreamError
           read.pipe(@d)
         , (write) =>
-          @err "Invalid write stream" unless write.write
+          @err "Invalid write stream" unless helper.isWritable write
           write.on 'error', @onStreamError
           @d.pipe(write)
 

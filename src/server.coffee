@@ -1,7 +1,7 @@
-_ = require 'lodash'
 dnode = require 'dnode'
 Base = require './base'
 transports = require './transports'
+helper = require './helper'
 servers = []
 
 class Server extends Base
@@ -32,8 +32,8 @@ class Server extends Base
     if read.write and not write?.write
       write = read
 
-    @err "Invalid read stream" unless read.read
-    @err "Invalid write stream" unless write.write
+    @err "Invalid read stream" unless helper.isReadable read
+    @err "Invalid write stream" unless helper.isWritable write
 
     d = dnode @exposed
 
@@ -82,18 +82,15 @@ class Server extends Base
     @on 'remote', cb
 
   clientSync: (id) ->
-    if _.isString id
+    if typeof id is 'string'
       return @clients[id]?.remote
-    else if _.isNumber id
+    else if typeof id is 'number'
       i = id
       for id, client of @clients
         return client.remote if i-- is 0
       return null
     else
       @err "invalid arguments"
-
-  # clients: ->
-  #   _.map @clients, (c) -> c.remote
 
 
 module.exports = (opts) ->
@@ -102,10 +99,10 @@ module.exports = (opts) ->
   return server
 
 #unbind all servers on exit
-process.on 'exit', ->
+process.on? 'exit', ->
   for server in servers
     server.unbind()
 
-process.on 'SIGINT', ->
+process.on? 'SIGINT', ->
   process.exit()
 

@@ -23,12 +23,10 @@ exports.bind = (context, args) ->
     transport = parsed.protocol
     args.unshift parsed.hostname
     args.unshift parsed.port if parsed.port
-  else if /[^a-z]/.test transport
-    context.err "Invalid transport name: '#{transport}'"
 
   obj = exports.get transport
   unless obj
-    @err "Transport: '#{transport}' not found"
+    context.err "Transport: '#{transport}' not found"
 
   obj['bind'+context.name].apply context, args
 
@@ -50,6 +48,6 @@ exports.get = (name) ->
   return transports[name]
 
 #init
-fs.readdirSync(__dirname).forEach (file) ->
+fs.readdirSync?(__dirname).forEach (file) ->
   if file isnt 'index.js'
     exports.add file.replace('.js',''), require("./#{file}")

@@ -1,12 +1,13 @@
 
 {EventEmitter} = require 'events'
-_ = require 'lodash'
+_ = require '../lib/lodash'
+
 os = require "os"
 
 guid = -> (Math.random()*Math.pow(2,32)).toString(16)
 ips = []
 #fill ips
-for name, addrs of os.networkInterfaces()
+for name, addrs of os.networkInterfaces?()
   for addr in addrs
     if addr.family is 'IPv4'
       ips.push addr.address
