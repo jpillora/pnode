@@ -15,6 +15,8 @@ class Server extends Base
   constructor: ->
     super
     @clients = {}
+    #alias
+    @bindOn = @bind
 
   #premade handlers
   bind: ->
@@ -47,16 +49,16 @@ class Server extends Base
     read.pipe(d).pipe(write)
 
   onRemote: (remote, d) ->
-    meta = remote._multi
+    meta = remote._pnode
     unless meta
       @log "closing connection, not a pnode client"
       d.end()
       return
-    
+
     @clients[meta.id] = {remote, d}
 
     @log 'connected to client', meta.id
-    @emit 'remote', remote
+    @emit 'remote', remote, @
     d.once 'end', =>
       @log 'disconnected from client', meta.id
       delete @clients[meta.id]
@@ -77,7 +79,7 @@ class Server extends Base
       @removeListener 'remote', cb
       callback rem
 
-    @on 'remote', cb
+    @once 'remote', cb
 
   clientSync: (id) ->
     if typeof id is 'string'

@@ -32,10 +32,10 @@ var client2 = pnode.client({
 client2.bind('tcp://localhost:8000');
 
 //CALL SERVER 
-client1(function(remote) {
+client1.server(function(remote) {
   remote.one(new Date());
 });
 
-client2(function(remote) {
+client2.server(function(remote) {
   remote.two(new Date());
 });

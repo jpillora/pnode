@@ -3,6 +3,6 @@ var client = pnode.client();
 
 client.bind('ipc://pnode.sock');
 
-client(function(remote) {
+client.server(function(remote) {
   remote.say(new Date());
 });

@@ -10,7 +10,7 @@ exports.parse = (str) ->
 
 exports.bindServer = ->
   # see 'src/transports/ws.coffee'
-  throw "bind server not supported"
+  throw "bind server not supported in the browser"
 
 exports.bindClient = (args...) ->
   client = @

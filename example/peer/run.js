@@ -9,9 +9,9 @@ peer1.expose({
   }
 });
 
-peer1.bindOn('https://0.0.0.0:10001');
-peer1.bindTo('https://127.0.0.1:10002');
-peer1.bindTo('https://127.0.0.1:10003');
+peer1.bindOn('tcp://0.0.0.0:10001');
+peer1.bindTo('tcp://127.0.0.1:10002');
+peer1.bindTo('tcp://127.0.0.1:10003');
 
 //START PEER2
 var peer2 = pnode.peer('peer-2');
@@ -22,9 +22,9 @@ peer2.expose({
   }
 });
 
-peer2.bindOn('https://0.0.0.0:10002');
-peer2.bindTo('https://127.0.0.1:10001');
-peer2.bindTo('https://127.0.0.1:10003');
+peer2.bindOn('tcp://0.0.0.0:10002');
+peer2.bindTo('tcp://127.0.0.1:10001');
+peer2.bindTo('tcp://127.0.0.1:10003');
 
 //START PEER3
 setTimeout(function() {
@@ -37,9 +37,9 @@ setTimeout(function() {
     }
   });
 
-  peer3.bindOn('https://0.0.0.0:10003');
-  peer3.bindTo('https://127.0.0.1:10001');
-  peer3.bindTo('https://127.0.0.1:10002');
+  peer3.bindOn('tcp://0.0.0.0:10003');
+  peer3.bindTo('tcp://127.0.0.1:10001');
+  peer3.bindTo('tcp://127.0.0.1:10002');
 
 }, 3000);
 
@@ -49,7 +49,7 @@ peer1.all(function(remote) {
 });
 
 //SEND TO ONE
-peer1('peer-3', function(remote) {
+peer1.peer('peer-3', function(remote) {
   remote.say('hi peer-3 from peer-1');
 });
 

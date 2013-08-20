@@ -26,14 +26,13 @@ class Client extends Base
     @reconnect = _.throttle @reconnect, @opts.interval, {leading:true}
     @ping = _.throttle @ping, @opts.interval
 
-    #return @get function extended by this instance
-    _.extend @get, @
-    return @get
+    #alias
+    @bindTo = @bind    
 
   #premade connection creators
   bind: ->
     @count.attempt = 0
-    transports.bind @, arguments
+    @ci = transports.bind @, arguments
 
   unbind: ->
     @count.attempt = 0
@@ -47,7 +46,7 @@ class Client extends Base
     @getConnectionFn = fn
     @reconnect()
 
-  get: (callback) ->
+  server: (callback) ->
     #check connection function
     unless @getConnectionFn
       return @err "no create connection method defined"
@@ -75,6 +74,7 @@ class Client extends Base
     @connecting = true
 
     @reset()
+
     @d = dnode @exposed
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
@@ -128,11 +128,11 @@ class Client extends Base
     @timeout(false)
 
     #ensure it's a pnode remote
-    unless remote._multi?.ping
+    unless remote._pnode?.ping
       return @err "Invalid pnode host"
-    
+
     @remote = remote
-    @emit 'remote', @remote
+    @emit 'remote', @remote, @
     @setStatus 'up'
     @ping()
 
@@ -142,7 +142,7 @@ class Client extends Base
     @count.ping++
     @timeout(true)
     # @log "ping #{@count.ping}!"
-    @remote._multi.ping (ok) =>
+    @remote._pnode.ping (ok) =>
       @count.pong++ if ok is true
       @timeout(false)
       @ping()

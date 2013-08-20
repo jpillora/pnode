@@ -5,7 +5,7 @@ client.bind('ws:///pnode-ws');
 // or
 // client.bind('ws://localhost:8000/pnode-ws');
 
-client(function(remote) {
+client.server(function(remote) {
   remote.time(function(str) {
     document.body.innerText = str;
   });

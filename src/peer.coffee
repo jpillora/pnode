@@ -3,23 +3,29 @@ pnode = require './index'
 Base = require './base'
 locals = []
 
-# a remote peer contains all connections to and from it 
-class RemotePeer extends Base
+# a remote peer contains all connections to and from it
+# identified by its 'guid', all remotes with this guid
+# will be added to this peer which may be used as an
+# rpc transport
+class RemotePeer extends Base.Logger
 
   name: 'RemotePeer'
 
-  defaults:
-    hello: 42
+  constructor: (@local, @remote, clientOrServer) ->
+    super
 
-  constructor: (@local, @remote) ->
-    #id
-    #guid
-    #ips
-    #server remote OR a client
+    {@id,@guid,@ips} = @remote._pnode
 
-  toJSON: ->
-    @log 'toJSON', @remote
-    @remote._multi.ips
+    @clients = {}
+    @servers = {}
+
+    switch clientOrServer.name
+      when 'Client' then @client = clientOrServer
+      when 'Server' then @server = clientOrServer
+
+  #custom serialisation
+  serialize: ->
+    "#{@name} - #{@id}: [#{@ips.join(',')}]"
 
   add: ->
     @log 'add!'
@@ -32,6 +38,8 @@ class LocalPeer extends Base
 
   defaults:
     debug: true
+    providePeers: true
+    extractPeers: true
     hello: 42
 
   constructor: ->
@@ -39,38 +47,45 @@ class LocalPeer extends Base
 
     @peers = {}
 
-    @expose
-      _multi:
-        guid: @guid
-        peers: (cb) -> cb @peers
-
-    _.extend @one, @
-    return @one
+    if @opts.providePeers
+      @expose { _pnode: {peers: (cb) => cb @serializePeers()} }
 
   bindOn: ->
     server = pnode.server @opts
-    server.expose @exposed
-    server.bind.apply server, arguments
+    server.on 'error', (err) => @emit 'error', err
     server.on 'remote', @onPeer
+    server.exposed = @exposed
+    server.bindOn.apply server, arguments
 
   bindTo: ->
     client = pnode.client @opts
-    client.expose @exposed
-    client.bind.apply client, arguments
+    client.on 'error', (err) => @emit 'error', err
+    client.on 'remote', @onPeer
+    client.exposed = @exposed
+    client.bindTo.apply client, arguments
 
   #new peer connection
-  onPeer: (remote) ->
-    @log 'new peer! ', remote._multi.guid
+  onPeer: (remote, clientOrServer) ->
+    meta = remote._pnode
+    return unless meta
 
-    remote._multi.peers (p) => @log p
+    if @opts.extractPeers and meta.peers
+      meta.peers (p) => @log "PEERS on #{meta.id}", p
 
-    guid = remote?._multi?.guid
-
-    return unless guid
+    guid = meta.guid
+    unless guid
+      @log 'peer missing guid'
+      return
     if @peers[guid]
       @peers[guid].add remote
     else
-      @peers[guid] = new RemotePeer @, remote
+      @peers[guid] = new RemotePeer @, remote, clientOrServer
+
+  serializePeers: ->
+    peers = {}
+    for guid, peer of @peers
+      peers[guid] = peer.serialize()
+    return peers
 
   #peers can provide their peers to us
   # learn: (peers) ->
@@ -78,7 +93,7 @@ class LocalPeer extends Base
   all: ->
     @log 'all!'
 
-  one: ->
+  peer: ->
     @log 'one!'
 
 module.exports = (opts) ->

@@ -2,8 +2,23 @@
 {EventEmitter} = require 'events'
 _ = require '../vendor/lodash'
 
-os = require "os"
+class Logger extends EventEmitter
 
+  name: 'Logger'
+
+  #debugging
+  log: ->
+    if @opts?.debug
+      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
+
+  err: (str) ->
+    @emit 'error', new Error "#{@} #{str}"
+
+  toString: ->
+    "#{@name}: #{@id}:"
+
+#base class of client,server and peer
+os = require "os"
 guid = -> (Math.random()*Math.pow(2,32)).toString(16)
 ips = []
 #fill ips
@@ -12,8 +27,7 @@ for name, addrs of os.networkInterfaces?()
     if addr.family is 'IPv4'
       ips.push addr.address
 
-#base class of client,server and peer
-module.exports = class Base extends EventEmitter
+class Base extends Logger
 
   name: 'Base'
 
@@ -24,31 +38,22 @@ module.exports = class Base extends EventEmitter
 
     @guid = guid()
     @id = @opts.id or @guid
-    _.bindAll @
 
     @exposed =
-      _multi:
+      _pnode:
         id: @id
         guid: @guid
-        ips: ips
+        ips: ips.filter (ip) -> ip isnt '127.0.0.1'
         ping: (cb) -> cb true
+
+    _.bindAll @
 
   expose: (obj) ->
     _.merge @exposed, obj
 
-
   #get all ip on the nic
   ips: -> ips
 
-  #debugging
-  log: ->
-    if @opts.debug
-      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
-
-  err: (str) ->
-    throw new Error "#{@} #{str}"
-
-  toString: ->
-    "#{@name}: #{@id}:"
-
-
+#publicise
+Base.Logger = Logger
+module.exports = Base

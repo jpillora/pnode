@@ -1,6 +1,7 @@
 https = require 'https'
 pkg = require '../../package.json'
 pem = require 'pem'
+_ = require '../../vendor/lodash'
 
 exports.bindServer = (args..., opts) ->
 
@@ -9,7 +10,9 @@ exports.bindServer = (args..., opts) ->
   start = =>
     s = https.createServer opts, server.handle
     s.listen.apply s, args
-    si.unbind = -> s.close()
+    _.extend si,
+      uri: "http://"#TODO
+      unbind: -> s.close()
 
   #start
   if typeof opts is 'object'

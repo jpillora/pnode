@@ -6,6 +6,7 @@ exports.bindServer = (args...) ->
   s = http.createServer server.handle
   s.listen.apply s, args
   return {
+    uri: "http://"#TODO
     unbind: -> s.close()
   }
 
@@ -30,3 +31,7 @@ exports.bindClient = (args...) ->
 
   client.createConnection (readCallback, writeCallback) ->
     writeCallback http.request opts, readCallback
+
+  return {
+    uri: "http://"#TODO
+  }

@@ -30,7 +30,7 @@ run = (name, test, done) ->
   client = pnode.client("#{name}-client")
   client.bind.apply client, test.client
 
-  client (remote) ->
+  client.server (remote) ->
     expect(remote).to.be.defined
     expect(remote.foo).to.be.a('function')
     remote.foo (result) ->

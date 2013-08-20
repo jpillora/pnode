@@ -35,4 +35,4 @@ exports.bindServer = (args..., opts) ->
 
 exports.bindClient = (args...) ->
   # see 'browser/src/transports/ws.coffee'
-  throw "bind client not supported"
+  throw "bind client not supported in node"

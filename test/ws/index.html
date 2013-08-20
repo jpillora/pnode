@@ -19,7 +19,7 @@
 
     client.bind('ws:///pnode-ws-test');
 
-    client(function(remote) {
+    client.server(function(remote) {
       remote.foo(7, function(resp) {
         response = resp
       });

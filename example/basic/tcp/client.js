@@ -3,6 +3,6 @@ var client = pnode.client();
 
 client.bind('tcp://localhost:8000');
 
-client(function(remote) {
+client.server(function(remote) {
   remote.say(new Date());
 });
