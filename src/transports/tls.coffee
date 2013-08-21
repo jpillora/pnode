@@ -11,7 +11,10 @@ exports.bindServer = (args..., opts) ->
   start = =>
     s = tls.createServer opts, (stream) -> server.handle stream
     s.listen.apply s, args
-    si.unbind = -> s.close()
+    addr = s.address()
+    _.extend si,
+      uri: "tls://#{addr.address}:#{addr.port}"
+      unbind: -> s.close()
 
   #start
   if typeof opts is 'object'
@@ -44,5 +47,8 @@ exports.bindClient = (args...) ->
   client.createConnection (callback) ->
     callback tls.connect.call null, opts
 
+  return {
+    uri: "tls://#{opts.hostname or 'localhost'}:#{opts.port}"
+  }
 
 

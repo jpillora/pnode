@@ -9,7 +9,7 @@ class Client extends Base
   name: 'Client'
 
   defaults:
-    debug: true
+    debug: false
     maxRetries: 5
     timeout: 5000
     interval: 1000
@@ -37,6 +37,7 @@ class Client extends Base
   unbind: ->
     @count.attempt = 0
     @reset()
+    @ci = null
 
   createConnection: (fn) ->
     unless typeof fn is 'function'
@@ -120,7 +121,7 @@ class Client extends Base
   #on rpc method exception
   onError: (err) ->
     @log "error: #{err}"
-    @emit "error", err
+    @err err
 
   #up events
   onRemote: (remote) ->
@@ -173,6 +174,9 @@ class Client extends Base
   reset: ->
     @setStatus 'down'
     @d.removeAllListeners().end() if @d
+
+  serialize: ->
+    @ci?.uri
 
 module.exports = (opts) ->
   new Client opts

@@ -41,6 +41,13 @@ setTimeout(function() {
   peer3.bindTo('tcp://127.0.0.1:10001');
   peer3.bindTo('tcp://127.0.0.1:10002');
 
+
+  setTimeout(function() {
+    console.log(peer1.getPeers(),'\n\n');
+    console.log(peer2.getPeers(),'\n\n');
+    console.log(peer3.getPeers(),'\n\n');
+  }, 1000);
+
 }, 3000);
 
 //SEND TO ALL

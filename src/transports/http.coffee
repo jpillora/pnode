@@ -5,8 +5,10 @@ exports.bindServer = (args...) ->
   server = @
   s = http.createServer server.handle
   s.listen.apply s, args
+  
+  addr = s.address()
   return {
-    uri: "http://"#TODO
+    uri: "http://#{addr.address}:#{addr.port}"
     unbind: -> s.close()
   }
 
@@ -33,5 +35,5 @@ exports.bindClient = (args...) ->
     writeCallback http.request opts, readCallback
 
   return {
-    uri: "http://"#TODO
+    uri: "http://#{opts.hostname or 'localhost'}:#{opts.port}"
   }

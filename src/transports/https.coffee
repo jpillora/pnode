@@ -10,8 +10,10 @@ exports.bindServer = (args..., opts) ->
   start = =>
     s = https.createServer opts, server.handle
     s.listen.apply s, args
+
+    addr = s.address()
     _.extend si,
-      uri: "http://"#TODO
+      uri: "http://#{addr.address}:#{addr.port}"
       unbind: -> s.close()
 
   #start
@@ -47,3 +49,7 @@ exports.bindClient = (args...) ->
 
   client.createConnection (readCallback, writeCallback) ->
     writeCallback https.request opts, readCallback
+  
+  return {
+    uri: "https://#{opts.hostname or 'localhost'}:#{opts.port}"
+  }

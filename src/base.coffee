@@ -19,7 +19,9 @@ class Logger extends EventEmitter
 
 #base class of client,server and peer
 os = require "os"
-guid = -> (Math.random()*Math.pow(2,32)).toString(16)
+crypto = require "crypto"
+guid = -> crypto.randomBytes(6).toString('hex')
+
 ips = []
 #fill ips
 for name, addrs of os.networkInterfaces?()

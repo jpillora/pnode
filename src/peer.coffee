@@ -1,6 +1,7 @@
 _ = require '../vendor/lodash'
 pnode = require './index'
 Base = require './base'
+helper = require './helper'
 locals = []
 
 # a remote peer contains all connections to and from it
@@ -11,25 +12,29 @@ class RemotePeer extends Base.Logger
 
   name: 'RemotePeer'
 
-  constructor: (@local, @remote, clientOrServer) ->
+  constructor: (meta, @local) ->
     super
-
-    {@id,@guid,@ips} = @remote._pnode
-
+    @opts = @local.opts
+    {@id,@guid,@ips} = meta
     @clients = {}
     @servers = {}
 
+  onRemote: (remote, clientOrServer) ->
+    @log 'add!'
     switch clientOrServer.name
-      when 'Client' then @client = clientOrServer
-      when 'Server' then @server = clientOrServer
+      when 'Client' then @clients[clientOrServer.guid] = clientOrServer
+      when 'Server' then @servers[clientOrServer.guid] = clientOrServer
+
+    @active = clientOrServer
+    @remote = remote
 
   #custom serialisation
   serialize: ->
-    "#{@name} - #{@id}: [#{@ips.join(',')}]"
-
-  add: ->
-    @log 'add!'
-
+    id: @id
+    guid: @guid
+    ips: @ips
+    clients: helper.serialize @clients
+    servers: helper.serialize @servers
 
 # a peer is 1 server and N clients 
 class LocalPeer extends Base
@@ -37,10 +42,9 @@ class LocalPeer extends Base
   name: 'LocalPeer'
 
   defaults:
-    debug: true
+    debug: false
     providePeers: true
     extractPeers: true
-    hello: 42
 
   constructor: ->
     super
@@ -48,7 +52,7 @@ class LocalPeer extends Base
     @peers = {}
 
     if @opts.providePeers
-      @expose { _pnode: {peers: (cb) => cb @serializePeers()} }
+      @expose { _pnode: {peers: (cb) => cb @getPeers()} }
 
   bindOn: ->
     server = pnode.server @opts
@@ -76,16 +80,15 @@ class LocalPeer extends Base
     unless guid
       @log 'peer missing guid'
       return
-    if @peers[guid]
-      @peers[guid].add remote
-    else
-      @peers[guid] = new RemotePeer @, remote, clientOrServer
 
-  serializePeers: ->
-    peers = {}
-    for guid, peer of @peers
-      peers[guid] = peer.serialize()
-    return peers
+    unless @peers[guid]
+      @peers[guid] = new RemotePeer @, meta
+
+    @peers[guid].onRemote remote, clientOrServer
+    @emit 'remote', remote
+
+  getPeers: ->
+    helper.serialize @peers
 
   #peers can provide their peers to us
   # learn: (peers) ->

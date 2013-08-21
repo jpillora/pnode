@@ -9,7 +9,7 @@ class Server extends Base
   name: 'Server'
 
   defaults:
-    debug: true
+    debug: false
     wait: 5000
 
   constructor: ->
@@ -28,6 +28,7 @@ class Server extends Base
       @si.unbind() if typeof @si?.unbind is 'function'
     catch e
       #ignore if already closed
+    @si = null
 
   handle: (read, write) ->
 
@@ -39,13 +40,9 @@ class Server extends Base
 
     d = dnode @exposed
 
+    helper.proxyEvents d, @, 'error', 'fail'
     d.once 'remote', @onRemote
-
-    d.on 'error', (err) => @log 'handle error', err
-    d.on 'fail', (err) => @log 'handle fail', err
-    
     read.once 'close', d.end
-
     read.pipe(d).pipe(write)
 
   onRemote: (remote, d) ->
@@ -91,6 +88,9 @@ class Server extends Base
       return null
     else
       @err "invalid arguments"
+
+  serialize: ->
+    @si?.uri
 
 
 module.exports = (opts) ->
