@@ -2,7 +2,17 @@ dnode = require 'dnode'
 Base = require './base'
 transports = require './transports'
 helper = require './helper'
+_ = require '../vendor/lodash'
 servers = []
+
+#represents a client connected
+class Connection extends Base.Logger
+
+  name: 'Connection'
+
+  constructor: (@server, meta, @remote, @d) ->
+    {@id, @guid} = meta
+
 
 class Server extends Base
 
@@ -14,7 +24,7 @@ class Server extends Base
 
   constructor: ->
     super
-    @clients = {}
+    @clients = []
     #alias
     @bindOn = @bind
 
@@ -23,9 +33,12 @@ class Server extends Base
     @si = transports.bind @, arguments
 
   unbind: ->
-    client.d.end() for id, client of @clients
+    for client in @clients
+      client?.d?.end()
+
     try
       @si.unbind() if typeof @si?.unbind is 'function'
+      @emit 'unbind'
     catch e
       #ignore if already closed
     @si = null
@@ -52,13 +65,19 @@ class Server extends Base
       d.end()
       return
 
-    @clients[meta.id] = {remote, d}
+    client = new Connection @, meta, remote, d
+    @clients.push client
 
-    @log 'connected to client', meta.id
+    @emit 'connection', client
     @emit 'remote', remote, @
+
     d.once 'end', =>
-      @log 'disconnected from client', meta.id
-      delete @clients[meta.id]
+      i = @clients.indexOf client
+      @log 'removing client ', i
+      @clients.splice i, 1
+      
+      @emit 'disconnection', client
+      client.emit 'disconnect'
 
   client: (id, callback) ->
     rem = @clientSync id
@@ -80,18 +99,17 @@ class Server extends Base
 
   clientSync: (id) ->
     if typeof id is 'string'
-      return @clients[id]?.remote
-    else if typeof id is 'number'
-      i = id
-      for id, client of @clients
-        return client.remote if i-- is 0
+      for client in @clients
+        if client.id is id or client.guid is id
+          return client.remote
       return null
+    else if typeof id is 'number'
+      return @clients[id]?.remote
     else
       @err "invalid arguments"
 
-  serialize: ->
-    @si?.uri
-
+  uri: -> @si?.uri
+  serialize: -> @uri()
 
 module.exports = (opts) ->
   server = new Server opts

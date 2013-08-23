@@ -173,10 +173,13 @@ class Client extends Base
 
   reset: ->
     @setStatus 'down'
-    @d.removeAllListeners().end() if @d
+    if @d
+      @d.removeAllListeners().end()
+      @d = null
 
-  serialize: ->
-    @ci?.uri
+  uri: -> @ci?.uri
+  serialize: -> @uri()
+    
 
 module.exports = (opts) ->
   new Client opts

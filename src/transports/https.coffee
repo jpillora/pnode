@@ -10,11 +10,8 @@ exports.bindServer = (args..., opts) ->
   start = =>
     s = https.createServer opts, server.handle
     s.listen.apply s, args
-
-    addr = s.address()
-    _.extend si,
-      uri: "http://#{addr.address}:#{addr.port}"
-      unbind: -> s.close()
+    si.uri = "http://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
+    si.unbind = -> s.close()
 
   #start
   if typeof opts is 'object'

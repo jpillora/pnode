@@ -6,9 +6,8 @@ exports.bindServer = (args...) ->
   s = http.createServer server.handle
   s.listen.apply s, args
   
-  addr = s.address()
   return {
-    uri: "http://#{addr.address}:#{addr.port}"
+    uri: "http://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
     unbind: -> s.close()
   }
 

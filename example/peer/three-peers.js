@@ -41,22 +41,26 @@ setTimeout(function() {
   peer3.bindTo('tcp://127.0.0.1:10001');
   peer3.bindTo('tcp://127.0.0.1:10002');
 
-
   setTimeout(function() {
-    console.log(peer1.getPeers(),'\n\n');
-    console.log(peer2.getPeers(),'\n\n');
-    console.log(peer3.getPeers(),'\n\n');
+
+    console.log(peer1.toString(), peer1.serialize());
+
+    //SEND TO ALL
+    peer1.all(function(remotes) {
+      remotes.forEach(function(remote) {
+        remote.say('hi from peer-1');
+      });
+    });
+
+    //SEND TO ONE
+    peer1.peer('peer-3', function(remote) {
+      remote.say('hi peer-3 from peer-1');
+    });
+
+
+
   }, 1000);
 
 }, 3000);
 
-//SEND TO ALL
-peer1.all(function(remote) {
-  remote.say('hi from peer-1');
-});
-
-//SEND TO ONE
-peer1.peer('peer-3', function(remote) {
-  remote.say('hi peer-3 from peer-1');
-});
 

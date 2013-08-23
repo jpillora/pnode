@@ -12,21 +12,38 @@ class RemotePeer extends Base.Logger
 
   name: 'RemotePeer'
 
-  constructor: (meta, @local) ->
-    super
+  constructor: (@local) ->
     @opts = @local.opts
-    {@id,@guid,@ips} = meta
     @clients = {}
-    @servers = {}
+    @connections = {}
+    @addresses = {}
 
-  onRemote: (remote, clientOrServer) ->
-    @log 'add!'
-    switch clientOrServer.name
-      when 'Client' then @clients[clientOrServer.guid] = clientOrServer
-      when 'Server' then @servers[clientOrServer.guid] = clientOrServer
+  #will be a client, or a server connection
+  addPeer: (peer) ->
+    meta = peer.remote._pnode
+    {@guid, @id, @ips} = meta
 
-    @active = clientOrServer
-    @remote = remote
+    switch peer.name
+      when 'Client' then @addClient peer
+      when 'Connection' then @addConnection peer
+
+  addClient: (client) ->
+    @addresses[client.uri()] = true
+    @clients[client.guid] = client
+    client.once 'down', =>
+      delete @clients[client.guid]
+
+  addConnection: (conn) ->
+    @connections[conn.guid] = conn
+    conn.once 'disconnect', =>
+      delete @connections[conn.guid]
+
+  getRemote: ->
+    for guid, client of @clients
+      return client.remote
+    for guid, conn of @connections
+      return conn.remote
+    return null
 
   #custom serialisation
   serialize: ->
@@ -34,7 +51,6 @@ class RemotePeer extends Base.Logger
     guid: @guid
     ips: @ips
     clients: helper.serialize @clients
-    servers: helper.serialize @servers
 
 # a peer is 1 server and N clients 
 class LocalPeer extends Base
@@ -43,61 +59,95 @@ class LocalPeer extends Base
 
   defaults:
     debug: false
+    wait: 1000
     providePeers: true
     extractPeers: true
 
   constructor: ->
     super
 
+    @servers = {}
     @peers = {}
 
     if @opts.providePeers
-      @expose { _pnode: {peers: (cb) => cb @getPeers()} }
+      @expose { _pnode: {serialize: (cb) => cb @serialize()} }
 
   bindOn: ->
     server = pnode.server @opts
     server.on 'error', (err) => @emit 'error', err
-    server.on 'remote', @onPeer
+    server.on 'connection', @onPeer
     server.exposed = @exposed
     server.bindOn.apply server, arguments
+
+    @servers[server.guid] = server
+    server.once 'unbind', =>
+      delete @servers[server.guid]
 
   bindTo: ->
     client = pnode.client @opts
     client.on 'error', (err) => @emit 'error', err
-    client.on 'remote', @onPeer
+    client.on 'remote', => @onPeer client
     client.exposed = @exposed
     client.bindTo.apply client, arguments
 
   #new peer connection
-  onPeer: (remote, clientOrServer) ->
-    meta = remote._pnode
-    return unless meta
-
-    if @opts.extractPeers and meta.peers
-      meta.peers (p) => @log "PEERS on #{meta.id}", p
-
-    guid = meta.guid
-    unless guid
-      @log 'peer missing guid'
-      return
+  # a peer must have a remote which must have a guid
+  onPeer: (peer) ->
+    {remote} = peer
+    return @log 'peer missing remote' unless remote
+      
+    guid = remote?._pnode?.guid
+    return @log 'peer missing guid' unless guid
 
     unless @peers[guid]
-      @peers[guid] = new RemotePeer @, meta
+      @peers[guid] = new RemotePeer @
 
-    @peers[guid].onRemote remote, clientOrServer
+    @peers[guid].addPeer peer
     @emit 'remote', remote
 
-  getPeers: ->
-    helper.serialize @peers
+  serialize: ->
+    servers: helper.serialize @servers
+    peers: helper.serialize @peers
 
   #peers can provide their peers to us
   # learn: (peers) ->
 
-  all: ->
-    @log 'all!'
+  all: (callback) ->
 
-  peer: ->
-    @log 'one!'
+    missing = 0
+    rems = []
+    for guid, peer of @peers
+      rem = peer.getRemote()
+      if rem
+        rems.push rem
+      else
+        missing++
+
+    console.log @toString(), 'all()', missing
+    callback rems
+
+  peer: (id, callback) ->
+
+    console.log @toString(), 'peer()', id
+
+    #find peer
+    peer = @peers[id]
+    #interate through peer ids
+    unless peer
+      for guid, p of @peers
+        if p.id is id
+          peer = p
+          break
+    #no peer with this id
+    unless peer
+      return null
+
+    rem = peer.getRemote()
+
+    if rem
+      callback rem
+
+    return null
 
 module.exports = (opts) ->
   peer = new LocalPeer opts

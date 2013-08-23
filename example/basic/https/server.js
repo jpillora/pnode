@@ -7,6 +7,6 @@ server.expose({
   }
 });
 
-server.bind('http://0.0.0.0:8000', function(){
+server.bind('https://0.0.0.0:8000', function(){
   console.log('bound to all interfaces on port 8000');
 });
