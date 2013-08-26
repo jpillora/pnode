@@ -103,6 +103,9 @@ class LocalPeer extends Base
       @peers[guid] = new RemotePeer @
 
     @peers[guid].addPeer peer
+
+    @log 'add peer', remote
+
     @emit 'remote', remote
 
   serialize: ->

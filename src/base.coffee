@@ -38,6 +38,8 @@ class Base extends Logger
       @opts = { id:@opts }
     _.defaults @opts, @defaults
 
+    @pubsub = new EventEmitter
+
     @guid = guid()
     @id = @opts.id or @guid
 
@@ -46,6 +48,8 @@ class Base extends Logger
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
+        subscriptions: (cb) -> cb Object.keys @pubsub._events
+        publish: (event, args...) -> @pubsub.emit.apply @pubsub, event, args
         ping: (cb) -> cb true
 
     _.bindAll @

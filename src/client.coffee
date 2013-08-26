@@ -31,7 +31,7 @@ class Client extends Base
 
   #premade connection creators
   bind: ->
-    @count.attempt = 0
+    @unbind()
     transports.bind @, arguments
     return
 
