@@ -1,7 +1,7 @@
 var exec = require('child_process').exec;
 var http = require('http');
 var fs = require('fs');
-var pnode = require('../../');
+var pnode = require('../../../');
 var server = pnode.server();
 
 server.expose({
@@ -13,9 +13,9 @@ server.expose({
 //a mini-static file server, may swap out for express or similar
 var httpServer = http.createServer(function(req, res) {
   res.end(fs.readFileSync(
-    req.url === '/bundle.js' ? '../../browser/dist/bundle.js' :
-    req.url === '/client.js' ? './same-domain-client.js' :
-      './index.html'
+    req.url === '/pnode.js'  ? '../../../browser/dist/pnode.min.js' :
+    req.url === '/client.js' ? './client.js' :
+      '../index.html'
   ));
 }).listen(8000, function(){
   console.log('server running at http://localhost:8000');

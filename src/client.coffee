@@ -32,12 +32,14 @@ class Client extends Base
   #premade connection creators
   bind: ->
     @count.attempt = 0
-    @ci = transports.bind @, arguments
+    transports.bind @, arguments
+    return
 
   unbind: ->
     @count.attempt = 0
     @reset()
     @ci = null
+    return
 
   createConnection: (fn) ->
     unless typeof fn is 'function'
@@ -46,6 +48,7 @@ class Client extends Base
       @err "must have arity 1 or 2"
     @getConnectionFn = fn
     @reconnect()
+    return
 
   server: (callback) ->
     #check connection function
@@ -61,6 +64,7 @@ class Client extends Base
 
     #call back when remote arrives
     @once 'remote', callback
+    return
 
   unget: (callback) ->
     @removeListener 'remote', callback
@@ -107,6 +111,7 @@ class Client extends Base
           @err "Invalid write stream" unless helper.isWritable write
           write.on 'error', @onStreamError
           @d.pipe(write)
+    return
 
   #connection failed
   onStreamError: (err) ->
@@ -117,6 +122,7 @@ class Client extends Base
     # @emit "error", err
     @setStatus 'down'
     @reconnect()
+    return
 
   #on rpc method exception
   onError: (err) ->
@@ -177,6 +183,7 @@ class Client extends Base
       @d.removeAllListeners().end()
       @d = null
 
+  setInterface: (obj) -> @si = obj
   uri: -> @ci?.uri
   serialize: -> @uri()
     

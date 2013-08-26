@@ -30,18 +30,19 @@ class Server extends Base
 
   #premade handlers
   bind: ->
-    @si = transports.bind @, arguments
+    @unbind()
+    transports.bind @, arguments
+    return
 
   unbind: ->
     for client in @clients
       client?.d?.end()
-
     try
-      @si.unbind() if typeof @si?.unbind is 'function'
-      @emit 'unbind'
-    catch e
-      #ignore if already closed
+      if typeof @si?.unbind is 'function'
+        @si.unbind()
+        @emit 'unbind'
     @si = null
+    return
 
   handle: (read, write) ->
 
@@ -78,6 +79,7 @@ class Server extends Base
       
       @emit 'disconnection', client
       client.emit 'disconnect'
+    return
 
   client: (id, callback) ->
     rem = @clientSync id
@@ -96,6 +98,7 @@ class Server extends Base
       callback rem
 
     @once 'remote', cb
+    return
 
   clientSync: (id) ->
     if typeof id is 'string'
@@ -108,6 +111,7 @@ class Server extends Base
     else
       @err "invalid arguments"
 
+  setInterface: (obj) -> @si = obj
   uri: -> @si?.uri
   serialize: -> @uri()
 

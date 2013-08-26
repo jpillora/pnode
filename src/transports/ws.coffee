@@ -1,7 +1,6 @@
 http = require 'http'
 shoe = require 'shoe'
 
-
 #custom parse to include path
 exports.parse = (str) ->
   args = []
@@ -14,10 +13,10 @@ exports.parse = (str) ->
 
 exports.bindServer = (args..., opts) ->
 
-  server = @
+  pserver = @
 
   unless opts
-    server.err "Missing options" 
+    pserver.err "Missing options" 
 
   if args[0] instanceof http.Server
     s = args.shift()
@@ -26,13 +25,13 @@ exports.bindServer = (args..., opts) ->
     s = http.createServer()
     s.listen.apply s, args
 
-  sock = shoe (stream) -> server.handle stream
+  sock = shoe (stream) -> pserver.handle stream
   sock.install s, opts
 
-  return {
+  pserver.setInterface
     unbind: -> s.close()
-  }
+  
 
-exports.bindClient = (args...) ->
+exports.bindClient = ->
   # see 'browser/src/transports/ws.coffee'
   throw "bind client not supported in node"

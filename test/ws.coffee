@@ -1,6 +1,8 @@
-{assert, expect} = require "chai"
-phantom = require "phantom"
-pnode = require "../"
+{assert, expect} = require 'chai'
+phantom = require 'phantom'
+pnode = require '../'
+http = require 'http'
+fs = require 'fs'
 
 #init phantomjs
 phantom = null
@@ -13,20 +15,24 @@ after ->
   phantom.exit()
 
 #tests
-describe "websockets", ->
-  it "simple call", (done) ->
+describe 'websockets', ->
+  it 'simple call', (done) ->
 
-    httpServer = require "./ws/static-file-server"
+    #simple file server
+    httpServer = http.createServer (req, res) ->
+      res.end fs.readFileSync "#{__dirname}/#{if req.url is '/pnode.js' then '/../browser/dist/pnode.js' else 'ws.html'}"
+    .listen 8000
 
-    server = pnode.server("ws-server")
+    #peer server
+    server = pnode.server('ws-server')
     server.expose
       foo: (n, callback) -> callback n+42
 
     #bind to server object under the path '/pnode-ws'
-    server.bind "ws", httpServer, "/pnode-ws-test"
+    server.bind 'ws', httpServer, '/pnode-ws-test'
 
     phantom.createPage (page) ->
-      page.open "http://localhost:8000", (status) ->
+      page.open 'http://localhost:8000', (status) ->
         expect(status).to.equal('success')
 
         check = ->

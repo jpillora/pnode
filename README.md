@@ -8,7 +8,12 @@
 <description>peer-to-peer dnode over anything!</end>
 
 [![NPM version](https://nodei.co/npm/pnode.png?compact=true)](https://npmjs.org/package/pnode)
+
+Node tests:
 [![Build Status](https://travis-ci.org/jpillora/pnode.png)](https://travis-ci.org/jpillora/pnode)
+
+Browser tests:
+[![browser support](http://ci.testling.com/jpillora/pnode.png)](http://ci.testling.com/jpillora/pnode)
 
 ## Features
 

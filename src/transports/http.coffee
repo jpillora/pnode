@@ -1,19 +1,24 @@
-http = require 'http'
+_ = require '../../vendor/lodash'
 pkg = require '../../package.json'
 
-exports.bindServer = (args...) ->
-  server = @
-  s = http.createServer server.handle
-  s.listen.apply s, args
-  
-  return {
-    uri: "http://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
+#common code for http/https
+exports.createServer = (pserver, type, listenArgs, serverArgs) ->
+  httpModule = require type
+  s = httpModule.createServer.apply null, serverArgs
+  s.listen.apply s, listenArgs
+
+  hostname = if typeof listenArgs[1] is 'string' then listenArgs[1] else '0.0.0.0'
+  port = listenArgs[0]
+
+  pserver.setInterface {
+    uri: "http://#{hostname}:#{port}"
     unbind: -> s.close()
   }
+  return
 
-exports.bindClient = (args...) ->
-
-  client = @
+exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
+  
+  httpModule = require type
 
   opts =
     path: '/'+pkg.name
@@ -22,17 +27,33 @@ exports.bindClient = (args...) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  if typeof args[0] is 'number'
-    opts.port = args.shift()
+  #extra options
+  _.merge opts, extraOpts
+
+  if typeof reqArgs[0] is 'number'
+    opts.port = reqArgs.shift()
   else
-    client.err "bind failed: missing port"
+    pclient.err "bind #{type} error: missing port"
 
-  if typeof args[0] is 'string'
-    opts.hostname = args.shift()
+  if typeof reqArgs[0] is 'string'
+    opts.hostname = reqArgs.shift()
 
-  client.createConnection (readCallback, writeCallback) ->
-    writeCallback http.request opts, readCallback
+  pclient.createConnection (readCallback, writeCallback) ->
+    writeCallback httpModule.request opts, readCallback
 
-  return {
+  pclient.setInterface {
     uri: "http://#{opts.hostname or 'localhost'}:#{opts.port}"
   }
+  return
+
+#http specifc
+exports.bindServer = (args...) ->
+  pserver = @
+  exports.createServer pserver, 'http', args, [pserver.handle]
+  return
+
+exports.bindClient = (args...) ->
+  pclient = @
+  exports.createClient pclient, 'http', args
+  return
+

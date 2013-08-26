@@ -5,14 +5,14 @@ _ = require '../../vendor/lodash'
 
 exports.bindServer = (args..., opts) ->
 
-  server = @
+  pserver = @
   si = {}
 
   start = =>
-    s = tls.createServer opts, (stream) -> server.handle stream
+    s = tls.createServer opts, (stream) -> pserver.handle stream
     s.listen.apply s, args
     addr = s.address()
-    _.extend si,
+    pserver.setInterface
       uri: "tls://#{addr.address}:#{addr.port}"
       unbind: -> s.close()
 
@@ -21,7 +21,7 @@ exports.bindServer = (args..., opts) ->
     start()
   else
     pem.createCertificate {days:365, selfSigned:true}, (err, keys) =>
-      server.err err if err
+      pserver.err err if err
       opts =
         key: keys.serviceKey
         cert: keys.certificate
@@ -43,12 +43,11 @@ exports.bindClient = (args...) ->
   if opts.rejectUnauthorized is `undefined`
     opts.rejectUnauthorized = false
 
-  client = @
-  client.createConnection (callback) ->
+  pclient = @
+  pclient.createConnection (callback) ->
     callback tls.connect.call null, opts
 
-  return {
+  pclient.setInterface
     uri: "tls://#{opts.hostname or 'localhost'}:#{opts.port}"
-  }
-
+  return
 

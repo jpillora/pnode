@@ -41,6 +41,14 @@
     "source": "~/.grunt-sources/node",
     "repo": "https://github.com/jpillora/grunt-source-node.git"
   },
+  "testling": {
+    "browsers": [
+        "ie6", "ie7", "ie8", "ie9",
+        "firefox/15", "chrome/22", "opera/12", "safari/5.1"
+    ],
+    "harness" : "mocha",
+    "files": "test/browser/*.js"
+  },
   "devDependencies": {
     "chai": "~1.7.2",
     "mocha": "~1.12.0",

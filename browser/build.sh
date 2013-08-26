@@ -1,4 +1,3 @@
-node node_modules/.bin/browserify -t coffeeify --debug src/index.coffee > dist/bundle.js
-node node_modules/.bin/browserify -t coffeeify src/index.coffee |
-  node node_modules/.bin/uglifyjs > dist/bundle.min.js
-# node node_modules/.bin/discify -t coffeeify src/index.coffee > stats/stats.html
+node node_modules/.bin/browserify --debug src/index.js > dist/pnode.js
+node node_modules/.bin/browserify src/index.js | node node_modules/.bin/uglifyjs --mangle --compress > dist/pnode.min.js
+node node_modules/.bin/discify src/index.js > stats/stats.html

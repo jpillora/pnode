@@ -32,9 +32,9 @@ if(process.argv.indexOf('client') > 0) {
     }
   });
 
-  var addr = process.argv[process.argv.indexOf('client')+1] || 'localhost:8000';
+  var addr = process.argv[process.argv.indexOf('client')+1] || 'localhost';
 
-  client.bind('tcp://' + addr);
+  client.bind('tcp://' + addr + ':8000');
 
   client.server(function(remote) {
     //1kb of data
@@ -51,3 +51,6 @@ if(process.argv.indexOf('client') > 0) {
     remote.inc(0, d);
   });
 }
+
+if(!server && !client)
+  console("usage: simple-tcp server | client [host]");
