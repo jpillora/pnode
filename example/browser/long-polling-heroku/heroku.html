@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body style="padding: 50px">
+
+    <div>
+      <h3>pnode browser demo</h3></br>
+      <h5>view source and open network tab</h5>
+    </div>
+
+    <div>
+      <input id="input" style="width: 400px;" placeholder="type in here..."/>
+    </div>
+
+    <div>
+      <pre id="output" style="width: 400px; height: 200px"/>
+    </div>
+
+    <script type="text/javascript" src="http://jpillora.com/pnode/browser/dist/pnode.js"></script>
+    <script type="text/javascript">
+      var client = pnode.client('browser');
+
+      client.bind('ws:///pnode-ws');
+
+      var input = document.getElementById("input"),
+          output = document.getElementById("output");
+
+      var t;
+      input.onkeyup = function() {
+        clearTimeout(t);
+        t = setTimeout(function() {
+
+          //transform text on server
+          client.server(function(remote) {
+            remote.transform(input.value, function(str) {
+              output.innerHTML = str;
+            });
+          });
+
+        }, 500);
+      }
+
+    </script>
+
+  </body>
+</html>
