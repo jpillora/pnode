@@ -1,4 +1,3 @@
-
 ***In progress - API Unstable!***
 
 --------------
@@ -10,23 +9,25 @@
 [![NPM version](https://nodei.co/npm/pnode.png?compact=true)](https://npmjs.org/package/pnode)
 
 Node tests:
+
 [![Build Status](https://travis-ci.org/jpillora/pnode.png)](https://travis-ci.org/jpillora/pnode)
 
 Browser tests:
+
 [![browser support](http://ci.testling.com/jpillora/pnode.png)](http://ci.testling.com/jpillora/pnode)
+
 
 ## Features
 
 * Simplified `dnode` API
 * Autoreconnects and buffering like `upnode`
 * Easily utilise different transports
+* Usable in the browser with the Websockets transport 
 
 ## Future Features
 
-* Websockets transport
 * Client function call timeouts
-* Integrates with [cluster](http://nodejs.org/api/cluster.html)
-* Browser version using WebSockets ([shoe](https://www.github.com/substack/shoe))
+* Integration with [cluster](http://nodejs.org/api/cluster.html)
 * Peer-to-Peer API
   * Each instance is a server and many clients
 * Authentication
@@ -45,7 +46,7 @@ npm install pnode
 ```
 </end>
 
-***Note: Only node `v0.10.x` is supported***
+***Note: Only node `v0.10.x` is currently supported***
 
 ## Basic Usage
 
@@ -75,7 +76,7 @@ var client = pnode.client();
 
 client.bind('https://localhost:8000');
 
-client(function(remote) {
+client.server(function(remote) {
   remote.say(new Date());
 });
 
@@ -92,7 +93,11 @@ the following transports are avaiable:
 * `ipc` (unix sockets)
 * `ws` (websockets)
 
-See examples [here](example/)
+See [basic examples](example/basic/)
+
+## Browser Usage
+
+See [browser examples](example/browser/) and 'long-polling-heroku' is depolyed [here](http://pnode-browser-demo.herokuapp.com/)
 
 ## API
 
@@ -116,29 +121,39 @@ if `transport` is a URI `://` then it will parse `host` and `port` from it which
 
 ### `pnode.addTransport(transport)`
 
-`transport` must implement:
+the `transport` object must implement:
 
-1. a `bindServer` method, which should `server.handle()` each new incoming connection. It can optionally return another object with an `unbind()` method.
-1. a `bindClient` method, which should define a `client.createConnection()` function to create new outgoing connections.
+1. a `bindServer` method, which must `server.handle()` each new incoming connection. It must also call `server.setInterface(obj)` with a `obj.unbind()` method implemented, which may be used to close the server and well as a `obj.uri` property which is a string with the URI of the server.
+1. a `bindClient` method, which must define a `client.createConnection()` function to create new outgoing connections. It must also call `server.setInterface(obj)` with a `obj.uri` property which is a string with the URI of the server the client is connected to.
 
 #### The TCP Transport
 
+`src/transports/tcp.coffee`:
 <showFile("src/transports/tcp.coffee")>
 ```
 net = require 'net'
 
-exports.bindServer = (args...) -&gt;
-  server = @
-  s = net.createServer server.handle
+exports.bindServer = (args...) ->
+  pserver = @
+  s = net.createServer pserver.handle
   s.listen.apply s, args
-  return {
-    unbind: -&gt; s.close()
-  }
 
-exports.bindClient = (args...) -&gt;
-  client = @
-  client.createConnection (callback) -&gt;
+  pserver.setInterface {
+    uri: "tcp://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
+    unbind: -> s.close()
+  }
+  return
+
+exports.bindClient = (args...) ->
+  pclient = @
+  pclient.createConnection (callback) ->
     callback net.connect.apply null, args
+
+  pclient.setInterface {
+    uri: "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
+  }
+  return
+
 ```
 </end>
 
