@@ -1,0 +1,9 @@
+
+/* line 1 : /Users/jpillora/.grunt-sources/web/node_modules/grunt-contrib-stylus/node_modules/stylus/lib/functions/index.styl */
+
+/* line 2 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
+html,
+body {
+  width: 100%;
+  height: 100%;
+}

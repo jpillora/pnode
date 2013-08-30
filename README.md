@@ -16,13 +16,20 @@ Browser tests:
 
 [![browser support](http://ci.testling.com/jpillora/pnode.png)](http://ci.testling.com/jpillora/pnode)
 
+## Summary
+
+**pnode** is a Node.js library, built ontop of dnode ([What's dnode?](http://substack.net/doc/dnode_slides_nodeconf.pdf)),
+allows applications (node and browser) to easily communicate in a peer-to-peer fashion. Since there's no centralised server,
+there's no single point of failure, this ability simplifies the implementation of *resilient* applications by adding
+*redundancy*.
 
 ## Features
 
-* Simplified `dnode` API
-* Autoreconnects and buffering like `upnode`
+* Simplified [dnode](https://github.com/substack/dnode) API 
+* Autoreconnects and buffering **like** [upnode](https://github.com/substack/upnode)
 * Easily utilise different transports
-* Usable in the browser with the Websockets transport 
+* Usable in the browser with the Websockets transport
+* Create your own transport types with any duplex stream
 
 ## Future Features
 
@@ -35,8 +42,9 @@ Browser tests:
   * Certificates
   * [ACL](http://en.wikipedia.org/wiki/Access_control_list)
 * Proxying RPC
-  * For example `client` can communicate with `server2` via `server1` - `client-server1-server2`
-  * Achived by `expose()`ing another `server`/`client`
+  * Allowing `client` can communicate with `server2` via `server1` (`client`↔`server1`↔`server2`)
+  * Achieved by `expose()`ing another `server`/`client`
+* WebRTC transport `rtc://` to provide `client`↔`client` networks
 
 ## Download
 
@@ -97,68 +105,18 @@ See [basic examples](example/basic/)
 
 ## Browser Usage
 
-See [browser examples](example/browser/) and 'long-polling-heroku' is depolyed [here](http://pnode-browser-demo.herokuapp.com/)
+See [browser examples](example/browser/)
+
+See [this demo](http://pnode-browser-demo.herokuapp.com/) ('long-polling-heroku' in the examples),
+since Heroku doesn't support Websockets, sockjs falls back to
+[XHR long polling](http://en.wikipedia.org/wiki/Comet_(programming))
+with [shoe](https://github.com/substack/shoe) maintaining stream-like behaviour.
 
 ## API
 
-### `pnode.`[`server`/`client`]`(options)`
+See [API docs](docs/pnode-api.md/)
 
-`options` must be an object, if it's a string it'll be converted to `{ id: options }`
 
-returns a `server`/`client` instance
-
-#### [`server`/`client`]`.expose(object)`
-
-each property of `object` will be publically exposed to all remote connections
-
-#### [`server`/`client`]`.bind(transport, args...)`
-
-`transport` must be a string representing an avaiable transport
-
-if `transport` is a URI `://` then it will parse `host` and `port` from it which will then be prepended to the arguments. So, `server.bind('tcp://my-server.com:3000', 'a', 'b')` is equivalent to `server.bind('tcp', 3000, 'my-server.com', 'a', 'b')`.
-
-`args` will be passed directly into the transport's `bindServer()`/`bindClient()` method (minus the `transport` string)
-
-### `pnode.addTransport(transport)`
-
-the `transport` object must implement:
-
-1. a `bindServer` method, which must `server.handle()` each new incoming connection. It must also call `server.setInterface(obj)` with a `obj.unbind()` method implemented, which may be used to close the server and well as a `obj.uri` property which is a string with the URI of the server.
-1. a `bindClient` method, which must define a `client.createConnection()` function to create new outgoing connections. It must also call `server.setInterface(obj)` with a `obj.uri` property which is a string with the URI of the server the client is connected to.
-
-#### The TCP Transport
-
-`src/transports/tcp.coffee`:
-<showFile("src/transports/tcp.coffee")>
-```
-net = require 'net'
-
-exports.bindServer = (args...) ->
-  pserver = @
-  s = net.createServer pserver.handle
-  s.listen.apply s, args
-
-  pserver.setInterface {
-    uri: "tcp://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
-    unbind: -> s.close()
-  }
-  return
-
-exports.bindClient = (args...) ->
-  pclient = @
-  pclient.createConnection (callback) ->
-    callback net.connect.apply null, args
-
-  pclient.setInterface {
-    uri: "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
-  }
-  return
-
-```
-</end>
-
-See how each transport is implemented for more
-examples [here](src/transports)
 
 ## Advanced Usage
 

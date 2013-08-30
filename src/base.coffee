@@ -2,21 +2,6 @@
 {EventEmitter} = require 'events'
 _ = require '../vendor/lodash'
 
-class Logger extends EventEmitter
-
-  name: 'Logger'
-
-  #debugging
-  log: ->
-    if @opts?.debug
-      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
-
-  err: (str) ->
-    @emit 'error', new Error "#{@} #{str}"
-
-  toString: ->
-    "#{@name}: #{@id}:"
-
 #base class of client,server and peer
 os = require "os"
 crypto = require "crypto"
@@ -39,6 +24,7 @@ class Base extends Logger
     _.defaults @opts, @defaults
 
     @pubsub = new EventEmitter
+    @pubsub.remotes = {}
 
     @guid = guid()
     @id = @opts.id or @guid
@@ -48,6 +34,8 @@ class Base extends Logger
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
+        subscribe: ->
+        unsubscribe: ->
         subscriptions: (cb) -> cb Object.keys @pubsub._events
         publish: (event, args...) -> @pubsub.emit.apply @pubsub, event, args
         ping: (cb) -> cb true
@@ -59,6 +47,22 @@ class Base extends Logger
 
   #get all ip on the nic
   ips: -> ips
+
+
+class Logger extends EventEmitter
+
+  name: 'Logger'
+
+  #debugging
+  log: ->
+    if @opts?.debug
+      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
+
+  err: (str) ->
+    @emit 'error', new Error "#{@} #{str}"
+
+  toString: ->
+    "#{@name}: #{@id}:"
 
 #publicise
 Base.Logger = Logger

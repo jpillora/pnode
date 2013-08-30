@@ -37,10 +37,6 @@
     "sockjs": "~0.3.7",
     "shoe": "0.0.13"
   },
-  "gruntSource": {
-    "source": "~/.grunt-sources/node",
-    "repo": "https://github.com/jpillora/grunt-source-node.git"
-  },
   "testling": {
     "browsers": [
         "ie6", "ie7", "ie8", "ie9",
