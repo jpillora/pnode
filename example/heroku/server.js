@@ -24,6 +24,7 @@ pserver.expose({
 });
 
 var port = process.env.PORT || 3000;
+//create a plain http server
 http.createServer(function(req, res) {
 
   //only handle pnodes clients
@@ -33,12 +34,21 @@ http.createServer(function(req, res) {
 
   //otherwise assume browser...
   } else {
-    res.end('nothing to see here...');
+    res.end('this is a pnode server running over HTTP on port 80, '+
+            'to connect to this server, please see: ' +
+            'https://github.com/jpillora/pnode/blob/gh-pages/example/heroku/client.js');
   }
 
 }).listen(port, function() {
   console.log('bound to ' + port);
 });
+//note: you could equivalently do
+//pserver.bind('http', port);
+//although we wouldn't be able to conditionally handle requests
+
+
+
+
 
 
 

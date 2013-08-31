@@ -16,6 +16,7 @@ exports.createServer = (pserver, type, listenArgs, serverArgs) ->
   }
   return
 
+#common code for http/https
 exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
   
   httpModule = require type

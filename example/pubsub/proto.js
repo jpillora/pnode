@@ -1,21 +1,21 @@
 var pnode = require('../../../');
 
 //client subscribes to updates
-var client = pnode.client('1');
+var client1 = pnode.client('1');
 
-client.bind('https://localhost:8000');
+client1.bind('https://localhost:8000');
 
-client.subscribe('foos', function(obj) {
-  client.log('incoming foo', obj);
+client1.subscribe('foos', function(obj) {
+  client1.log('incoming foo', obj);
 });
 
 //client subscribes to updates
-var client = pnode.client('2');
+var client2 = pnode.client('2');
 
-client.bind('https://localhost:8000');
+client2.bind('https://localhost:8000');
 
-client.subscribe('foos', function(obj) {
-  client.log('incoming foo', obj);
+client2.subscribe('foos', function(obj) {
+  client2.log('incoming foo', obj);
 });
 
 //server publishes updates to clients

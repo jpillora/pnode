@@ -18,6 +18,8 @@ class Client extends Base
   constructor: ->
     super
 
+    @bound = false
+    @stream = {}
     @count = { ping: 0, pong: 0, attempt: 0 }
     @connecting = false
     @status = 'down'
@@ -32,12 +34,19 @@ class Client extends Base
   #premade connection creators
   bind: ->
     @unbind()
+    #call the appropriate transport.bindClient()
+    @bound = true
     transports.bind @, arguments
     return
 
   unbind: ->
+    @bound = false
     @count.attempt = 0
     @reset()
+    @stream.duplex?.close?()
+    @stream.read?.close?()
+    @stream.write?.close?()
+    @stream = {}
     @ci = null
     return
 
@@ -90,7 +99,7 @@ class Client extends Base
       @reset()
       @reconnect()
 
-    # @log "connection attempt #{@count.attempt}!"
+    @log "connection attempt #{@count.attempt}!"
     @emit 'connecting'
     #get stream and splice in
     switch @getConnectionFn.length
@@ -101,20 +110,24 @@ class Client extends Base
           @err "Invalid duplex stream (not writable)" unless helper.isWritable stream
           stream.on 'error', @onStreamError
           stream.pipe(@d).pipe(stream)
+          @stream.duplex = stream
       #user providing a read stream and a write stream
       when 2
         @getConnectionFn (read) =>
           @err "Invalid read stream" unless helper.isReadable read
           read.on 'error', @onStreamError
           read.pipe(@d)
+          @stream.read = read
         , (write) =>
           @err "Invalid write stream" unless helper.isWritable write
           write.on 'error', @onStreamError
           @d.pipe(write)
+          @stream.write = write
     return
 
   #connection failed
   onStreamError: (err) ->
+    return unless @bound
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"
     # else
@@ -126,6 +139,7 @@ class Client extends Base
 
   #on rpc method exception
   onError: (err) ->
+    return unless @bound
     @log "error: #{err}"
     @err err
 

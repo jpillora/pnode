@@ -1,4 +1,7 @@
-PNODE_DEMO_APP=pnode-demo
+# script to setup heroku repo, update it, then tear it down
+
+# SET THIS TO YOUR APP NAME
+# PNODE_DEMO_APP=pnode-demo
 
 if [ ! $PNODE_DEMO_APP ]
 then
@@ -6,7 +9,13 @@ then
   exit 1
 fi
 
-
-git init
-git remote add heroku git@heroku.com:$PNODE_DEMO_APP.git
-git pull heroku master
+git clone git@heroku.com:$PNODE_DEMO_APP.git heroku-tmp
+cp * heroku-tmp/
+cd heroku-tmp
+git add *
+git commit -m 'updated'
+git push
+cd ..
+rm -rf heroku-tmp
+echo "======================="
+echo "Heroku Deploy Complete!"
