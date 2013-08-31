@@ -10,9 +10,9 @@ try {
   pnode = require('../../');
 }
 
-var server = pnode.server();
+var pserver = pnode.server();
 
-server.expose({
+pserver.expose({
   //do not do this IRL
   evaluate: function(code, callback) {
     try {
@@ -26,9 +26,12 @@ server.expose({
 var port = process.env.PORT || 3000;
 http.createServer(function(req, res) {
 
+  //only handle pnodes clients
   if(/^pnode/.test(req.headers['user-agent'])) {
     //could also check 'Authorisation' header for security (use https though!)
-    server.handle(req, res);
+    pserver.handle(req, res);
+
+  //otherwise assume browser...
   } else {
     res.end('nothing to see here...');
   }
@@ -36,3 +39,6 @@ http.createServer(function(req, res) {
 }).listen(port, function() {
   console.log('bound to ' + port);
 });
+
+
+

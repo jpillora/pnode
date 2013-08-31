@@ -2,6 +2,22 @@
 {EventEmitter} = require 'events'
 _ = require '../vendor/lodash'
 
+#base class of the base class
+class Logger extends EventEmitter
+
+  name: 'Logger'
+
+  #debugging
+  log: ->
+    if @opts?.debug
+      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
+
+  err: (str) ->
+    @emit 'error', new Error "#{@} #{str}"
+
+  toString: ->
+    "#{@name}: #{@id}:"
+
 #base class of client,server and peer
 os = require "os"
 crypto = require "crypto"
@@ -47,22 +63,6 @@ class Base extends Logger
 
   #get all ip on the nic
   ips: -> ips
-
-
-class Logger extends EventEmitter
-
-  name: 'Logger'
-
-  #debugging
-  log: ->
-    if @opts?.debug
-      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
-
-  err: (str) ->
-    @emit 'error', new Error "#{@} #{str}"
-
-  toString: ->
-    "#{@name}: #{@id}:"
 
 #publicise
 Base.Logger = Logger
