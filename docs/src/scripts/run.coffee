@@ -1,2 +1,3 @@
 
-console.log 'run'
+Nav("#nav")
+responsiveNav("#nav", {customToggle: "#toggle"})

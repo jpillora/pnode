@@ -1,10 +1,21 @@
-!!!5
-html
-  head
-    link(rel="stylesheet", href="/css/app.css")
+!!! 5
+html(lang='en')
+head
+    meta(charset='utf-8')
+    title Responsive Nav · Advanced Left Navigation Demo
+    meta(name='viewport', content='width=device-width,initial-scale=1')
+    //if lte IE 8
+      link(rel='stylesheet', href='docs/css/responsive-nav.css')
+    link(rel="stylesheet", href="docs/css/app.css")
+    
   body
-    p hello world
+    #nav
+    .main
+      a#toggle(href='#nav') Menu
 
-    script(src='//ajax.googleapis.com/ajax/libs/jquery/1/jquery#{min}.js')
+      //- include each section in file order
+      !{includeDir("sections")}
+    
+    //- script(src='//ajax.googleapis.com/ajax/libs/jquery/1/jquery#{min}.js')
     //- script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular#{min}.js')
-    script(src="/js/app.js")
+    script(src='docs/js/app.js')

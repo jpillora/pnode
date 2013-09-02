@@ -1,4 +1,7 @@
 {
-  "source": "~/.grunt-sources/web",
-  "repo": "https://github.com/jpillora/grunt-source-web.git"
+  "source": "~/.grunt-sources/docs",
+  "repo": "https://github.com/jpillora/grunt-source-docs.git",
+  "output": {
+    "html": "../index.html"
+  }
 }

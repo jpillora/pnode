@@ -18,10 +18,7 @@ Browser tests:
 
 ## Summary
 
-**pnode** is a Node.js library, built ontop of dnode ([What's dnode?](http://substack.net/doc/dnode_slides_nodeconf.pdf)),
-allows applications (node and browser) to easily communicate in a peer-to-peer fashion. Since there's no centralised server,
-there's no single point of failure, this ability simplifies the implementation of *resilient* applications by adding
-*redundancy*.
+
 
 ## Features
 

@@ -1,6 +1,7 @@
-//TODO
 var t0 = false;
 var total = 0;
+//1kb of data
+var size = 10e3;
 var done = false;
 var pnode = require('../');
 
@@ -37,8 +38,6 @@ if(process.argv.indexOf('client') > 0) {
   client.bind('tcp://' + addr + ':8000');
 
   client.server(function(remote) {
-    //1kb of data
-    var size = 10e3;
     var d = "", s = size;
     while(s--) d += "d";
     //start timers
