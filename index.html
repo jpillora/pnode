@@ -2,28 +2,144 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Responsive Nav &middot; Advanced Left Navigation Demo</title>
+    <title>Responsive Nav · Advanced Left Navigation Demo</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="http://localhost:3000/JavaScript/responsive-nav.js-master/demos/advanced-left-navigation/styles.css">
+    <link rel="stylesheet" href="docs/css/app.css">
   </head>
   <body>
+    <div id="nav"></div>
+    <div class="main"><a id="toggle" href="#nav">Menu</a>
+<div data-nav="Summary">
+  <h1>pnode</h1>
+  <p class="intro">
+    <b>pnode</b> is a Node.js library built ontop of dnode (<a href="http://substack.net/doc/dnode_slides_nodeconf.pdf">What's dnode?</a>).
+    pnode allows server applications to easily communicate over a peer-to-peer network over any supported protocol.
+    Since there's no centralised server, there's no single point of failure, this simplifies the creation
+    of <i>resilient</i> applications by adding <i>redundancy</i>.
+    
+  </p>
+  <div class="badges">
+    <a href="https://nodei.co/npm/pnode/"><img src="https://nodei.co/npm/pnode.png?compact=true"></a><br>
+    <a href="https://travis-ci.org/jpillora/pnode"><img src="https://travis-ci.org/jpillora/pnode.png"></a>
+  </div>
+<div data-nav>
+  <h2>Features</h2>
+  <div>
+    <ul>
+      <li>Simplified <a href="https://github.com/substack/dnode">dnode</a> client ↔ server RPC API</li>
+      <li>Peer-to-Peer RPC API
+        <ul>
+          <li>Each peer is many clients and servers</li>
+        </ul>
+      </li>
+      <li>Publish-Subcribe API</li>
+      <li>Autoreconnects and buffering similar to <a href="https://github.com/substack/upnode">upnode</a></li>
+      <li>Easily utilise different transports</li>
+      <li>Usable in the browser with the Websockets transport</li>
+      <li>Create your own transport types with any duplex stream</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Future Features</h3>
+    <ul>
+      <li>Client function call timeouts</li>
+      <li>Integration with <a href="http://nodejs.org/api/cluster.html">cluster</a></li>
+      <li>Authentication
+        <ul>
+          <li>Password</li>
+          <li>Certificates</li>
+          <li>IP <a href="http://en.wikipedia.org/wiki/Access_control_list">ACL</a></li>
+        </ul>
+      </li>
+      <li>Proxying RPC
+        <ul>
+          <li>Allowing <code>client</code> can communicate with <code>server2</code> via <code>server1</code></li>
+          <li>Achieved by <code>expose()</code>ing another <code>client</code> or <code>server</code></li>
+        </ul>
+      </li>
+      <li>WebRTC transport <code>rtc://</code> to provide <code>client ↔ client</code> networks</li>
+    </ul>
+  </div>
+</div>
 
-    <div role="navigation" id="nav">
-      <ul>
-        <li class="active"><a href="#">Home</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="#">Projects</a></li>
-        <li><a href="#">Blog</a></li>
-      </ul>
+<div data-nav class="download">
+  <h2>Download</h2>
+  <div><pre><code>npm install pnode</code></pre></div>
+</div>
+
+</div>
+
+<div data-nav>
+  <h2>Usage</h2>
+  <p>
+    Some content
+    
+  </p>
+<div data-nav>
+  <h3>Basic</h3>
+  <div class="demo">
+    <h4>Server</h4><pre><code><span class="keyword">var</span> pnode = require(<span class="string">'pnode'</span>);
+<span class="keyword">var</span> server = pnode.server();
+
+server.expose({
+  say: <span class="keyword">function</span>(date) {
+    console.log(<span class="string">'client says '</span> + date);
+  }
+});
+
+server.bind(<span class="string">'tcp://0.0.0.0:8000'</span>, <span class="keyword">function</span>(){
+  console.log(<span class="string">'bound to all interfaces on port 8000'</span>);
+});</code></pre>
+  </div>
+  <div class="demo">
+    <h4>Client</h4><pre><code><span class="keyword">var</span> pnode = require(<span class="string">'pnode'</span>);
+<span class="keyword">var</span> client = pnode.client();
+
+client.bind(<span class="string">'tcp://localhost:8000'</span>);
+
+client.server(<span class="keyword">function</span>(remote) {
+  remote.say(<span class="keyword">new</span> Date());
+});
+</code></pre>
+  </div>
+</div>
+
+<div data-nav>
+  <h3>Advanced</h3><pre><code><span class="keyword">var</span> pnode = require(<span class="string">'pnode'</span>);
+<span class="keyword">var</span> server = pnode.server();
+
+server.expose({
+  say: <span class="keyword">function</span>(date) {
+    console.log(<span class="string">'client says '</span> + date);
+  }
+});
+
+server.bind(<span class="string">'https://0.0.0.0:8000'</span>, <span class="keyword">function</span>(){
+  console.log(<span class="string">'bound to all interfaces on port 8000'</span>);
+});</code></pre>
+</div>
+
+</div>
+
+<div data-nav>
+  <h2>API</h2>
+  <p>
+    Some intro API content
+    
+  </p>
+<div data-nav>
+  <h3>Server</h3>
+  <p>Server API...</p>
+</div>
+
+<div data-nav>
+  <h3>Client</h3>
+  <p>Client API...</p>
+</div>
+
+</div>
+
     </div>
-
-    <div role="main" class="main">
-      <a href="#nav" id="toggle">Menu</a>
-    </div>
-
-    <script src="http://localhost:3000/JavaScript/responsive-nav.js-master/responsive-nav.js"></script>
-    <script>
-      var navigation = responsiveNav("#nav", {customToggle: "#toggle"});
-    </script>
+    <script src="docs/js/app.js"></script>
   </body>
 </html>

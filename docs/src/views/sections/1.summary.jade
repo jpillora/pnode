@@ -3,7 +3,13 @@ div(data-nav="Summary")
   h1 pnode
 
   p.intro.
-    <b>pnode</b> is a Node.js library, built ontop of dnode (<a href="http://substack.net/doc/dnode_slides_nodeconf.pdf">What's dnode?</a>).
-    pnode allows server applications to easily communicate over a peer-to-peer network.
-    Since there's no centralised server, there's no single point of failure, this ability simplifies the creation
+    <b>pnode</b> is a Node.js library built ontop of dnode (<a href="http://substack.net/doc/dnode_slides_nodeconf.pdf">What's dnode?</a>).
+    pnode allows server applications to easily communicate over a peer-to-peer network over any supported protocol.
+    Since there's no centralised server, there's no single point of failure, this simplifies the creation
     of <i>resilient</i> applications by adding <i>redundancy</i>.
+
+  .badges
+    <a href="https://nodei.co/npm/pnode/"><img src="https://nodei.co/npm/pnode.png?compact=true"></a><br>
+    <a href="https://travis-ci.org/jpillora/pnode"><img src="https://travis-ci.org/jpillora/pnode.png"></a>
+
+  !{ includeDir("summary") }

@@ -9,7 +9,7 @@ create = (nodeType) ->
   document.createElement nodeType
 
 slug = (str) ->
-  str.replace(/\s+/g, '-').toLowerCase()
+  str.replace(/\W+/g, '-').toLowerCase()
 
 defaults = 
   wrapper: "ul"
@@ -22,6 +22,21 @@ parentsUntil = (start, end) ->
     n++
     e = e.parent
   return n
+
+
+hash = ""
+onHashChange = (fn) ->
+  check = ->
+    next = window.location.hash.substr 1
+    return if next is hash
+    hash = next
+    fn(hash)
+  check()
+  setInterval check, 100
+
+onHashChange (str) ->
+  elem = $ "[data-nav-id=#{str}]"
+  elem?.scrollIntoView()
 
 Nav = (navContainer, pageRoot = document.body) ->
 
@@ -49,10 +64,15 @@ Nav = (navContainer, pageRoot = document.body) ->
       unless heading
         heading = "..."
 
+      id = slug heading
+
+      #auto id
+      elem.setAttribute "data-nav-id", id
+
       #create anchor
       item = create defaults.item
       a = create "a"
-      a.href = "#" + slug heading
+      a.href = "#" + id
       a.innerHTML = heading
       item.appendChild a
 
@@ -71,4 +91,6 @@ Nav = (navContainer, pageRoot = document.body) ->
   navContainer = $(navContainer) if typeof navContainer is "string"
   navContainer.appendChild wrapper
 
+  #trigger
+  onHashChange.hash = null
 

@@ -1,4 +1,5 @@
 {
+  "name": "pnode",
   "source": "~/.grunt-sources/docs",
   "repo": "https://github.com/jpillora/grunt-source-docs.git",
   "output": {
