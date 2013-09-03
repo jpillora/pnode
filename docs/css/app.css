@@ -141,7 +141,7 @@ a:hover {
 }
 
 #nav a:hover { background: rgba(255,255,255, .1) }
-#nav .active a { color: #fff; background: rgba(0,0,0, .3) }
+#nav .active > a { color: #fff; background: rgba(0,0,0, .3) }
 /*#nav li:first-child a { border-top: 0 }
 #nav li:last-child a { border-bottom: 0 }*/
 #toggle { display: none }
@@ -343,29 +343,30 @@ a {
 }
 
 /* line 10 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
-.nav-depth-1 {
+.nav-depth-1,
+.nav-depth-2 {
   margin: 3px 20px;
   border-radius: 5px;
   padding: 5px 0;
   font-size: 12px;
 }
 
-/* line 17 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
+/* line 19 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
 .main ul {
   margin-left: 20px;
 }
 
-/* line 19 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
+/* line 21 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
 .main ul ul {
   margin-left: 40px;
 }
 
-/* line 23 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
+/* line 25 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
 code {
   font-weight: bold;
 }
 
-/* line 26 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
+/* line 28 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
 pre code {
   font-weight: normal;
   border-radius: 5px;

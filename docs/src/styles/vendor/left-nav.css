@@ -137,7 +137,7 @@ a:hover {
 }
 
 #nav a:hover { background: rgba(255,255,255, .1) }
-#nav .active a { color: #fff; background: rgba(0,0,0, .3) }
+#nav .active > a { color: #fff; background: rgba(0,0,0, .3) }
 /*#nav li:first-child a { border-top: 0 }
 #nav li:last-child a { border-bottom: 0 }*/
 #toggle { display: none }

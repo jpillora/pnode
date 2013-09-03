@@ -613,7 +613,7 @@ var responsiveNav = (function (window, document) {
   return xports;
 }));
 (function() {
-  var $, $$, Nav, create, defaults, hash, onHashChange, parentsUntil, slug,
+  var $, $$, Nav, create, defaults, hash, listen, onHashChange, parentsUntil, scrollCheck, scrollInit, slug, toggleClass, visited,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $ = function(selector, ctx) {
@@ -654,6 +654,10 @@ var responsiveNav = (function (window, document) {
     return n;
   };
 
+  listen = function(elem, event, fn) {
+    return elem.addEventListener(event, fn);
+  };
+
   hash = "";
 
   onHashChange = function(fn) {
@@ -677,18 +681,62 @@ var responsiveNav = (function (window, document) {
     return elem != null ? elem.scrollIntoView() : void 0;
   });
 
+  toggleClass = function(elem, cls, flag) {
+    var clss;
+    clss = elem.className;
+    clss = clss ? clss.split(/\s+/) : [];
+    if (flag === true && __indexOf.call(clss, cls) < 0) {
+      clss.push(cls);
+    }
+    if (flag === false && __indexOf.call(clss, cls) >= 0) {
+      clss.splice(clss.indexOf(cls), 1);
+    }
+    return elem.className = clss.join(" ");
+  };
+
+  scrollCheck = function() {
+    var elem, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = visited.length; _i < _len; _i++) {
+      elem = visited[_i];
+      _results.push(toggleClass(elem.navAnchor.parentElement, 'active', verge.inViewport(elem)));
+    }
+    return _results;
+  };
+
+  scrollInit = function() {
+    var e, maxe, maxh, vh, _i, _len;
+    for (_i = 0, _len = visited.length; _i < _len; _i++) {
+      e = visited[_i];
+      vh = verge.viewportH();
+      maxh = 0;
+      maxe = null;
+      while (e) {
+        if (e.clientHeight > maxh) {
+          maxh = e.clientHeight;
+          maxe = e;
+        }
+        e = e.parentElement;
+        if (e === document.body.parentElement) {
+          break;
+        }
+      }
+    }
+    maxe.addEventListener('scroll', scrollCheck);
+  };
+
+  visited = [];
+
   Nav = function(navContainer, pageRoot) {
-    var build, visited, wrapper;
+    var a, build, target, wrapper, _i, _len, _ref;
     if (pageRoot == null) {
       pageRoot = document.body;
     }
-    visited = [];
     build = function(pageElem, depth) {
       var a, child, elem, heading, id, item, wrapper, _i, _j, _len, _len1, _ref, _ref1;
       if (depth == null) {
         depth = 0;
       }
-      visited.push(pageElem);
       wrapper = create(defaults.wrapper);
       wrapper.className = "nav-depth-" + depth;
       _ref = $$("[data-nav]", pageElem);
@@ -719,8 +767,9 @@ var responsiveNav = (function (window, document) {
         a.href = "#" + id;
         a.innerHTML = heading;
         item.appendChild(a);
+        elem.navAnchor = a;
         if ($("[data-nav]", elem)) {
-          item.appendChild(build(elem, depth + 1));
+          a.appendChild(build(elem, depth + 1));
         }
         wrapper.appendChild(item);
       }
@@ -731,6 +780,13 @@ var responsiveNav = (function (window, document) {
       navContainer = $(navContainer);
     }
     navContainer.appendChild(wrapper);
+    scrollInit();
+    _ref = $$("[data-nav-link]", pageRoot);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      a = _ref[_i];
+      target = a.getAttribute("data-nav-id") || a.innerHTML;
+      a.href = "#" + slug(target);
+    }
     return onHashChange.hash = null;
   };
 

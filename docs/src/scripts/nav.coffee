@@ -23,6 +23,8 @@ parentsUntil = (start, end) ->
     e = e.parent
   return n
 
+listen = (elem, event, fn) ->
+  elem.addEventListener event, fn
 
 hash = ""
 onHashChange = (fn) ->
@@ -38,13 +40,41 @@ onHashChange (str) ->
   elem = $ "[data-nav-id=#{str}]"
   elem?.scrollIntoView()
 
-Nav = (navContainer, pageRoot = document.body) ->
+toggleClass = (elem, cls, flag) ->
+  clss = elem.className
+  clss = if clss then clss.split /\s+/ else []
+  if flag is true and cls not in clss
+    clss.push cls
+  if flag is false and cls in clss
+    clss.splice clss.indexOf(cls), 1
+  elem.className = clss.join " "
 
-  visited = []
+
+#react to scroll
+scrollCheck = ->
+  for elem in visited
+    toggleClass elem.navAnchor.parentElement, 'active', verge.inViewport(elem)
+
+scrollInit = ->
+  for e in visited
+    vh = verge.viewportH()
+    maxh = 0
+    maxe = null
+    while e
+      if e.clientHeight > maxh
+        maxh = e.clientHeight
+        maxe = e
+      e = e.parentElement
+      break if e is document.body.parentElement
+  maxe.addEventListener('scroll', scrollCheck)
+  return
+
+visited = []
+
+Nav = (navContainer, pageRoot = document.body) ->
 
   #build each <ul>...<ul>
   build = (pageElem, depth = 0) ->
-    visited.push pageElem
 
     wrapper = create defaults.wrapper
     wrapper.className = "nav-depth-#{depth}" 
@@ -75,22 +105,28 @@ Nav = (navContainer, pageRoot = document.body) ->
       a.href = "#" + id
       a.innerHTML = heading
       item.appendChild a
+      elem.navAnchor = a
 
       #create subnav
       #if has children
       if $("[data-nav]", elem)
-        item.appendChild build elem, depth + 1
+        a.appendChild build elem, depth + 1
 
       wrapper.appendChild item
     return wrapper
 
-
   #build root
   wrapper = build pageRoot
-
   navContainer = $(navContainer) if typeof navContainer is "string"
   navContainer.appendChild wrapper
 
+  #init when ready
+  scrollInit()
+
+  #setup nav-links
+  for a in $$ "[data-nav-link]", pageRoot
+    target = a.getAttribute("data-nav-id") or a.innerHTML
+    a.href = "#" + slug target
+
   #trigger
   onHashChange.hash = null
-

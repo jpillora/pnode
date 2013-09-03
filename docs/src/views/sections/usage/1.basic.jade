@@ -1,5 +1,9 @@
 div(data-nav)
-  h3 Basic
+  h3 Client Server
+
+  p.
+    The simplest way to use pnode is like dnode (client and server), though with a slightly
+    different API.
 
   .demo
     h4 Server
@@ -9,3 +13,7 @@ div(data-nav)
     h4 Client
     !{ showCodeFile("example/basic/tcp/client.js") }
 
+  .tip.
+    You can use a different transport by simply changing the protocol
+    in these examples (which are using TCP <code>tcp://</code>). See the
+    <a data-nav-link>Transports</a> section for a list of avaiable transports.
