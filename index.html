@@ -1,40 +1,29 @@
 <!DOCTYPE html>
-<html lang="en"></html>
-<head>
-  <meta charset="utf-8">
-  <title>Responsive Nav · Advanced Left Navigation Demo</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"><!--[if lte IE 8]>
-  <link rel="stylesheet" href="docs/css/responsive-nav.css"><![endif]-->
-  <link rel="stylesheet" href="docs/css/app.css">
-</head>
-<body>
-  <div id="nav"></div>
-  <div class="main"><a id="toggle" href="#nav">Menu</a>
-<div data-nav="Summary">
-  <h1>pnode</h1>
-  <p class="intro">
-    <b>pnode</b> is a Node.js library, built ontop of dnode (<a href="http://substack.net/doc/dnode_slides_nodeconf.pdf">What's dnode?</a>).
-    pnode allows server applications to easily communicate over a peer-to-peer network.
-    Since there's no centralised server, there's no single point of failure, this ability simplifies the creation
-    of <i>resilient</i> applications by adding <i>redundancy</i>.
-  </p>
-</div>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Responsive Nav &middot; Advanced Left Navigation Demo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="http://localhost:3000/JavaScript/responsive-nav.js-master/demos/advanced-left-navigation/styles.css">
+  </head>
+  <body>
 
-<div data-nav>
-  <h2>Features</h2>
-  <p>Some content</p>
-</div>
+    <div role="navigation" id="nav">
+      <ul>
+        <li class="active"><a href="#">Home</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Projects</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+    </div>
 
-<div data-nav>
-  <h2>Download</h2>
-  <p>Some content</p>
-</div>
+    <div role="main" class="main">
+      <a href="#nav" id="toggle">Menu</a>
+    </div>
 
-<div data-nav>
-  <h2>Usage</h2>
-  <p>Some content</p>
-</div>
-
-  </div>
-  <script src="docs/js/app.js"></script>
-</body>
+    <script src="http://localhost:3000/JavaScript/responsive-nav.js-master/responsive-nav.js"></script>
+    <script>
+      var navigation = responsiveNav("#nav", {customToggle: "#toggle"});
+    </script>
+  </body>
+</html>

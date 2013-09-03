@@ -27,6 +27,11 @@ body {
   font: normal 100%/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+.main div {
+  float: left;
+  width: 100%;
+}
+
 h1 {
   font-size: 3em;
   line-height: 1;

@@ -10,9 +10,9 @@
 boss:true, bitwise:true, browser:true, devel:true, indent:2 */
 /* exported responsiveNav */
 
-var responsiveNav = (function (window, document) {
+var responsiveNav = (function(window, document) {
 
-  var computed = !!window.getComputedStyle;
+  var computed = !! window.getComputedStyle;
 
   // getComputedStyle polyfill
   if (!window.getComputedStyle) {
@@ -24,7 +24,7 @@ var responsiveNav = (function (window, document) {
           prop = "styleFloat";
         }
         if (re.test(prop)) {
-          prop = prop.replace(re, function () {
+          prop = prop.replace(re, function() {
             return arguments[2].toUpperCase();
           });
         }
@@ -34,23 +34,19 @@ var responsiveNav = (function (window, document) {
     };
   }
 
-  var nav,
-    opts,
-    navToggle,
-    styleElement = document.createElement("style"),
-    hasAnimFinished,
-    navOpen,
+  var nav, opts, navToggle, styleElement = document.createElement("style"),
+    hasAnimFinished, navOpen,
 
     // fn arg can be an object or a function, thanks to handleEvent
     // read more at: http://www.thecssninja.com/javascript/handleevent
-    addEvent = function (el, evt, fn, bubble) {
+    addEvent = function(el, evt, fn, bubble) {
       if ("addEventListener" in el) {
         // BBOS6 doesn't support handleEvent, catch and polyfill
         try {
           el.addEventListener(evt, fn, bubble);
         } catch (e) {
           if (typeof fn === "object" && fn.handleEvent) {
-            el.addEventListener(evt, function (e) {
+            el.addEventListener(evt, function(e) {
               // Bind fn as this and set first arg as event object
               fn.handleEvent.call(fn, e);
             }, bubble);
@@ -61,7 +57,7 @@ var responsiveNav = (function (window, document) {
       } else if ("attachEvent" in el) {
         // check if the callback is an object and contains handleEvent
         if (typeof fn === "object" && fn.handleEvent) {
-          el.attachEvent("on" + evt, function () {
+          el.attachEvent("on" + evt, function() {
             // Bind fn as this
             fn.handleEvent.call(fn);
           });
@@ -71,13 +67,13 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    removeEvent = function (el, evt, fn, bubble) {
+    removeEvent = function(el, evt, fn, bubble) {
       if ("removeEventListener" in el) {
         try {
           el.removeEventListener(evt, fn, bubble);
         } catch (e) {
           if (typeof fn === "object" && fn.handleEvent) {
-            el.removeEventListener(evt, function (e) {
+            el.removeEventListener(evt, function(e) {
               fn.handleEvent.call(fn, e);
             }, bubble);
           } else {
@@ -86,7 +82,7 @@ var responsiveNav = (function (window, document) {
         }
       } else if ("detachEvent" in el) {
         if (typeof fn === "object" && fn.handleEvent) {
-          el.detachEvent("on" + evt, function () {
+          el.detachEvent("on" + evt, function() {
             fn.handleEvent.call(fn);
           });
         } else {
@@ -95,7 +91,7 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    getChildren = function (e) {
+    getChildren = function(e) {
       if (e.children.length < 1) {
         throw new Error("The Nav container has no containing elements");
       }
@@ -110,37 +106,46 @@ var responsiveNav = (function (window, document) {
       return children;
     },
 
-    setAttributes = function (el, attrs) {
+    setAttributes = function(el, attrs) {
       for (var key in attrs) {
         el.setAttribute(key, attrs[key]);
       }
     },
 
-    addClass = function (el, cls) {
+    addClass = function(el, cls) {
       el.className += " " + cls;
-      el.className = el.className.replace(/(^\s*)|(\s*$)/g,"");
+      el.className = el.className.replace(/(^\s*)|(\s*$)/g, "");
     },
 
-    removeClass = function (el, cls) {
+    removeClass = function(el, cls) {
       var reg = new RegExp("(\\s|^)" + cls + "(\\s|$)");
-      el.className = el.className.replace(reg, " ").replace(/(^\s*)|(\s*$)/g,"");
+      el.className = el.className.replace(reg, " ").replace(/(^\s*)|(\s*$)/g, "");
     },
 
-    ResponsiveNav = function (el, options) {
+    ResponsiveNav = function(el, options) {
       var i;
 
       // Default options
       this.options = {
-        animate: true,        // Boolean: Use CSS3 transitions, true or false
-        transition: 350,      // Integer: Speed of the transition, in milliseconds
-        label: "Menu",        // String: Label for the navigation toggle
-        insert: "after",      // String: Insert the toggle before or after the navigation
-        customToggle: "",     // Selector: Specify the ID of a custom toggle
-        openPos: "relative",  // String: Position of the opened nav, relative or static
-        jsClass: "js",        // String: 'JS enabled' class which is added to <html> el
-        init: function(){},   // Function: Init callback
-        open: function(){},   // Function: Open callback
-        close: function(){}   // Function: Close callback
+        animate: true,
+        // Boolean: Use CSS3 transitions, true or false
+        transition: 350,
+        // Integer: Speed of the transition, in milliseconds
+        label: "Menu",
+        // String: Label for the navigation toggle
+        insert: "after",
+        // String: Insert the toggle before or after the navigation
+        customToggle: "",
+        // Selector: Specify the ID of a custom toggle
+        openPos: "relative",
+        // String: Position of the opened nav, relative or static
+        jsClass: "js",
+        // String: 'JS enabled' class which is added to <html> el
+        init: function() {},
+        // Function: Init callback
+        open: function() {},
+        // Function: Open callback
+        close: function() {} // Function: Close callback
       };
 
       // User defined options
@@ -173,7 +178,7 @@ var responsiveNav = (function (window, document) {
 
   ResponsiveNav.prototype = {
     // Public methods
-    destroy: function () {
+    destroy: function() {
       this._removeStyles();
       removeClass(nav, "closed");
       removeClass(nav, "opened");
@@ -197,24 +202,28 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    toggle: function () {
+    toggle: function() {
       if (hasAnimFinished === true) {
         if (!navOpen) {
           removeClass(nav, "closed");
           addClass(nav, "opened");
           nav.style.position = opts.openPos;
-          setAttributes(nav, {"aria-hidden": "false"});
+          setAttributes(nav, {
+            "aria-hidden": "false"
+          });
 
           navOpen = true;
           opts.open();
         } else {
           removeClass(nav, "opened");
           addClass(nav, "closed");
-          setAttributes(nav, {"aria-hidden": "true"});
+          setAttributes(nav, {
+            "aria-hidden": "true"
+          });
 
           if (opts.animate) {
             hasAnimFinished = false;
-            setTimeout(function () {
+            setTimeout(function() {
               nav.style.position = "absolute";
               hasAnimFinished = true;
             }, opts.transition + 10);
@@ -228,7 +237,7 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    handleEvent: function (e) {
+    handleEvent: function(e) {
       var evt = e || window.event;
 
       switch (evt.type) {
@@ -255,7 +264,7 @@ var responsiveNav = (function (window, document) {
     },
 
     // Private methods
-    _init: function () {
+    _init: function() {
       addClass(nav, "closed");
       hasAnimFinished = true;
       navOpen = false;
@@ -276,19 +285,19 @@ var responsiveNav = (function (window, document) {
       opts.init();
     },
 
-    _createStyles: function () {
+    _createStyles: function() {
       if (!styleElement.parentNode) {
         document.getElementsByTagName("head")[0].appendChild(styleElement);
       }
     },
 
-    _removeStyles: function () {
+    _removeStyles: function() {
       if (styleElement.parentNode) {
         styleElement.parentNode.removeChild(styleElement);
       }
     },
 
-    _createToggle: function () {
+    _createToggle: function() {
       if (!opts.customToggle) {
         var toggle = document.createElement("a");
         toggle.innerHTML = opts.label;
@@ -324,7 +333,7 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    _onTouchStart: function (e) {
+    _onTouchStart: function(e) {
       e.stopPropagation();
       this.startX = e.touches[0].clientX;
       this.startY = e.touches[0].clientY;
@@ -332,14 +341,13 @@ var responsiveNav = (function (window, document) {
       removeEvent(navToggle, "mouseup", this, false);
     },
 
-    _onTouchMove: function (e) {
-      if (Math.abs(e.touches[0].clientX - this.startX) > 10 ||
-      Math.abs(e.touches[0].clientY - this.startY) > 10) {
+    _onTouchMove: function(e) {
+      if (Math.abs(e.touches[0].clientX - this.startX) > 10 || Math.abs(e.touches[0].clientY - this.startY) > 10) {
         this.touchHasMoved = true;
       }
     },
 
-    _onTouchEnd: function (e) {
+    _onTouchEnd: function(e) {
       this._preventDefault(e);
       if (!this.touchHasMoved) {
         if (e.type === "touchend") {
@@ -347,7 +355,7 @@ var responsiveNav = (function (window, document) {
           // Prevent click on the underlying menu on Android 2.3
           var that = this;
           nav.addEventListener("click", that._preventDefault, true);
-          setTimeout(function () {
+          setTimeout(function() {
             nav.removeEventListener("click", that._preventDefault, true);
           }, opts.transition + 100);
           return;
@@ -361,14 +369,14 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    _onKeyUp: function (e) {
+    _onKeyUp: function(e) {
       var evt = e || window.event;
       if (evt.keyCode === 13) {
         this.toggle(e);
       }
     },
 
-    _transitions: function () {
+    _transitions: function() {
       if (opts.animate) {
         var objStyle = nav.style,
           transition = "max-height " + opts.transition + "ms";
@@ -380,7 +388,7 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    _calcHeight: function () {
+    _calcHeight: function() {
       var savedHeight = 0;
       for (var i = 0; i < nav.inner.length; i++) {
         savedHeight += nav.inner[i].offsetHeight;
@@ -395,21 +403,29 @@ var responsiveNav = (function (window, document) {
       }
     },
 
-    _resize: function () {
+    _resize: function() {
       if (window.getComputedStyle(navToggle, null).getPropertyValue("display") !== "none") {
-        setAttributes(navToggle, {"aria-hidden": "false"});
+        setAttributes(navToggle, {
+          "aria-hidden": "false"
+        });
 
         // If the navigation is hidden
         if (nav.className.match(/(^|\s)closed(\s|$)/)) {
-          setAttributes(nav, {"aria-hidden": "true"});
+          setAttributes(nav, {
+            "aria-hidden": "true"
+          });
           nav.style.position = "absolute";
         }
 
         this._createStyles();
         this._calcHeight();
       } else {
-        setAttributes(navToggle, {"aria-hidden": "true"});
-        setAttributes(nav, {"aria-hidden": "false"});
+        setAttributes(navToggle, {
+          "aria-hidden": "true"
+        });
+        setAttributes(nav, {
+          "aria-hidden": "false"
+        });
         nav.style.position = opts.openPos;
         this._removeStyles();
       }
@@ -418,7 +434,8 @@ var responsiveNav = (function (window, document) {
   };
 
   var _instance;
-  function rn (el, options) {
+
+  function rn(el, options) {
     if (!_instance) {
       _instance = new ResponsiveNav(el, options);
     }
@@ -427,107 +444,3 @@ var responsiveNav = (function (window, document) {
 
   return rn;
 })(window, document);
-
-(function() {
-  var $, $$, Nav, create, defaults, parentsUntil, slug,
-    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-  $ = function(selector, ctx) {
-    if (ctx == null) {
-      ctx = document;
-    }
-    return ctx.querySelector(selector);
-  };
-
-  $$ = function(selector, ctx) {
-    if (ctx == null) {
-      ctx = document;
-    }
-    return ctx.querySelectorAll(selector);
-  };
-
-  create = function(nodeType) {
-    return document.createElement(nodeType);
-  };
-
-  slug = function(str) {
-    return str.replace(/\s+/g, '-').toLowerCase();
-  };
-
-  defaults = {
-    wrapper: "ul",
-    item: "li"
-  };
-
-  parentsUntil = function(start, end) {
-    var e, n;
-    n = 0;
-    e = start;
-    while (e && e !== end) {
-      n++;
-      e = e.parent;
-    }
-    return n;
-  };
-
-  Nav = function(navContainer, pageRoot) {
-    var build, visited, wrapper;
-    if (pageRoot == null) {
-      pageRoot = document.body;
-    }
-    visited = [];
-    build = function(pageElem, depth) {
-      var a, child, elem, heading, item, wrapper, _i, _j, _len, _len1, _ref, _ref1;
-      if (depth == null) {
-        depth = 0;
-      }
-      visited.push(pageElem);
-      wrapper = create(defaults.wrapper);
-      wrapper.className = "nav-depth-" + depth;
-      _ref = $$("[data-nav]", pageElem);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        elem = _ref[_i];
-        if (__indexOf.call(visited, elem) >= 0) {
-          continue;
-        }
-        visited.push(elem);
-        heading = elem.getAttribute("data-nav");
-        if (!heading) {
-          _ref1 = elem.children;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            child = _ref1[_j];
-            if (/^h\d$/i.test(child.nodeName)) {
-              heading = child.innerHTML;
-              break;
-            }
-          }
-        }
-        if (!heading) {
-          heading = "...";
-        }
-        item = create(defaults.item);
-        a = create("a");
-        a.href = "#" + slug(heading);
-        a.innerHTML = heading;
-        item.appendChild(a);
-        if ($("[data-nav]", elem)) {
-          item.appendChild(build(elem, depth + 1));
-        }
-        wrapper.appendChild(item);
-      }
-      return wrapper;
-    };
-    wrapper = build(pageRoot);
-    if (typeof navContainer === "string") {
-      navContainer = $(navContainer);
-    }
-    return navContainer.appendChild(wrapper);
-  };
-
-  Nav("#nav");
-
-  responsiveNav("#nav", {
-    customToggle: "#toggle"
-  });
-
-}).call(this);

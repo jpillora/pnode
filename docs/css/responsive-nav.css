@@ -1,7 +1,3 @@
-
-/* line 1 : /Users/jpillora/.grunt-sources/docs/node_modules/grunt-contrib-stylus/node_modules/stylus/lib/functions/index.styl */
-
-/* line 239 : /Users/jpillora/Code/Node/pnode/docs/src/styles/vendor/left-nav.css */
 body,div,
 h1,h2,p,
 ol,ul,li {
@@ -29,11 +25,6 @@ body {
   background: #444 url("img/debut_dark.png") repeat;
   color: #666;
   font: normal 100%/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-.main div {
-  float: left;
-  width: 100%;
 }
 
 h1 {
@@ -209,14 +200,4 @@ a:hover {
 @media screen and (min-width: 76em) {
   #nav { width: 18em }
   .main { width: auto; left: 18em }
-}
-
-/* line 10 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
-a {
-  color: #000080;
-}
-
-/* line 13 : /Users/jpillora/Code/Node/pnode/docs/src/styles/app.styl */
-.nav-depth-1 {
-  margin-left: 20px;
 }
