@@ -229,7 +229,7 @@ class Client extends Base
   uri: -> @ci?.uri
   serialize: -> @uri()
 
-module.exports = (opts) ->
-  new Client opts
+module.exports = (opts, parent) ->
+  new Client opts, parent
 
 

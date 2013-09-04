@@ -31,14 +31,16 @@ class Connection extends Base.Logger
     read.once 'close', @d.end
     read.pipe(@d).pipe(write)
 
-  close: ->
+    @once 'end', => @emit 'disconnected'
+
+  disconnect: ->
     @d.end() if @d
 
   #recieve a remote interface
   onRemote: (remote) ->
     meta = remote._pnode
     unless meta
-      @log "closing connection, not a pnode client"
+      @log "closing connection, not a pnode connection"
       d.end()
       return
 
@@ -50,6 +52,14 @@ class Connection extends Base.Logger
     @emit 'remote', remote
     return
 
+  publish: ->
+    args = arguments
+    return unless @ctx.events[args[0]]
+    @remote._pnode.publish.apply null, args
+
+  subscribe: (event, fn) ->
+    @remote._pnode.subscribe event
+
 class Server extends Base
 
   name: 'Server'
@@ -60,10 +70,10 @@ class Server extends Base
 
   constructor: ->
     super
-    @clients = []
+    @connections = []
     #add indexes
-    @clients.ids = {}
-    @clients.guids = {}
+    @connections.ids = {}
+    @connections.guids = {}
     #alias
     @bindOn = @bind
 
@@ -74,8 +84,8 @@ class Server extends Base
     return
 
   unbind: ->
-    for client in @clients
-      client?.d?.end()
+    for connection in @connections
+      connection.disconnect()
     try
       if typeof @si?.unbind is 'function'
         @si.unbind()
@@ -91,36 +101,35 @@ class Server extends Base
     @err "Invalid read stream" unless helper.isReadable read
     @err "Invalid write stream" unless helper.isWritable write
 
-    client = new Connection @, read, write
+    connection = new Connection @, read, write
 
-    client.once 'remote', (remote) =>
+    connection.once 'remote', (remote) =>
       #check for existing id or guid
       for idType in ['id', 'guid']
-        c = client[idType] 
-        if c and @clients[idType+'s'][c]
-          @warn "rejected client with duplicate #{idType}: #{c}"
-          client.close()
+        c = connection[idType] 
+        if c and @connections[idType+'s'][c]
+          @warn "rejected connection with duplicate #{idType}: #{c}"
+          connection.disconnect()
           return
-
       #add to all
-      @clients.push client
-      @clients.ids[client.id] = client
-      @clients.guids[client.guid] = client
+      @connections.push connection
+      @connections.ids[connection.id] = connection
+      @connections.guids[connection.guid] = connection
 
       @emit 'remote', remote
-      @emit 'connection', client, @
+      @emit 'connection', connection, @
 
-    client.once 'end', =>
-      i = @clients.indexOf client
+    connection.once 'disconnected', =>
+      i = @connections.indexOf connection
       return if i is -1
-      @log 'removing client ', i
+      @log 'removing connection ', i
       #remove from all
-      @clients.splice i, 1
-      delete @clients.ids[client.id]
-      delete @clients.guids[client.guid]
-      @emit 'disconnection', client
+      @connections.splice i, 1
+      delete @connections.ids[connection.id]
+      delete @connections.guids[connection.guid]
+      @emit 'disconnection', connection
 
-  client: (id, callback) ->
+  connection: (id, callback) ->
     rem = @clientSync id
     return callback(rem) if rem
 
@@ -142,30 +151,29 @@ class Server extends Base
 
   clientSync: (id) ->
     if typeof id is 'string'
-      return (@clients.ids[id] or @clients.guids[id] or {}).remote
+      return (@connections.ids[id] or @connections.guids[id] or {}).remote
     else if typeof id is 'number'
-      return @clients[id]?.remote
+      return @connections[id]?.remote
     else
       @err "invalid arguments"
 
-  #pubsub to ALL client remotes
+  #pubsub to ALL connection remotes
   publish: ->
     args = arguments
-    for client in @clients
-      continue unless client.ctx.events[args[0]]
-      client.remote._pnode.publish.apply null, args
+    for connection in @connections
+      connection.publish.apply null, args
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
-    for client in @clients
-      client.remote._pnode.subscribe event
+    for connection in @connections
+      connection.subscribe event
 
   setInterface: (obj) -> @si = obj
   uri: -> @si?.uri
   serialize: -> @uri()
 
-module.exports = (opts) ->
-  server = new Server opts
+module.exports = (opts, parent) ->
+  server = new Server opts, parent
   servers.push server
   return server
 

@@ -15,4 +15,3 @@ peer2.bindOn("tcp://0.0.0.0:9000", function(){
 });
 
 peer2.bindTo("tcp://localhost:8000");
-

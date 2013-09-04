@@ -13,3 +13,7 @@ peer1.subscribe('foos', function(obj) {
 peer1.bindOn("tcp://0.0.0.0:8000", function(){
   peer1.log('tcp bound to all interfaces on port 8000');
 });
+
+setTimeout(function(){
+  peer1.bindTo("tcp://localhost:9000");
+}, 3000)

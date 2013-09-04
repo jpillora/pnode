@@ -16,37 +16,47 @@ class RemotePeer extends Base.Logger
   name: 'RemotePeer'
 
   constructor: (@local) ->
+    @reset()
     @opts = @local.opts
-    @clients = {}
-    @connections = {}
+    @clients = []
+    @connections = []
     @addresses = {}
 
   #will be a client, or a server connection
   addPeer: (peer) ->
-    meta = peer.remote._pnode
-    {@guid, @id, @ips} = meta
-
+    
+    unless @up
+      @remote = peer.remote
+      @getMeta()
+    
     switch peer.name
       when 'Client' then @addClient peer
       when 'Connection' then @addConnection peer
 
+  getMeta: ->
+    {@guid, @id, @ips} = @remote._pnode
+
   addClient: (client) ->
     @addresses[client.uri()] = true
-    @clients[client.guid] = client
+    #disconnect if already connected
+    return client.unbind() if @up
+    @clients.push client
     client.once 'down', =>
-      delete @clients[client.guid]
+      @reset()
+      delete @addresses[client.uri()]
+      @clients.splice @clients.indexOf(client), 1
 
   addConnection: (conn) ->
-    @connections[conn.guid] = conn
-    conn.once 'disconnect', =>
-      delete @connections[conn.guid]
+    #disconnect if already connected
+    return conn.disconnect() if @up
+    @connections.push conn
+    conn.once 'disconnected', =>
+      @reset()
+      @connections.splice @connections.indexOf(conn), 1
 
-  getRemote: ->
-    for guid, client of @clients
-      return client.remote
-    for guid, conn of @connections
-      return conn.remote
-    return null
+  reset: ->
+    @up = false
+    @remote = null
 
   #custom serialisation
   serialize: ->
@@ -73,13 +83,14 @@ class LocalPeer extends Base
     @peers = {}
 
     if @opts.providePeers
-      @expose { _pnode: {serialize: (cb) => cb @serialize()} }
+      @expose 
+        _pnode:
+          serialize: new Base.Exposed => @serialize()
 
   bindOn: ->
-    server = pnode.server @opts
+    server = pnode.server @opts, @
     server.on 'error', (err) => @emit 'error', err
     server.on 'connection', @onPeer
-    server.exposed = @exposed
     server.bindOn.apply server, arguments
 
     @servers[server.guid] = server
@@ -87,10 +98,9 @@ class LocalPeer extends Base
       delete @servers[server.guid]
 
   bindTo: ->
-    client = pnode.client @opts
+    client = pnode.client @opts, @
     client.on 'error', (err) => @emit 'error', err
     client.on 'remote', => @onPeer client
-    client.exposed = @exposed
     client.bindTo.apply client, arguments
 
   #new peer connection

@@ -31,39 +31,50 @@ for name, addrs of os.networkInterfaces?()
     if addr.family is 'IPv4'
       ips.push addr.address
 
+class Exposed
+  constructor: (@fn) ->
+
 class Base extends Logger
 
   name: 'Base'
 
-  constructor: (@opts = {})->
-    if _.isString @opts
-      @opts = { id:@opts }
-    _.defaults @opts, @defaults
+  constructor: (@opts = {}, parent)->
 
-    pubsub = @pubsub = new EventEmitter
+    @opts = { id:@opts } if _.isString @opts
+    _.defaults @opts, @defaults
     
     @guid = guid()
     @id = @opts.id or @guid
 
     _.bindAll @
 
-    log = @log
+    log = @log    
+    @pubsub = if parent then parent.pubsub else new EventEmitter
+    @exposed = if parent then parent.exposed else @defaultExposed()
 
-    @exposed =
+  defaultExposed: ->
+
+    @log "CREATE EXPOSED"
+
+    pubsub = @pubsub
+    return {
       _pnode:
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
         #remotes can push their own event list
         subscribe: (event) ->
-          @events[event] = 1
+          this.events[event] = 1
         unsubscribe: (event) ->
-          @events[event] = 0
+          this.events[event] = 0
         #remotes can push events
         publish: (event, args...) ->
           pubsub.emit.apply pubsub, [event].concat args
         ping: (cb) ->
           cb true
+        events: new Exposed ->
+          Object.keys pubsub._events
+    }
 
   expose: (obj) ->
     _.merge @exposed, obj
@@ -72,16 +83,17 @@ class Base extends Logger
   exposeWith: (ctx) ->
     unless ctx instanceof RemoteContext
       return @err "must bound remote to a context"
-    exposed = _.merge {}, @exposed, (a,b) =>
+    return _.merge {}, @exposed, (a,b) =>
+      if b instanceof Exposed
+        return b.fn()
       if typeof b is "function"
         return b.bind(ctx)
       return a
-    exposed._pnode.events = Object.keys @pubsub._events
-    exposed
 
   #get all ip on the nic
   ips: -> ips
 
 #publicise
+Base.Exposed = Exposed
 Base.Logger = Logger
 module.exports = Base
