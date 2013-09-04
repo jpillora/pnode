@@ -13,7 +13,8 @@ class Client extends Base
     debug: false
     maxRetries: 5
     timeout: 5000
-    interval: 1000
+    retryInterval: 1000
+    pingInterval: 5000
     port: 7337
 
   constructor: ->
@@ -26,8 +27,8 @@ class Client extends Base
     @status = 'down'
 
     #throttle reconnects and pings
-    @reconnect = _.throttle @reconnect, @opts.interval, {leading:true}
-    @ping = _.throttle @ping, @opts.interval
+    @reconnect = _.throttle @reconnect, @opts.retryInterval, {leading:true}
+    @ping = _.throttle @ping, @opts.pingInterval
 
     #alias
     @bindTo = @bind    
@@ -92,7 +93,7 @@ class Client extends Base
 
     #server context, exposed to remote api
     @ctx = new RemoteContext
-    @d = dnode @boundExposed(@ctx)
+    @d = dnode @exposeWith(@ctx)
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
     @d.once 'error', @onError
@@ -211,10 +212,22 @@ class Client extends Base
       @d.removeAllListeners().end()
       @d = null
 
+  #pubsub to server remote
+  publish: ->
+    args = arguments
+    return unless @ctx.events[args[0]]
+    @server (remote) =>
+      remote._pnode.publish.apply null, args
+
+  subscribe: (event, fn) ->
+    @pubsub.on event, fn
+    return unless @getConnectionFn
+    @server (remote) =>
+      remote._pnode.subscribe event
+
   setInterface: (obj) -> @si = obj
   uri: -> @ci?.uri
   serialize: -> @uri()
-    
 
 module.exports = (opts) ->
   new Client opts

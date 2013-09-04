@@ -21,7 +21,7 @@ class Connection extends Base.Logger
     @ctx.getAddr read
 
     #provide a client-specific version of exposed
-    @d = dnode @server.boundExposed(@ctx)
+    @d = dnode @server.exposeWith(@ctx)
     
     #handle dnode event
     helper.proxyEvents @d, @, 'error', 'fail', 'end'
@@ -94,7 +94,6 @@ class Server extends Base
     client = new Connection @, read, write
 
     client.once 'remote', (remote) =>
-
       #check for existing id or guid
       for idType in ['id', 'guid']
         c = client[idType] 
@@ -148,6 +147,18 @@ class Server extends Base
       return @clients[id]?.remote
     else
       @err "invalid arguments"
+
+  #pubsub to ALL client remotes
+  publish: ->
+    args = arguments
+    for client in @clients
+      continue unless client.ctx.events[args[0]]
+      client.remote._pnode.publish.apply null, args
+
+  subscribe: (event, fn) ->
+    @pubsub.on event, fn
+    for client in @clients
+      client.remote._pnode.subscribe event
 
   setInterface: (obj) -> @si = obj
   uri: -> @si?.uri

@@ -6,21 +6,16 @@ RemoteContext = require './context'
 
 #base class of the base class
 class Logger extends EventEmitter
-
   name: 'Logger'
-
   #debugging
   log: ->
     if @opts?.debug
       # arguments[0] = util.inspect arguments[0]
       console.log @.toString() + ' ' + util.format.apply null, arguments
-
   warn: ->
     console.warn 'WARNING: ' + @.toString() + ' ' + util.format.apply null, arguments
-
   err: (str) ->
     @emit 'error', new Error "#{@} #{str}"
-
   toString: ->
     "#{@name}: #{@id}:"
 
@@ -45,7 +40,7 @@ class Base extends Logger
       @opts = { id:@opts }
     _.defaults @opts, @defaults
 
-    pubsub = new EventEmitter
+    pubsub = @pubsub = new EventEmitter
     
     @guid = guid()
     @id = @opts.id or @guid
@@ -59,14 +54,14 @@ class Base extends Logger
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
+        #remotes can push their own event list
         subscribe: (event) ->
-          @events[events] = 1
+          @events[event] = 1
         unsubscribe: (event) ->
-          @events[events] = 0
-        subscriptions: (cb) ->
-          cb Object.keys pubsub._events
+          @events[event] = 0
+        #remotes can push events
         publish: (event, args...) ->
-          pubsub.emit.apply pubsub, event, args
+          pubsub.emit.apply pubsub, [event].concat args
         ping: (cb) ->
           cb true
 
@@ -74,13 +69,15 @@ class Base extends Logger
     _.merge @exposed, obj
 
   #provide an interface which has all methods bound to this connection
-  boundExposed: (target) ->
-    unless target instanceof RemoteContext
+  exposeWith: (ctx) ->
+    unless ctx instanceof RemoteContext
       return @err "must bound remote to a context"
-    _.merge {}, @exposed, (a,b) =>
+    exposed = _.merge {}, @exposed, (a,b) =>
       if typeof b is "function"
-        return b.bind(target)
+        return b.bind(ctx)
       return a
+    exposed._pnode.events = Object.keys @pubsub._events
+    exposed
 
   #get all ip on the nic
   ips: -> ips

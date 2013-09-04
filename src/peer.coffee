@@ -155,6 +155,9 @@ class LocalPeer extends Base
 
     return null
 
+  publish: ->
+  subscribe: ->
+
 module.exports = (opts) ->
   peer = new LocalPeer opts
   locals.push peer

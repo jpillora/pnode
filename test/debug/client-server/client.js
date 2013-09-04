@@ -1,4 +1,4 @@
-var pnode = require('../../');
+var pnode = require('../../../');
 
 //START CLIENT 1
 var client1 = pnode.client({
