@@ -3,6 +3,7 @@ dnode = require 'dnode'
 Base = require './base'
 helper = require './helper'
 transports = require './transports'
+RemoteContext = require './context'
 
 class Client extends Base
 
@@ -89,7 +90,9 @@ class Client extends Base
 
     @reset()
 
-    @d = dnode @exposed
+    #server context, exposed to remote api
+    @ctx = new RemoteContext
+    @d = dnode @boundExposed(@ctx)
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
     @d.once 'error', @onError
@@ -109,6 +112,10 @@ class Client extends Base
           @err "Invalid duplex stream (not readable)" unless helper.isReadable stream
           @err "Invalid duplex stream (not writable)" unless helper.isWritable stream
           stream.on 'error', @onStreamError
+
+          #extract src ip and port
+          @ctx.getAddr stream
+
           stream.pipe(@d).pipe(stream)
           @stream.duplex = stream
       #user providing a read stream and a write stream
@@ -117,6 +124,10 @@ class Client extends Base
           @err "Invalid read stream" unless helper.isReadable read
           read.on 'error', @onStreamError
           read.pipe(@d)
+
+          #extract src ip and port
+          @ctx.getAddr read
+
           @stream.read = read
         , (write) =>
           @err "Invalid write stream" unless helper.isWritable write
@@ -149,10 +160,13 @@ class Client extends Base
     @timeout(false)
 
     #ensure it's a pnode remote
-    unless remote._pnode?.ping
+    meta = remote?._pnode
+    unless typeof meta?.ping is "function"
       return @err "Invalid pnode host"
 
     @remote = remote
+    @ctx.getIds meta
+    
     @emit 'remote', @remote, @
     @setStatus 'up'
     @ping()

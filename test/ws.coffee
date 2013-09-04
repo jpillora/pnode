@@ -1,5 +1,4 @@
 {assert, expect} = require 'chai'
-phantom = require 'phantom'
 pnode = require '../'
 http = require 'http'
 fs = require 'fs'

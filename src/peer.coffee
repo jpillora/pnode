@@ -4,6 +4,9 @@ Base = require './base'
 helper = require './helper'
 locals = []
 
+#source map support
+require('source-map-support').install()
+
 # a remote peer contains all connections to and from it
 # identified by its 'guid', all remotes with this guid
 # will be added to this peer which may be used as an

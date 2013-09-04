@@ -67,5 +67,5 @@ exports.get = (name) ->
 
 #init
 fs.readdirSync?(__dirname).forEach (file) ->
-  if file isnt 'index.js'
+  if file isnt 'index.js' and /\.js$/.test file
     exports.add file.replace('.js',''), require("./#{file}")

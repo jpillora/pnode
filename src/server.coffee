@@ -3,16 +3,52 @@ Base = require './base'
 transports = require './transports'
 helper = require './helper'
 _ = require '../vendor/lodash'
+RemoteContext = require './context'
 servers = []
 
-#represents a client connected
+#represents a client connection
 class Connection extends Base.Logger
 
   name: 'Connection'
 
-  constructor: (@server, meta, @remote, @d) ->
-    {@id, @guid} = meta
+  constructor: (@server, read, write) ->
 
+    @opts = @server.opts
+    @id = @guid = "S-#{@server.id}"
+    @subs = {}
+
+    @ctx = new RemoteContext
+    @ctx.getAddr read
+
+    #provide a client-specific version of exposed
+    @d = dnode @server.boundExposed(@ctx)
+    
+    #handle dnode event
+    helper.proxyEvents @d, @, 'error', 'fail', 'end'
+    @d.once 'remote', @onRemote.bind(@)
+
+    #connect!
+    read.once 'close', @d.end
+    read.pipe(@d).pipe(write)
+
+  close: ->
+    @d.end() if @d
+
+  #recieve a remote interface
+  onRemote: (remote) ->
+    meta = remote._pnode
+    unless meta
+      @log "closing connection, not a pnode client"
+      d.end()
+      return
+
+    {@id, @guid} = meta
+    @ctx.getIds meta
+
+    @log "dnode connected!"
+    @remote = remote
+    @emit 'remote', remote
+    return
 
 class Server extends Base
 
@@ -25,6 +61,9 @@ class Server extends Base
   constructor: ->
     super
     @clients = []
+    #add indexes
+    @clients.ids = {}
+    @clients.guids = {}
     #alias
     @bindOn = @bind
 
@@ -52,60 +91,59 @@ class Server extends Base
     @err "Invalid read stream" unless helper.isReadable read
     @err "Invalid write stream" unless helper.isWritable write
 
-    d = dnode @exposed
+    client = new Connection @, read, write
 
-    helper.proxyEvents d, @, 'error', 'fail'
-    d.once 'remote', @onRemote
-    read.once 'close', d.end
-    read.pipe(d).pipe(write)
+    client.once 'remote', (remote) =>
 
-  onRemote: (remote, d) ->
-    meta = remote._pnode
-    unless meta
-      @log "closing connection, not a pnode client"
-      d.end()
-      return
+      #check for existing id or guid
+      for idType in ['id', 'guid']
+        c = client[idType] 
+        if c and @clients[idType+'s'][c]
+          @warn "rejected client with duplicate #{idType}: #{c}"
+          client.close()
+          return
 
-    client = new Connection @, meta, remote, d
-    @clients.push client
+      #add to all
+      @clients.push client
+      @clients.ids[client.id] = client
+      @clients.guids[client.guid] = client
 
-    @emit 'connection', client
-    @emit 'remote', remote, @
+      @emit 'remote', remote
+      @emit 'connection', client, @
 
-    d.once 'end', =>
+    client.once 'end', =>
       i = @clients.indexOf client
+      return if i is -1
       @log 'removing client ', i
+      #remove from all
       @clients.splice i, 1
-      
+      delete @clients.ids[client.id]
+      delete @clients.guids[client.guid]
       @emit 'disconnection', client
-      client.emit 'disconnect'
-    return
 
   client: (id, callback) ->
     rem = @clientSync id
     return callback(rem) if rem
 
     t = setTimeout =>
-      # @log "timeout waiting for #{id}"
+      @log "timeout waiting for #{id}"
       @removeListener 'remote', cb
     , @opts.wait
 
     cb = =>
+      @log "new remote! looking for #{id}"
       rem = @clientSync id
       return unless rem
       clearTimeout t
       @removeListener 'remote', cb
       callback rem
 
-    @once 'remote', cb
+    @on 'remote', cb
     return
 
   clientSync: (id) ->
     if typeof id is 'string'
-      for client in @clients
-        if client.id is id or client.guid is id
-          return client.remote
-      return null
+      return (@clients.ids[id] or @clients.guids[id] or {}).remote
     else if typeof id is 'number'
       return @clients[id]?.remote
     else

@@ -1,6 +1,8 @@
 
 {EventEmitter} = require 'events'
+util = require 'util'
 _ = require '../vendor/lodash'
+RemoteContext = require './context'
 
 #base class of the base class
 class Logger extends EventEmitter
@@ -10,7 +12,11 @@ class Logger extends EventEmitter
   #debugging
   log: ->
     if @opts?.debug
-      console.log.apply console, [@.toString()].concat([].slice.call(arguments))
+      # arguments[0] = util.inspect arguments[0]
+      console.log @.toString() + ' ' + util.format.apply null, arguments
+
+  warn: ->
+    console.warn 'WARNING: ' + @.toString() + ' ' + util.format.apply null, arguments
 
   err: (str) ->
     @emit 'error', new Error "#{@} #{str}"
@@ -19,10 +25,10 @@ class Logger extends EventEmitter
     "#{@name}: #{@id}:"
 
 #base class of client,server and peer
-os = require "os"
 crypto = require "crypto"
 guid = -> crypto.randomBytes(6).toString('hex')
 
+os = require "os"
 ips = []
 #fill ips
 for name, addrs of os.networkInterfaces?()
@@ -39,27 +45,42 @@ class Base extends Logger
       @opts = { id:@opts }
     _.defaults @opts, @defaults
 
-    @pubsub = new EventEmitter
-    @pubsub.remotes = {}
-
+    pubsub = new EventEmitter
+    
     @guid = guid()
     @id = @opts.id or @guid
+
+    _.bindAll @
+
+    log = @log
 
     @exposed =
       _pnode:
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
-        subscribe: ->
-        unsubscribe: ->
-        subscriptions: (cb) -> cb Object.keys @pubsub._events
-        publish: (event, args...) -> @pubsub.emit.apply @pubsub, event, args
-        ping: (cb) -> cb true
-
-    _.bindAll @
+        subscribe: (event) ->
+          @events[events] = 1
+        unsubscribe: (event) ->
+          @events[events] = 0
+        subscriptions: (cb) ->
+          cb Object.keys pubsub._events
+        publish: (event, args...) ->
+          pubsub.emit.apply pubsub, event, args
+        ping: (cb) ->
+          cb true
 
   expose: (obj) ->
     _.merge @exposed, obj
+
+  #provide an interface which has all methods bound to this connection
+  boundExposed: (target) ->
+    unless target instanceof RemoteContext
+      return @err "must bound remote to a context"
+    _.merge {}, @exposed, (a,b) =>
+      if typeof b is "function"
+        return b.bind(target)
+      return a
 
   #get all ip on the nic
   ips: -> ips
