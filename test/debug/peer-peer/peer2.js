@@ -2,7 +2,7 @@ var pnode = require('../../../');
 
 //START PEER 2
 var peer2 = pnode.peer({
-  id: 'peer-1',
+  id: 'peer-2',
   debug: true
 });
 

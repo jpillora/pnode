@@ -4,9 +4,10 @@ transports = require './transports'
 helper = require './helper'
 _ = require '../vendor/lodash'
 RemoteContext = require './context'
+ObjectIndex = require 'object-index'
 servers = []
 
-#represents a client connection
+#represents a client conn
 class Connection extends Base.Logger
 
   name: 'Connection'
@@ -24,28 +25,35 @@ class Connection extends Base.Logger
     @d = dnode @server.exposeWith(@ctx)
     
     #handle dnode event
-    helper.proxyEvents @d, @, 'error', 'fail', 'end'
+    helper.proxyEvents @d, @, 'error', 'fail'
     @d.once 'remote', @onRemote.bind(@)
 
-    #connect!
     read.once 'close', @d.end
-    read.pipe(@d).pipe(write)
+    read.once 'end', @d.end
+    write.once 'close', @d.end
+    write.once 'end', @d.end
 
-    @once 'end', => @emit 'disconnected'
+    @d.once 'end', =>
+      @log "disconnected!"
+      @emit 'disconnected'
+
+    #splice!
+    read.pipe(@d).pipe(write)
 
   disconnect: ->
     @d.end() if @d
 
   #recieve a remote interface
   onRemote: (remote) ->
+    @log "connected!"
     meta = remote._pnode
     unless meta
-      @log "closing connection, not a pnode connection"
+      @log "closing conn, not a pnode conn"
       d.end()
       return
 
     {@id, @guid} = meta
-    @ctx.getIds meta
+    @ctx.getMeta meta
 
     @log "dnode connected!"
     @remote = remote
@@ -54,7 +62,9 @@ class Connection extends Base.Logger
 
   publish: ->
     args = arguments
-    return unless @ctx.events[args[0]]
+    unless @ctx.events[args[0]]
+      @log "not subscribed to event: #{args[0]}"
+      return 
     @remote._pnode.publish.apply null, args
 
   subscribe: (event, fn) ->
@@ -70,10 +80,8 @@ class Server extends Base
 
   constructor: ->
     super
-    @connections = []
-    #add indexes
-    @connections.ids = {}
-    @connections.guids = {}
+    @connections = ObjectIndex "id", "guid"
+
     #alias
     @bindOn = @bind
 
@@ -84,8 +92,9 @@ class Server extends Base
     return
 
   unbind: ->
-    for connection in @connections
-      connection.disconnect()
+    #copy and iterate
+    for conn in Array::slice.call @connections.list
+      conn.disconnect()
     try
       if typeof @si?.unbind is 'function'
         @si.unbind()
@@ -101,37 +110,30 @@ class Server extends Base
     @err "Invalid read stream" unless helper.isReadable read
     @err "Invalid write stream" unless helper.isWritable write
 
-    connection = new Connection @, read, write
+    conn = new Connection @, read, write
 
-    connection.once 'remote', (remote) =>
+    conn.once 'remote', (remote) =>
       #check for existing id or guid
-      for idType in ['id', 'guid']
-        c = connection[idType] 
-        if c and @connections[idType+'s'][c]
-          @warn "rejected connection with duplicate #{idType}: #{c}"
-          connection.disconnect()
-          return
+      if @connections.getBy("id",  conn.id) or
+         @connections.getBy("guid",conn.guid)
+        @warn "rejected duplicate conn with id #{conn.id} (#{conn.guid})"
+        conn.disconnect()
+        return
       #add to all
-      @connections.push connection
-      @connections.ids[connection.id] = connection
-      @connections.guids[connection.guid] = connection
+      @connections.add conn
 
       @emit 'remote', remote
-      @emit 'connection', connection, @
+      @emit 'conn', conn, @
 
-    connection.once 'disconnected', =>
-      i = @connections.indexOf connection
-      return if i is -1
-      @log 'removing connection ', i
-      #remove from all
-      @connections.splice i, 1
-      delete @connections.ids[connection.id]
-      delete @connections.guids[connection.guid]
-      @emit 'disconnection', connection
+    conn.once 'disconnected', =>
+      if @connections.remove conn
+        @log 'removed conn'
+        @emit 'disconnection', conn
 
-  connection: (id, callback) ->
-    rem = @clientSync id
-    return callback(rem) if rem
+  client: (id, callback) ->
+    conn = @connections.get id
+    return conn unless callback
+    return callback(conn.remote) if conn
 
     t = setTimeout =>
       @log "timeout waiting for #{id}"
@@ -140,33 +142,25 @@ class Server extends Base
 
     cb = =>
       @log "new remote! looking for #{id}"
-      rem = @clientSync id
-      return unless rem
+      conn = @connections.get id
+      return unless conn
       clearTimeout t
       @removeListener 'remote', cb
-      callback rem
+      callback conn.remote
 
     @on 'remote', cb
     return
 
-  clientSync: (id) ->
-    if typeof id is 'string'
-      return (@connections.ids[id] or @connections.guids[id] or {}).remote
-    else if typeof id is 'number'
-      return @connections[id]?.remote
-    else
-      @err "invalid arguments"
-
-  #pubsub to ALL connection remotes
+  #pubsub to ALL conn remotes
   publish: ->
     args = arguments
-    for connection in @connections
-      connection.publish.apply null, args
+    for conn in @connections.list
+      conn.publish.apply conn, args
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
-    for connection in @connections
-      connection.subscribe event
+    for conn in @connections.list
+      conn.subscribe event
 
   setInterface: (obj) -> @si = obj
   uri: -> @si?.uri

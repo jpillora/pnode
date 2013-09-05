@@ -1,11 +1,11 @@
 
-{EventEmitter} = require 'events'
+{EventEmitter2} = require 'eventemitter2'
 util = require 'util'
 _ = require '../vendor/lodash'
 RemoteContext = require './context'
 
 #base class of the base class
-class Logger extends EventEmitter
+class Logger extends EventEmitter2
   name: 'Logger'
   #debugging
   log: ->
@@ -49,13 +49,10 @@ class Base extends Logger
     _.bindAll @
 
     log = @log    
-    @pubsub = if parent then parent.pubsub else new EventEmitter
+    @pubsub = if parent then parent.pubsub else new EventEmitter2
     @exposed = if parent then parent.exposed else @defaultExposed()
 
   defaultExposed: ->
-
-    @log "CREATE EXPOSED"
-
     pubsub = @pubsub
     return {
       _pnode:
@@ -87,7 +84,7 @@ class Base extends Logger
       if b instanceof Exposed
         return b.fn()
       if typeof b is "function"
-        return b.bind(ctx)
+        return _.bind(b,ctx)
       return a
 
   #get all ip on the nic

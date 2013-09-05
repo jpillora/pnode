@@ -30,7 +30,6 @@ exports.bindServer = (args..., opts) ->
 
   pserver.setInterface
     unbind: -> s.close()
-  
 
 exports.bindClient = ->
   # see 'browser/src/transports/ws.coffee'

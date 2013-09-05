@@ -37,11 +37,13 @@ class Client extends Base
   bind: ->
     @unbind()
     #call the appropriate transport.bindClient()
+    @log "bind!"
     @bound = true
     transports.bind @, arguments
     return
 
   unbind: ->
+    @log "unbind!" if @bound
     @bound = false
     @count.attempt = 0
     @reset()
@@ -165,8 +167,10 @@ class Client extends Base
     unless typeof meta?.ping is "function"
       return @err "Invalid pnode host"
 
+    @log "got server remote", meta
+
     @remote = remote
-    @ctx.getIds meta
+    @ctx.getMeta meta
     
     @emit 'remote', @remote, @
     @setStatus 'up'
@@ -215,8 +219,10 @@ class Client extends Base
   #pubsub to server remote
   publish: ->
     args = arguments
-    return unless @ctx.events[args[0]]
     @server (remote) =>
+      unless @ctx.events[args[0]]
+        @log "server #{@ctx.id} isnt subscribed to #{args[0]}"
+        return
       remote._pnode.publish.apply null, args
 
   subscribe: (event, fn) ->

@@ -4,9 +4,6 @@ Base = require './base'
 helper = require './helper'
 locals = []
 
-#source map support
-require('source-map-support').install()
-
 # a remote peer contains all connections to and from it
 # identified by its 'guid', all remotes with this guid
 # will be added to this peer which may be used as an
@@ -16,6 +13,7 @@ class RemotePeer extends Base.Logger
   name: 'RemotePeer'
 
   constructor: (@local) ->
+    @connecting = false
     @reset()
     @opts = @local.opts
     @clients = []
@@ -23,15 +21,16 @@ class RemotePeer extends Base.Logger
     @addresses = {}
 
   #will be a client, or a server connection
-  addPeer: (peer) ->
-    
+  add: (cliconn) ->
+    @log "add peer (up:#{@up})"
     unless @up
-      @remote = peer.remote
+      @remote = cliconn.remote
       @getMeta()
     
-    switch peer.name
-      when 'Client' then @addClient peer
-      when 'Connection' then @addConnection peer
+    switch cliconn.name
+      when 'Client' then @addClient cliconn
+      when 'Connection' then @addConnection cliconn
+      else false
 
   getMeta: ->
     {@guid, @id, @ips} = @remote._pnode
@@ -45,14 +44,19 @@ class RemotePeer extends Base.Logger
       @reset()
       delete @addresses[client.uri()]
       @clients.splice @clients.indexOf(client), 1
+    @up = true
+    @emit 'up'
 
   addConnection: (conn) ->
     #disconnect if already connected
     return conn.disconnect() if @up
+    @up = true
     @connections.push conn
     conn.once 'disconnected', =>
       @reset()
       @connections.splice @connections.indexOf(conn), 1
+    @up = true
+    @emit 'up'
 
   reset: ->
     @up = false
@@ -103,24 +107,25 @@ class LocalPeer extends Base
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
 
-  #new peer connection
-  # a peer must have a remote which must have a guid
-  onPeer: (peer) ->
-    {remote} = peer
+  # new peer connection (client / server connection)
+  # must have a remote which must have a guid
+  onPeer: (cliconn) ->
+    {remote} = cliconn
     return @log 'peer missing remote' unless remote
-      
     guid = remote?._pnode?.guid
     return @log 'peer missing guid' unless guid
+    
+    peer = @peers[guid]
+    unless peer
+      peer = @peers[guid] = new RemotePeer @
+      peer.on 'up', (remote) =>
+        @log "new peer %s -> ", guid, remote._pnode.serialize
+        @emit 'remote', remote
+      peer.on 'down', =>
+        @log "lost peer %s", guid
 
-    unless @peers[guid]
-      @peers[guid] = new RemotePeer @
-
-    @peers[guid].addPeer peer
-
-    @log 'add peer', remote
-
-    @emit 'remote', remote
-
+    peer.add cliconn
+    return
   serialize: ->
     servers: helper.serialize @servers
     peers: helper.serialize @peers

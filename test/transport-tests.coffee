@@ -38,9 +38,9 @@ run = (name, test, done) ->
       server.unbind()
       done()
 
-describe "basic", ->
+describe "basic rpc > ", ->
   _.each tests, (obj, name) ->
-    it name, (done) ->
+    it "#{name} should work", (done) ->
       run name, obj, done
 
 

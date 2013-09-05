@@ -11,6 +11,8 @@ module.exports = class RemoteContext
   set: (k, v) -> @data[k] = v
   
   getAddr: (stream) ->
+    return if process.browser
+
     #set src ip
     if stream instanceof Socket
       sock = stream
@@ -20,7 +22,7 @@ module.exports = class RemoteContext
       @ip = sock.remoteAddress
       @port = sock.remotePort
 
-  getIds: (pnode) ->
-    {@id, @guid} = pnode
-    for e in pnode.events
+  getMeta: (meta) ->
+    {@id, @guid} = meta
+    for e in meta.events
       @events[e] = 1

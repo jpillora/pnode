@@ -36,7 +36,9 @@
     "pem": "~1.2.2",
     "sockjs": "~0.3.7",
     "shoe": "0.0.13",
-    "source-map-support": "~0.2.3"
+    "source-map-support": "~0.2.3",
+    "object-index": "~0.1.0",
+    "eventemitter2": "~0.4.13"
   },
   "testling": {
     "browsers": [
@@ -61,6 +63,7 @@
   },
   "browser": {
     "os": false,
-    "lodash": false
+    "lodash": false,
+    "source-map-support": false
   }
 }

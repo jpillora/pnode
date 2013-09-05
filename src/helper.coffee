@@ -17,6 +17,6 @@ exports.serialize = (obj) ->
   return newobj
 
 exports.proxyEvents = (src, dest, events...) ->
-  events.forEach (e) ->
+  for e in events
     src.on e, (a1, a2, a3, a4) ->
       dest.emit e, a1, a2, a3, a4

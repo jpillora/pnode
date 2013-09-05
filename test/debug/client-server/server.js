@@ -20,4 +20,4 @@ server.bind('http://0.0.0.0:8000', function(){
 
 setTimeout(function() {
   server.publish('foos', {foo:42});
-}, 3000);
+}, 5000);
