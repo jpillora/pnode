@@ -2,7 +2,7 @@ _ = require '../vendor/lodash'
 dnode = require 'dnode'
 Base = require './base'
 helper = require './helper'
-transports = require './transports'
+transportMgr = require './transport-mgr'
 RemoteContext = require './context'
 
 class Client extends Base
@@ -13,7 +13,7 @@ class Client extends Base
     debug: false
     maxRetries: 5
     timeout: 5000
-    retryInterval: 1000
+    retryInterval: 500
     pingInterval: 5000
     port: 7337
 
@@ -36,10 +36,10 @@ class Client extends Base
   #premade connection creators
   bind: ->
     @unbind()
-    #call the appropriate transport.bindClient()
+    #call the appropriate {transport}.bindClient()
     @log "bind!"
     @bound = true
-    transports.bind @, arguments
+    transportMgr.bind @, arguments
     return
 
   unbind: ->

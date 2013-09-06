@@ -63,7 +63,7 @@ class Base extends Logger
         subscribe: (event) ->
           this.events[event] = 1
         unsubscribe: (event) ->
-          this.events[event] = 0
+          delete this.events[event]
         #remotes can push events
         publish: (event, args...) ->
           pubsub.emit.apply pubsub, [event].concat args

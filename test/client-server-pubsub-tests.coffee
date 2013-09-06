@@ -2,11 +2,12 @@
 _ = require "../vendor/lodash"
 pnode = require "../"
 
-describe "server to clients > ", ->
+describe "server clients pubsub > ", ->
 
   server = null
   client1 = null
   client2 = null
+  client3 = null
 
   beforeEach ->
     server = pnode.server('server-1')
@@ -14,8 +15,9 @@ describe "server to clients > ", ->
 
   afterEach ->
     server.unbind()
-    client1 = null
-    client2 = null
+    client1?.unbind()
+    client2?.unbind()
+    client3?.unbind()
 
   it "should publish to server", (done) ->
 
@@ -53,25 +55,26 @@ describe "server to clients > ", ->
     client1.subscribe 'foos', checkFoo
     setTimeout ->
       client1.bind 'tcp://localhost:8000'
-    , 500
+    , 10
 
     #subscribe then bind
     client2 = pnode.client('client-2')
     client2.bind 'tcp://localhost:8000'
     setTimeout ->
       client2.subscribe 'foos', checkFoo
-    , 500
+    , 10
 
     #delay then both
     client3 = pnode.client('client-3')
     setTimeout ->
       client3.subscribe 'foos', checkFoo
       client3.bind 'tcp://localhost:8000'
-    , 500
+    , 10
 
-    #publish to all 3 clients
-    setTimeout ->
-      server.publish('foos', {bar: 42})
-    , 1000
+    #publish to all 3 clients when theyre up
+    server.on 'remote', ->
+      if server.connections.length is 3
+        server.publish('foos', {bar: 42})
+    
 
 

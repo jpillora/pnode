@@ -1,6 +1,6 @@
 dnode = require 'dnode'
 Base = require './base'
-transports = require './transports'
+transportMgr = require './transport-mgr'
 helper = require './helper'
 _ = require '../vendor/lodash'
 RemoteContext = require './context'
@@ -88,7 +88,7 @@ class Server extends Base
   #premade handlers
   bind: ->
     @unbind()
-    transports.bind @, arguments
+    transportMgr.bind @, arguments
     return
 
   unbind: ->

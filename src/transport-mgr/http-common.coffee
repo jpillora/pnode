@@ -3,7 +3,9 @@ pkg = require '../../package.json'
 
 #common code for http/https
 exports.createServer = (pserver, type, listenArgs, serverArgs) ->
+  
   httpModule = require type
+
   s = httpModule.createServer.apply null, serverArgs
   s.listen.apply s, listenArgs
 
@@ -46,15 +48,3 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
     uri: "http://#{opts.hostname or 'localhost'}:#{opts.port}"
   }
   return
-
-#http specifc
-exports.bindServer = (args...) ->
-  pserver = @
-  exports.createServer pserver, 'http', args, [pserver.handle]
-  return
-
-exports.bindClient = (args...) ->
-  pclient = @
-  exports.createClient pclient, 'http', args
-  return
-

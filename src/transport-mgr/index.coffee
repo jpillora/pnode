@@ -66,7 +66,7 @@ exports.get = (name) ->
   return transports[name]
 
 #init
-files = fs.readdirSync?(__dirname) or []
-for file in files
-  if file isnt 'index.js' and /\.js$/.test file
-    exports.add file.replace('.js',''), require("./#{file}")
+unless process.browser
+  files = fs.readdirSync path.join __dirname, "transports"
+  files.filter((f)->/\.js$/.test f).forEach (f) ->
+    exports.add f.replace('.js',''), require("./transports/#{f}")
