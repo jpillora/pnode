@@ -1,11 +1,11 @@
-_ = require '../vendor/lodash'
+_ = require '../../vendor/lodash'
 dnode = require 'dnode'
-Base = require './base'
-helper = require './helper'
-transportMgr = require './transport-mgr'
-RemoteContext = require './context'
+Base = require '../base'
+helper = require '../helper'
+transportMgr = require '../transport-mgr'
+RemoteContext = require '../context'
 
-class Client extends Base
+module.exports = class Client extends Base
 
   name: 'Client'
 
@@ -52,6 +52,7 @@ class Client extends Base
     @stream.write?.close?()
     @stream = {}
     @ci = null
+    @emit 'unbind'
     return
 
   createConnection: (fn) ->
@@ -234,8 +235,3 @@ class Client extends Base
   setInterface: (obj) -> @si = obj
   uri: -> @ci?.uri
   serialize: -> @uri()
-
-module.exports = (opts, parent) ->
-  new Client opts, parent
-
-

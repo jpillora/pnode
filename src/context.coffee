@@ -11,7 +11,7 @@ module.exports = class RemoteContext
   get: (k) -> @data[k]
   set: (k, v) -> @data[k] = v
   
-  join: (ctx) ->
+  combine: (ctx) ->
     @data   = ctx.data   = _.merge @data, ctx.data
     @events = ctx.events = _.merge @events, ctx.events
 

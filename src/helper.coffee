@@ -5,12 +5,12 @@ exports.isWritable = (stream) ->
   stream.writable is true or typeof stream.write is 'function'
 
 exports.serialize = (obj) ->
-  # if obj instanceof Array
-  #   return obj.filter((o) ->
-  #     typeof o.serialize is 'function'
-  #   ).map((o) -> 
-  #     o.serialize()
-  #   )
+  if obj instanceof Array
+    return obj.filter (o) ->
+      typeof o.serialize is 'function'
+    .map (o) -> 
+      o.serialize()
+  
   newobj = {}
   for key, o of obj
     newobj[key] = o.serialize() if o.serialize

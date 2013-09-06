@@ -31,7 +31,8 @@ for name, addrs of os.networkInterfaces?()
     if addr.family is 'IPv4'
       ips.push addr.address
 
-class Exposed
+#used to reeval properties at connection-time
+class DynamicExposed
   constructor: (@fn) ->
 
 class Base extends Logger
@@ -69,9 +70,12 @@ class Base extends Logger
           pubsub.emit.apply pubsub, [event].concat args
         ping: (cb) ->
           cb true
-        events: new Exposed ->
+        events: @exposeDynamic ->
           Object.keys pubsub._events
     }
+
+  exposeDynamic: (fn) ->
+    return new DynamicExposed fn
 
   expose: (obj) ->
     _.merge @exposed, obj
@@ -81,7 +85,7 @@ class Base extends Logger
     unless ctx instanceof RemoteContext
       return @err "must bound remote to a context"
     return _.merge {}, @exposed, (a,b) =>
-      if b instanceof Exposed
+      if b instanceof DynamicExposed
         return b.fn()
       if typeof b is "function"
         return _.bind(b,ctx)
@@ -91,6 +95,5 @@ class Base extends Logger
   ips: -> ips
 
 #publicise
-Base.Exposed = Exposed
 Base.Logger = Logger
 module.exports = Base

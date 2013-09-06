@@ -1,76 +1,12 @@
 dnode = require 'dnode'
-Base = require './base'
-transportMgr = require './transport-mgr'
-helper = require './helper'
-_ = require '../vendor/lodash'
-RemoteContext = require './context'
+Base = require '../base'
+transportMgr = require '../transport-mgr'
+helper = require '../helper'
 ObjectIndex = require 'object-index'
+Connection = require './connection'
 servers = []
 
-#represents a client conn
-class Connection extends Base.Logger
-
-  name: 'Connection'
-
-  constructor: (@server, read, write) ->
-
-    @opts = @server.opts
-    @id = @guid = "S-#{@server.id}"
-    @subs = {}
-
-    @ctx = new RemoteContext
-    @ctx.getAddr read
-
-    #provide a client-specific version of exposed
-    @d = dnode @server.exposeWith(@ctx)
-    
-    #handle dnode event
-    helper.proxyEvents @d, @, 'error', 'fail'
-    @d.once 'remote', @onRemote.bind(@)
-
-    read.once 'close', @d.end
-    read.once 'end', @d.end
-    write.once 'close', @d.end
-    write.once 'end', @d.end
-
-    @d.once 'end', =>
-      @log "disconnected!"
-      @emit 'disconnected'
-
-    #splice!
-    read.pipe(@d).pipe(write)
-
-  disconnect: ->
-    @d.end() if @d
-
-  #recieve a remote interface
-  onRemote: (remote) ->
-    @log "connected!"
-    meta = remote._pnode
-    unless meta
-      @log "closing conn, not a pnode conn"
-      d.end()
-      return
-
-    {@id, @guid} = meta
-    @ctx.getMeta meta
-
-    @log "dnode connected!"
-    @remote = remote
-    @emit 'remote', remote
-    return
-
-  publish: ->
-    args = arguments
-    unless @ctx.events[args[0]]
-      @log "not subscribed to event: #{args[0]}"
-      return 
-    @remote._pnode.publish.apply null, args
-
-  subscribe: (event, fn) ->
-    @remote._pnode.subscribe event
-
-class Server extends Base
+module.exports = class Server extends Base
 
   name: 'Server'
 
@@ -79,6 +15,7 @@ class Server extends Base
     wait: 5000
 
   constructor: ->
+    servers.push @
     super
     @connections = ObjectIndex "id", "guid"
 
@@ -98,8 +35,8 @@ class Server extends Base
     try
       if typeof @si?.unbind is 'function'
         @si.unbind()
-        @emit 'unbind'
     @si = null
+    @emit 'unbind'
     return
 
   handle: (read, write) ->
@@ -112,22 +49,22 @@ class Server extends Base
 
     conn = new Connection @, read, write
 
-    conn.once 'remote', (remote) =>
+    conn.once 'up', =>
       #check for existing id or guid
       if @connections.getBy("id",  conn.id) or
          @connections.getBy("guid",conn.guid)
         @warn "rejected duplicate conn with id #{conn.id} (#{conn.guid})"
-        conn.disconnect()
+        conn.unbind()
         return
       #add to all
       @connections.add conn
 
-      @emit 'remote', remote
-      @emit 'conn', conn, @
+      @emit 'remote', conn.remote
+      @emit 'connection', conn, @
 
-    conn.once 'disconnected', =>
+    conn.once 'down', =>
       if @connections.remove conn
-        @log 'removed conn'
+        @log 'removed connection'
         @emit 'disconnection', conn
 
   client: (id, callback) ->
@@ -165,11 +102,6 @@ class Server extends Base
   setInterface: (obj) -> @si = obj
   uri: -> @si?.uri
   serialize: -> @uri()
-
-module.exports = (opts, parent) ->
-  server = new Server opts, parent
-  servers.push server
-  return server
 
 #unbind all servers on exit
 process.on? 'exit', ->
