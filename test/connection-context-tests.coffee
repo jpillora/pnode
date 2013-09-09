@@ -31,9 +31,6 @@ describe "shared peer contexts > ", ->
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'
       peer2.peer 'peer-1', (remote) ->
-
-        peer2.log "GOT P1 REM"
-
         remote.set 7, ->
           getContext()
 

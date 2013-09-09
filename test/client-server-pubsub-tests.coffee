@@ -57,14 +57,14 @@ describe "server clients pubsub > ", ->
       client1.bind 'tcp://localhost:8000'
     , 10
 
-    #subscribe then bind
+    #bind then subscribe
     client2 = pnode.client('client-2')
     client2.bind 'tcp://localhost:8000'
     setTimeout ->
       client2.subscribe 'foos', checkFoo
     , 10
 
-    #delay then both
+    #delay both
     client3 = pnode.client('client-3')
     setTimeout ->
       client3.subscribe 'foos', checkFoo

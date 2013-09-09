@@ -14,7 +14,7 @@ Node tests:
 
 Browser tests:
 
-[![browser support](http://ci.testling.com/jpillora/pnode.png)](http://ci.testling.com/jpillora/pnode)
+[![browser support](https://ci.testling.com/jpillora/pnode.png)](https://ci.testling.com/jpillora/pnode)
 
 ## Summary
 

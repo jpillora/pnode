@@ -41,25 +41,25 @@
     "eventemitter2": "~0.4.13"
   },
   "testling": {
+    "server": "test/testling-server.js",
+    "files": "test/testling-client.js",
     "browsers": [
-      "ie6",
-      "ie7",
-      "ie8",
-      "ie9",
-      "firefox/15",
-      "chrome/22",
-      "opera/12",
-      "safari/5.1"
-    ],
-    "harness": "mocha",
-    "files": "test/browser/*.js"
+      "ie/6..latest",
+      "chrome/20..latest",
+      "firefox/10..latest",
+      "safari/latest",
+      "opera/11.0..latest",
+      "iphone/6",
+      "ipad/6"
+    ]
   },
   "devDependencies": {
     "chai": "~1.7.2",
     "mocha": "~1.12.0",
     "coffee-script": "~1.6.3",
     "phantom": "~0.5.2",
-    "colors": "~0.6.2"
+    "colors": "~0.6.2",
+    "tape": "~1.1.0"
   },
   "browser": {
     "os": false,

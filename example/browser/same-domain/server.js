@@ -1,7 +1,7 @@
-var exec = require('child_process').exec;
 var http = require('http');
 var fs = require('fs');
 var pnode = require('../../../');
+
 var server = pnode.server({ id: 'server-1', debug: true });
 
 server.expose({
