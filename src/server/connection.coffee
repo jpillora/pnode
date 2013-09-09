@@ -32,18 +32,18 @@ module.exports = class Connection extends Base.Logger
     write.once 'end', @d.end
 
     @d.once 'end', =>
-      @log "disconnected!"
-      @emit 'disconnected'
+      @log "DNODE END"
+      @emit 'down'
 
     #splice!
     read.pipe(@d).pipe(write)
 
   unbind: ->
+    @log "EXPLICIT UNBIND"
     @d.end() if @d
 
   #recieve a remote interface
   onRemote: (remote) ->
-    @log "connected!"
     meta = remote._pnode
     unless meta
       @log "closing conn, not a pnode conn"
@@ -53,9 +53,9 @@ module.exports = class Connection extends Base.Logger
     {@id, @guid} = meta
     @ctx.getMeta meta
 
-    @log "dnode connected!"
     @remote = remote
     @emit 'remote', remote
+    @emit 'up'
     return
 
   publish: ->

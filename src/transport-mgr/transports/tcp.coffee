@@ -13,10 +13,12 @@ exports.bindServer = (args...) ->
 
 exports.bindClient = (args...) ->
   pclient = @
-  pclient.createConnection (callback) ->
-    callback net.connect.apply null, args
 
   pclient.setInterface {
     uri: "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
   }
+
+  pclient.createConnection (callback) ->
+    callback net.connect.apply null, args
+
   return

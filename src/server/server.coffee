@@ -30,8 +30,8 @@ module.exports = class Server extends Base
 
   unbind: ->
     #copy and iterate
-    for conn in Array::slice.call @connections.list
-      conn.disconnect()
+    for conn in Array::slice.call @connections
+      conn.unbind()
     try
       if typeof @si?.unbind is 'function'
         @si.unbind()
@@ -63,9 +63,8 @@ module.exports = class Server extends Base
       @emit 'connection', conn, @
 
     conn.once 'down', =>
-      if @connections.remove conn
-        @log 'removed connection'
-        @emit 'disconnection', conn
+      return unless @connections.remove conn
+      @emit 'disconnection', conn
 
   client: (id, callback) ->
     conn = @connections.get id
@@ -91,12 +90,12 @@ module.exports = class Server extends Base
   #pubsub to ALL conn remotes
   publish: ->
     args = arguments
-    for conn in @connections.list
+    for conn in @connections
       conn.publish.apply conn, args
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
-    for conn in @connections.list
+    for conn in @connections
       conn.subscribe event
 
   setInterface: (obj) -> @si = obj

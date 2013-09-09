@@ -51,7 +51,7 @@ describe "server clients pubsub > ", ->
         done()
 
     #subscribe then bind
-    client1 = pnode.client('client-1')
+    client1 = pnode.client({id:'client-1',debug:false})
     client1.subscribe 'foos', checkFoo
     setTimeout ->
       client1.bind 'tcp://localhost:8000'
@@ -75,6 +75,4 @@ describe "server clients pubsub > ", ->
     server.on 'remote', ->
       if server.connections.length is 3
         server.publish('foos', {bar: 42})
-    
-
 

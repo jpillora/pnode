@@ -37,7 +37,7 @@
     "sockjs": "~0.3.7",
     "shoe": "0.0.13",
     "source-map-support": "~0.2.3",
-    "object-index": "~0.1.0",
+    "object-index": "~0.2.0",
     "eventemitter2": "~0.4.13"
   },
   "testling": {

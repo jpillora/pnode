@@ -12,32 +12,44 @@ module.exports = class RemotePeer extends Base.Logger
   constructor: (@local, @guid, @id, @ips) ->
     @connecting = false
     @ctx = new RemoteContext
-    @reset()
+    @isUp(false)
     @opts = @local.opts
     @cliconns = []
 
   #will be a client (outgoing) OR connection (incoming)
   add: (cliconn) ->
-    @log "add peer (up:#{@up})"
+    @log "add connection (required:#{not @up})"
 
     @ctx.combine cliconn.ctx
     
     #disconnect if already connected
-    return cliconn.unbind() if @up
-  
-    @remote = cliconn.remote
+    @remote = cliconn.remote unless @up
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
-      @reset()
+      @log "LOST CONNECTION TO", cliconn.id
       @cliconns.splice @cliconns.indexOf(cliconn), 1
+      @setRemote()
 
-    @up = true
-    @emit 'up'
+    @setRemote()
 
-  reset: ->
-    @up = false
-    @remote = null
+  setRemote: ->
+    @remote = @cliconns[0]?.remote
+    @isUp(typeof @remote is 'object')
+
+  isUp: (up) ->
+    if up
+      @up = true
+      @emit 'up'
+    else
+      @up = false
+      @remote = null
+      @emit 'down'
+    return
+
+  unbind: ->
+    for cliconn in Array::slice.call @cliconns
+      cliconn.unbind()
 
   #custom serialisation
   serialize: ->

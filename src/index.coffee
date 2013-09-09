@@ -9,6 +9,6 @@ try
 
 exports.addTransport = require('./transport-mgr').add
 
-exports.client = (opts) -> return new Client opts
-exports.server = (opts) -> return new Server opts
-exports.peer   = (opts) -> return new LocalPeer opts
+exports.client = (opts) -> new Client opts
+exports.server = (opts) -> new Server opts
+exports.peer   = (opts) -> new LocalPeer opts

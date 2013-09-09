@@ -31,7 +31,7 @@ for name, addrs of os.networkInterfaces?()
     if addr.family is 'IPv4'
       ips.push addr.address
 
-#used to reeval properties at connection-time
+#used to eval properties at connection-time
 class DynamicExposed
   constructor: (@fn) ->
 
@@ -80,7 +80,7 @@ class Base extends Logger
   expose: (obj) ->
     _.merge @exposed, obj
 
-  #provide an interface which has all methods bound to this connection
+  #provide an interface which has all methods bound to this context
   exposeWith: (ctx) ->
     unless ctx instanceof RemoteContext
       return @err "must bound remote to a context"

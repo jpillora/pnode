@@ -37,9 +37,9 @@ module.exports = class Client extends Base
   bind: ->
     @unbind()
     #call the appropriate {transport}.bindClient()
-    @log "bind!"
     @bound = true
     transportMgr.bind @, arguments
+    @log "bind to #{@uri()}!"
     return
 
   unbind: ->
@@ -106,7 +106,7 @@ module.exports = class Client extends Base
       @reset()
       @reconnect()
 
-    @log "connection attempt #{@count.attempt}!"
+    @log "connection attempt #{@count.attempt} (#{@uri()})"
     @emit 'connecting'
     #get stream and splice in
     switch @getConnectionFn.length
@@ -146,7 +146,7 @@ module.exports = class Client extends Base
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"
     # else
-    #   @log "stream error: #{err.message}"
+    @log "stream error: #{err.message}"
     # @emit "error", err
     @setStatus 'down'
     @reconnect()
@@ -155,7 +155,7 @@ module.exports = class Client extends Base
   #on rpc method exception
   onError: (err) ->
     return unless @bound
-    @log "error: #{err}"
+    @log "RPC Error: #{err.stack or err}"
     @err err
 
   #up events
@@ -232,6 +232,6 @@ module.exports = class Client extends Base
     @server (remote) =>
       remote._pnode.subscribe event
 
-  setInterface: (obj) -> @si = obj
+  setInterface: (obj) -> @ci = obj
   uri: -> @ci?.uri
   serialize: -> @uri()

@@ -41,10 +41,10 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
   if typeof reqArgs[0] is 'string'
     opts.hostname = reqArgs.shift()
 
-  pclient.createConnection (readCallback, writeCallback) ->
-    writeCallback httpModule.request opts, readCallback
-
   pclient.setInterface {
     uri: "http://#{opts.hostname or 'localhost'}:#{opts.port}"
   }
+
+  pclient.createConnection (readCallback, writeCallback) ->
+    writeCallback httpModule.request opts, readCallback
   return

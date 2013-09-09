@@ -1,5 +1,7 @@
 _ = require '../../vendor/lodash'
-pnode = require '../index'
+Server = require '../server/server'
+Connection = require '../server/connection'
+Client = require '../client/client'
 Base = require '../base'
 helper = require '../helper'
 RemotePeer = require './remote-peer'
@@ -28,7 +30,7 @@ module.exports = class LocalPeer extends Base
           serialize: @exposeDynamic => @serialize()
 
   bindOn: ->
-    server = pnode.server @opts, @
+    server = new Server @opts, @
     server.on 'error', (err) => @emit 'error', err
     server.on 'connection', @onPeer
     server.bindOn.apply server, arguments
@@ -38,20 +40,32 @@ module.exports = class LocalPeer extends Base
       delete @servers[server.guid]
 
   bindTo: ->
-    client = pnode.client @opts, @
+    client = new Client @opts, @
     client.on 'error', (err) => @emit 'error', err
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
 
+  unbind: ->
+    @log "UNBIND SELF AND ALL PEERS"
+    for peer in @peers
+      peer.unbind()
+    for guid, server of @servers
+      server.unbind()
+
   # new peer connection (client / server connection)
   # must have a remote which must have a guid
   onPeer: (cliconn) ->
-    return @log "must be client or conn" unless client?.name in ['Client','Connection']
+    unless cliconn instanceof Client or cliconn instanceof Connection
+      return @log "must be client or conn" 
+
     {remote} = cliconn
-    return @log 'peer missing remote' unless remote
     
-    {guid, id, ips} = remote?._pnode?
-    return @log 'peer missing guid' unless guid
+    unless remote
+      return @log 'peer missing remote'
+    
+    {guid, id, ips} = remote._pnode
+    unless guid
+      return @log 'peer missing guid'
     
     peer = @peers.get guid
 
@@ -61,11 +75,10 @@ module.exports = class LocalPeer extends Base
       @peers.add peer
 
       peer.on 'up', (remote) =>
+        @emit 'peer', peer
         @emit 'remote', remote
       peer.on 'down', =>
         @log "lost peer %s", guid
-
-
 
     peer.add cliconn
     return
@@ -84,30 +97,26 @@ module.exports = class LocalPeer extends Base
     callback rems
 
   peer: (id, callback) ->
+    get = =>
+      @log "get #{id}"
+      peer = @peers.get id
+      return false unless peer?.up
+      callback peer.remote
+      return true
 
+    return if get()
 
+    check = ->
+      return unless get()
+      @off 'peer', check
+      clearTimeout t
 
+    t = setTimeout =>
+      @off 'peer', check
+      @emit 'timeout', id
+    , @opts.wait
 
-    console.log @toString(), 'peer()', id
-
-    #find peer
-    peer = @peers[id]
-    #interate through peer ids
-    unless peer
-      for guid, p of @peers
-        if p.id is id
-          peer = p
-          break
-    #no peer with this id
-    unless peer
-      return null
-
-    rem = peer.getRemote()
-
-    if rem
-      callback rem
-
-    return null
+    @on 'peer', check
 
   publish: ->
   subscribe: ->
