@@ -41,6 +41,7 @@
     "eventemitter2": "~0.4.13"
   },
   "testling": {
+    "preprocess": "npm run-script prepublish",
     "server": "test/testling-server.js",
     "files": "test/testling-client.js",
     "browsers": [
