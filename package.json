@@ -20,7 +20,7 @@
   "scripts": {
     "test": "npm run-script prepublish && node node_modules/mocha/bin/mocha --watch --bail",
     "start": "node node_modules/coffee-script/bin/coffee -m -w -b -c -o out/ src/",
-    "prepublish": "node node_modules/coffee-script/bin/coffee -m -b -c -o out/ src/"
+    "prepublish": "node node_modules/coffee-script/bin/coffee -m -b -c -o out/ src/ && cd browser && sh build.sh"
   },
   "repository": {
     "type": "git",
@@ -42,8 +42,8 @@
   },
   "testling": {
     "preprocess": "npm run-script prepublish",
-    "server": "test/testling-server.js",
-    "files": "test/testling-client.js",
+    "server": "test/testling/server.js",
+    "html": "test/testling/client.html",
     "browsers": [
       "ie/6..latest",
       "chrome/20..latest",
