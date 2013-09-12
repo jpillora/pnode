@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "ipc.js",
+  "sourceRoot": "../../..",
+  "sources": [
+    "src/transport-mgr/transports/ipc.coffee"
+  ],
+  "names": [],
+  "mappings": ";AACA,CAAO,EAAU,GAAX,CAAN"
+}

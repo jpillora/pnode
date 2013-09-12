@@ -60,7 +60,7 @@ class Base extends Logger
         id: @id
         guid: @guid
         ips: ips.filter (ip) -> ip isnt '127.0.0.1'
-        #remotes can push their own event list
+        #remotes can push their list of events
         subscribe: (event) ->
           this.events[event] = 1
         unsubscribe: (event) ->

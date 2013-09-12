@@ -1,3 +1,10 @@
 var pnode = require("../../");
+
 pnode.addTransport("ws", require("./transports/ws"));
-window.pnode = pnode;
+
+if(typeof module === 'object' &&
+   typeof exports === 'object' &&
+   exports === module.exports)
+  module.exports = pnode;
+else
+  window.pnode = pnode;
