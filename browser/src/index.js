@@ -6,5 +6,5 @@ if(typeof module === 'object' &&
    typeof exports === 'object' &&
    exports === module.exports)
   module.exports = pnode;
-else
-  window.pnode = pnode;
+
+window.pnode = pnode;
