@@ -13,6 +13,7 @@ module.exports = class Server extends Base
   defaults:
     debug: false
     wait: 5000
+    timeout: 5000
 
   constructor: ->
     servers.push @
@@ -95,11 +96,14 @@ module.exports = class Server extends Base
     args = arguments
     for conn in @connections
       conn.publish.apply conn, args
+    return
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
-    for conn in @connections
-      conn.subscribe event
+    if @pubsub.listeners(event).length is 1
+      for conn in @connections
+        conn.subscribe event
+    return
 
   setInterface: (obj) -> @si = obj
   uri: -> @si?.uri

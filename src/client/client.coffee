@@ -219,22 +219,29 @@ module.exports = class Client extends Base
       @d = null
 
   #pubsub to server remote
-  publish: ->
-    args = arguments
-    @log "GET REMOTE"
+  publish: (args...) ->
+
+    #get remote
     @server (remote) =>
-      @log "GOT REMOTE"
-      unless @ctx.events[args[0]]
-        @log "server #{@ctx.id} isnt subscribed to #{args[0]}"
+
+      event = if typeof args[0] is 'function' then args[1] else args[0]
+
+      unless @ctx.events[event]
+        @log "server #{@ctx.id} isnt subscribed to #{event}"
         return
-      @log "publishing a #{args[0]}"
+
+      @log "publishing a #{event}"
+
       remote._pnode.publish.apply null, args
+    return
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
     return unless @getConnectionFn
-    @server (remote) =>
-      remote._pnode.subscribe event
+    if @pubsub.listeners(event).length is 1
+      @server (remote) =>
+        remote._pnode.subscribe event
+    return
 
   setInterface: (obj) -> @ci = obj
   uri: -> @ci?.uri

@@ -119,9 +119,16 @@ Base = (function(_super) {
           return delete this.events[event];
         },
         publish: function() {
-          var args, event;
-          event = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-          return pubsub.emit.apply(pubsub, [event].concat(args));
+          var args, cb;
+          args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+          if (typeof args[0] === 'function') {
+            cb = args.shift();
+          }
+          console.log("REMOTE " + this.id + " PUBLISHED " + event);
+          pubsub.emit.apply(pubsub, args);
+          if (cb) {
+            return cb(true);
+          }
         },
         ping: function(cb) {
           return cb(true);
@@ -147,14 +154,59 @@ Base = (function(_super) {
       return this.err("must bound remote to a context");
     }
     return _.merge({}, this.exposed, function(a, b) {
+      var k, v, _ref2, _ref3;
       if (b instanceof DynamicExposed) {
         return b.fn();
       }
       if (typeof b === "function") {
-        return _.bind(b, ctx);
+        name = null;
+        _ref2 = _this.exposed;
+        for (k in _ref2) {
+          v = _ref2[k];
+          if (b === v) {
+            name = k;
+          }
+        }
+        if (!name) {
+          _ref3 = _this.exposed._pnode;
+          for (k in _ref3) {
+            v = _ref3[k];
+            if (b === v) {
+              name = k;
+            }
+          }
+        }
+        return _this.timeoutify(name, b, ctx);
       }
       return a;
     });
+  };
+
+  Base.prototype.timeoutify = function(name, fn, ctx) {
+    var inst;
+    if (ctx == null) {
+      ctx = this;
+    }
+    inst = this;
+    return function() {
+      var a, i, t, _j, _len1;
+      console.log("!!!!CALL " + name + "!!!!!");
+      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
+        a = arguments[i];
+        if (typeof a === 'function') {
+          arguments[i] = function() {
+            clearTimeout(t);
+            inst.emit('timein', ctx, arguments);
+            return a.apply(this, arguments);
+          };
+          t = setTimeout(function() {
+            return inst.emit('timeout', ctx, arguments);
+          }, this.opts.timeout);
+          break;
+        }
+      }
+      return fn.apply(this, arguments);
+    };
   };
 
   Base.prototype.ips = function() {

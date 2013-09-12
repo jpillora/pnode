@@ -36,14 +36,12 @@ module.exports = Connection = (function(_super) {
     write.once('close', this.d.end);
     write.once('end', this.d.end);
     this.d.once('end', function() {
-      _this.log("DNODE END (from " + _this.server.id + ")");
       return _this.emit('down');
     });
     read.pipe(this.d).pipe(write);
   }
 
   Connection.prototype.unbind = function() {
-    this.log("EXPLICIT UNBIND (from " + this.server.id + ")");
     if (this.d) {
       return this.d.end();
     }
@@ -57,10 +55,8 @@ module.exports = Connection = (function(_super) {
       d.end();
       return;
     }
-    this.log("!", meta);
     this.id = meta.id, this.guid = meta.guid;
     this.ctx.getMeta(meta);
-    this.log("!");
     this.remote = remote;
     this.emit('remote', remote);
     this.emit('up');
@@ -73,7 +69,6 @@ module.exports = Connection = (function(_super) {
       this.log("not subscribed to event: " + args[0]);
       return;
     }
-    this.log("publishing a " + args[0]);
     return this.remote._pnode.publish.apply(null, args);
   };
 

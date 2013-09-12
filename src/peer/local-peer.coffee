@@ -123,11 +123,14 @@ module.exports = class LocalPeer extends Base
 
   publish: ->
     for peer in @peers
-      @log "publish to #{peer.id} (#{typeof peer.publish})"
-      peer.publish?.apply peer, arguments
+      if peer.up
+        peer.publish.apply peer, arguments
+    return
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
-    for peer in @peers
-      peer.subscribe? event
+    if @pubsub.listeners(event).length is 1
+      for peer in @peers
+        peer.subscribe? event
+    return
 

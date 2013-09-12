@@ -20,3 +20,5 @@ exports.proxyEvents = (src, dest, events...) ->
   for e in events
     src.on e, (a1, a2, a3, a4) ->
       dest.emit e, a1, a2, a3, a4
+  return
+

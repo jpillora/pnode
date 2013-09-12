@@ -29,16 +29,14 @@ exports.serialize = function(obj) {
 };
 
 exports.proxyEvents = function() {
-  var dest, e, events, src, _i, _len, _results;
+  var dest, e, events, src, _i, _len;
   src = arguments[0], dest = arguments[1], events = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
-  _results = [];
   for (_i = 0, _len = events.length; _i < _len; _i++) {
     e = events[_i];
-    _results.push(src.on(e, function(a1, a2, a3, a4) {
+    src.on(e, function(a1, a2, a3, a4) {
       return dest.emit(e, a1, a2, a3, a4);
-    }));
+    });
   }
-  return _results;
 };
 
 /*

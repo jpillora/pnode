@@ -30,7 +30,6 @@ module.exports = RemotePeer = (function(_super) {
     this.ctx.combine(cliconn.ctx);
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
-      _this.log("LOST CONNECTION (from " + _this.local.id + ")");
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
       return _this.setActive();
     });
@@ -52,12 +51,10 @@ module.exports = RemotePeer = (function(_super) {
     }
     if (up) {
       this.up = true;
-      this.log("UP!");
       this.emit('up');
     } else {
       this.up = false;
       this.remote = null;
-      this.log("DOWN!");
       this.emit('down');
     }
   };
@@ -78,6 +75,10 @@ module.exports = RemotePeer = (function(_super) {
       ips: this.ips,
       clients: helper.serialize(this.clients)
     };
+  };
+
+  RemotePeer.prototype.toString = function() {
+    return "" + this.name + ": " + this.local.id + ">" + this.id + ":";
   };
 
   return RemotePeer;

@@ -24,7 +24,8 @@ module.exports = Server = (function(_super) {
 
   Server.prototype.defaults = {
     debug: false,
-    wait: 5000
+    wait: 5000,
+    timeout: 5000
   };
 
   function Server() {
@@ -116,27 +117,25 @@ module.exports = Server = (function(_super) {
   };
 
   Server.prototype.publish = function() {
-    var args, conn, _i, _len, _ref, _results;
+    var args, conn, _i, _len, _ref;
     args = arguments;
     _ref = this.connections;
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       conn = _ref[_i];
-      _results.push(conn.publish.apply(conn, args));
+      conn.publish.apply(conn, args);
     }
-    return _results;
   };
 
   Server.prototype.subscribe = function(event, fn) {
-    var conn, _i, _len, _ref, _results;
+    var conn, _i, _len, _ref;
     this.pubsub.on(event, fn);
-    _ref = this.connections;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      conn = _ref[_i];
-      _results.push(conn.subscribe(event));
+    if (this.pubsub.listeners(event).length === 1) {
+      _ref = this.connections;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        conn = _ref[_i];
+        conn.subscribe(event);
+      }
     }
-    return _results;
   };
 
   Server.prototype.setInterface = function(obj) {

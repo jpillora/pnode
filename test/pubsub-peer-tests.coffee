@@ -3,7 +3,7 @@ sinon = require "sinon"
 _ = require "../vendor/lodash"
 pnode = require "../"
 
-describe "peers pubsub > ", ->
+describe.only "peers pubsub > ", ->
 
   peer1 = null
   peer2 = null
@@ -13,7 +13,7 @@ describe "peers pubsub > ", ->
     peer1?.unbind()
     peer2?.unbind()
     peer3?.unbind()
-    setTimeout done, 10
+    setTimeout done, 100
 
   describe "counts >", (done) ->
 
@@ -61,18 +61,20 @@ describe "peers pubsub > ", ->
         expect(spy2.called, 'spy2').to.be.false
         expect(spy3.called, 'spy3').to.be.true
         done()
-      , 50
+      , 100
 
-    it "should have called all peers n times", (done) ->
-      peer1.publish 'foo', {}
-      peer2.publish 'foo', {}
-      peer3.publish 'foo', {}
+    it.only "should have called all peers n times", (done) ->
+      peer1.publish 'foo', {f:1}
+      peer1.publish 'foo', {f:2}
+      peer2.publish 'foo', {f:3}
+      peer2.publish 'foo', {f:4}
+      peer3.publish 'foo', {f:5}
       setTimeout ->
-        expect(spy1.callCount, 'spy1').to.equal(1)
-        expect(spy2.callCount, 'spy2').to.equal(2)
-        expect(spy3.callCount, 'spy3').to.equal(1)
+        expect(spy1.callCount, 'spy1').to.equal(2)
+        expect(spy2.callCount, 'spy2').to.equal(3)
+        expect(spy3.callCount, 'spy3').to.equal(2)
         done()
-      , 50
+      , 15
 
 
 

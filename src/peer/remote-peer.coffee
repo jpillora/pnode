@@ -24,7 +24,7 @@ module.exports = class RemotePeer extends Base.Logger
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
-      @log "LOST CONNECTION (from #{@local.id})"
+      # @log "LOST CONNECTION (from #{@local.id})"
       @cliconns.splice @cliconns.indexOf(cliconn), 1
       @setActive()
 
@@ -41,12 +41,10 @@ module.exports = class RemotePeer extends Base.Logger
     return if @up is up
     if up
       @up = true
-      @log "UP!"
       @emit 'up'
     else
       @up = false
       @remote = null
-      @log "DOWN!"
       @emit 'down'
     return
 
@@ -61,3 +59,6 @@ module.exports = class RemotePeer extends Base.Logger
     guid: @guid
     ips: @ips
     clients: helper.serialize @clients
+
+  toString: ->
+    "#{@name}: #{@local.id}>#{@id}:"

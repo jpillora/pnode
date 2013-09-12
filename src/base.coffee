@@ -75,8 +75,12 @@ class Base extends Logger
         unsubscribe: (event) ->
           delete this.events[event]
         #remotes can push events
-        publish: (event, args...) ->
-          pubsub.emit.apply pubsub, [event].concat args
+        publish: (args...) ->
+          if typeof args[0] is 'function'
+            cb = args.shift()
+          console.log "REMOTE #{this.id} PUBLISHED #{event}"
+          pubsub.emit.apply pubsub, args
+          cb true if cb
         ping: (cb) ->
           cb true
         events: @exposeDynamic ->
@@ -91,19 +95,44 @@ class Base extends Logger
 
   #provide an interface which has all methods bound to this context
   exposeWith: (ctx) ->
+    
     unless ctx instanceof RemoteContext
       return @err "must bound remote to a context"
+
     return _.merge {}, @exposed, (a,b) =>
       if b instanceof DynamicExposed
         return b.fn()
       if typeof b is "function"
-        return _.bind(b,ctx)
+
+        name = null
+        for k, v of @exposed
+          name = k if b is v
+        unless name
+          for k, v of @exposed._pnode
+            name = k if b is v
+        return @timeoutify name, b, ctx
       return a
+
+  timeoutify: (name, fn, ctx = @) ->
+    inst = @
+    return ->
+      console.log "!!!!CALL #{name}!!!!!"
+      #place timeout on first function argument
+      for a, i in arguments
+        if typeof a is 'function'
+          arguments[i] = ->
+            clearTimeout t
+            inst.emit 'timein', ctx, arguments
+            a.apply @, arguments
+          t = setTimeout ->
+            inst.emit 'timeout', ctx, arguments
+          , @opts.timeout
+          break
+      #call original fn
+      fn.apply @, arguments
 
   #get all ip on the nic
   ips: -> ips
-
-
 
 #publicise
 Base.Logger = Logger
