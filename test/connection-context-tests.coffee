@@ -10,6 +10,7 @@ describe "shared peer contexts > ", ->
   beforeEach ->
     peer1 = pnode.peer({id:'peer-1',debug:false})
 
+    #peer1 maintains the same context for all clients
     peer1.expose
       set: (n, cb) ->
         @set 'foo', n

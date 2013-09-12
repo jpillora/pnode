@@ -45,7 +45,7 @@ class Base extends Logger
     @guid = guid()
 
     if incoming?.name is 'LocalPeer'
-      @opts = incoming
+      @opts = incoming.opts
       @id = incoming.id or @guid
       @pubsub = incoming.pubsub
       @exposed = incoming.exposed

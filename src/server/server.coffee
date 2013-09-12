@@ -26,6 +26,7 @@ module.exports = class Server extends Base
   bind: ->
     @unbind()
     transportMgr.bind @, arguments
+    @log "bind server!"
     return
 
   unbind: ->
@@ -48,6 +49,8 @@ module.exports = class Server extends Base
     @err "Invalid write stream" unless helper.isWritable write
 
     conn = new Connection @, read, write
+
+    @log "new connection!"
 
     conn.once 'up', =>
       #check for existing id or guid

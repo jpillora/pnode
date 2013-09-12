@@ -37,6 +37,7 @@ module.exports = Server = (function(_super) {
   Server.prototype.bind = function() {
     this.unbind();
     transportMgr.bind(this, arguments);
+    this.log("bind server!");
   };
 
   Server.prototype.unbind = function() {
@@ -68,6 +69,7 @@ module.exports = Server = (function(_super) {
       this.err("Invalid write stream");
     }
     conn = new Connection(this, read, write);
+    this.log("new connection!");
     conn.once('up', function() {
       if (_this.connections.getBy("id", conn.id) || _this.connections.getBy("guid", conn.guid)) {
         _this.warn("rejected duplicate conn with id " + conn.id + " (" + conn.guid + ")");

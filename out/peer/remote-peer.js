@@ -17,10 +17,10 @@ module.exports = RemotePeer = (function(_super) {
     this.guid = guid;
     this.id = id;
     this.ips = ips;
+    this.opts = this.local.opts;
     this.connecting = false;
     this.ctx = new RemoteContext;
     this.isUp(false);
-    this.opts = this.local.opts;
     this.cliconns = [];
   }
 
@@ -28,9 +28,6 @@ module.exports = RemotePeer = (function(_super) {
     var _this = this;
     this.log("add connection (first remote:" + (!this.up) + ")");
     this.ctx.combine(cliconn.ctx);
-    if (!this.up) {
-      this.remote = cliconn.remote;
-    }
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
       _this.log("LOST CONNECTION (from " + _this.local.id + ")");
@@ -46,7 +43,7 @@ module.exports = RemotePeer = (function(_super) {
     this.remote = c ? c.remote : null;
     this.publish = c ? c.publish.bind(c) : null;
     this.subscribe = c ? c.subscribe.bind(c) : null;
-    return this.isUp(typeof this.remote === 'object');
+    return this.isUp(!!this.remote);
   };
 
   RemotePeer.prototype.isUp = function(up) {
@@ -55,23 +52,23 @@ module.exports = RemotePeer = (function(_super) {
     }
     if (up) {
       this.up = true;
+      this.log("UP!");
       this.emit('up');
     } else {
       this.up = false;
       this.remote = null;
+      this.log("DOWN!");
       this.emit('down');
     }
   };
 
   RemotePeer.prototype.unbind = function() {
-    var cliconn, _i, _len, _ref, _results;
+    var cliconn, _i, _len, _ref;
     _ref = Array.prototype.slice.call(this.cliconns);
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       cliconn = _ref[_i];
-      _results.push(cliconn.unbind());
+      cliconn.unbind();
     }
-    return _results;
   };
 
   RemotePeer.prototype.serialize = function() {

@@ -83,7 +83,7 @@ Base = (function(_super) {
   function Base(incoming) {
     this.guid = guid();
     if ((incoming != null ? incoming.name : void 0) === 'LocalPeer') {
-      this.opts = incoming;
+      this.opts = incoming.opts;
       this.id = incoming.id || this.guid;
       this.pubsub = incoming.pubsub;
       this.exposed = incoming.exposed;

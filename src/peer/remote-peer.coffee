@@ -10,10 +10,10 @@ module.exports = class RemotePeer extends Base.Logger
   name: 'RemotePeer'
 
   constructor: (@local, @guid, @id, @ips) ->
+    @opts = @local.opts
     @connecting = false
     @ctx = new RemoteContext
     @isUp(false)
-    @opts = @local.opts
     @cliconns = []
 
   #will be a client (outgoing) OR connection (incoming)
@@ -21,9 +21,6 @@ module.exports = class RemotePeer extends Base.Logger
     @log "add connection (first remote:#{not @up})"
 
     @ctx.combine cliconn.ctx
-    
-    #disconnect if already connected
-    @remote = cliconn.remote unless @up
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
@@ -38,22 +35,25 @@ module.exports = class RemotePeer extends Base.Logger
     @remote = if c then c.remote else null
     @publish = if c then c.publish.bind(c) else null
     @subscribe = if c then c.subscribe.bind(c) else null
-    @isUp(typeof @remote is 'object')
+    @isUp(!!@remote)
 
   isUp: (up) ->
     return if @up is up
     if up
       @up = true
+      @log "UP!"
       @emit 'up'
     else
       @up = false
       @remote = null
+      @log "DOWN!"
       @emit 'down'
     return
 
   unbind: ->
     for cliconn in Array::slice.call @cliconns
       cliconn.unbind()
+    return
 
   #custom serialisation
   serialize: ->

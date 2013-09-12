@@ -33,7 +33,7 @@ describe "peers pubsub > ", ->
         peer1.bindTo 'tcp://localhost:8002'
       peer1.subscribe 'foo', spy1
 
-      peer2 = pnode.peer {id:'peer2', debug:true}
+      peer2 = pnode.peer {id:'peer2', debug:false}
       peer2.bindOn 'tcp://localhost:8002'
       setTimeout ->
         peer2.bindTo 'tcp://localhost:8003'
@@ -44,19 +44,24 @@ describe "peers pubsub > ", ->
       peer3.subscribe 'foo', spy3
 
       #publish when theyre up
-      peer2.on 'peer', ->
-        if peer2.peers.length is 2
+      check = ->
+        if peer1.peers.length is 1 and
+           peer2.peers.length is 2 and
+           peer3.peers.length is 1
           done()
+      peer1.on 'peer', check
+      peer2.on 'peer', check
+      peer3.on 'peer', check
 
-    it.only "should have called peer1 and pee3", (done) ->
-      debugger
+
+    it "should have called peer1 and pee3", (done) ->
       peer2.publish 'foo', {}
       setTimeout ->
         expect(spy1.called, 'spy1').to.be.true
         expect(spy2.called, 'spy2').to.be.false
         expect(spy3.called, 'spy3').to.be.true
         done()
-      , 100
+      , 50
 
     it "should have called all peers n times", (done) ->
       peer1.publish 'foo', {}
