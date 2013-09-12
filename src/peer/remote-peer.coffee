@@ -18,7 +18,7 @@ module.exports = class RemotePeer extends Base.Logger
 
   #will be a client (outgoing) OR connection (incoming)
   add: (cliconn) ->
-    @log "add connection (required:#{not @up})"
+    @log "add connection (first remote:#{not @up})"
 
     @ctx.combine cliconn.ctx
     
@@ -27,17 +27,21 @@ module.exports = class RemotePeer extends Base.Logger
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
-      @log "LOST CONNECTION TO", cliconn.id
+      @log "LOST CONNECTION (from #{@local.id})"
       @cliconns.splice @cliconns.indexOf(cliconn), 1
-      @setRemote()
+      @setActive()
 
-    @setRemote()
+    @setActive()
 
-  setRemote: ->
-    @remote = @cliconns[0]?.remote
+  setActive: ->
+    c = @cliconns[0]
+    @remote = if c then c.remote else null
+    @publish = if c then c.publish.bind(c) else null
+    @subscribe = if c then c.subscribe.bind(c) else null
     @isUp(typeof @remote is 'object')
 
   isUp: (up) ->
+    return if @up is up
     if up
       @up = true
       @emit 'up'

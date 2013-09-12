@@ -32,6 +32,7 @@ run = (name, test, done) ->
   server.expose
     foo: (callback) -> callback 42
 
+  #insert callback at 1th position
   test.server.splice 1, 0, ->
     #server up
     client = pnode.client("#{name}-client")

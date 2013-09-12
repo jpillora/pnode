@@ -39,22 +39,31 @@ class Base extends Logger
 
   name: 'Base'
 
-  constructor: (@opts = {}, parent)->
+  constructor: (incoming) ->
 
-    @opts = { id:@opts } if _.isString @opts
-    _.defaults @opts, @defaults
-    
+    #all instances have unique ids
     @guid = guid()
-    @id = @opts.id or @guid
+
+    if incoming?.name is 'LocalPeer'
+      @opts = incoming
+      @id = incoming.id or @guid
+      @pubsub = incoming.pubsub
+      @exposed = incoming.exposed
+    else
+      @opts = incoming or {}
+      @opts = { id:@opts } if _.isString @opts
+      @id = @opts.id or @guid
+      @pubsub = new EventEmitter2
+      @exposed = @defaultExposed()
+
+    #the class's apply defaults
+    _.defaults @opts, @defaults
 
     _.bindAll @
 
-    log = @log    
-    @pubsub = if parent then parent.pubsub else new EventEmitter2
-    @exposed = if parent then parent.exposed else @defaultExposed()
-
   defaultExposed: ->
     pubsub = @pubsub
+
     return {
       _pnode:
         id: @id
@@ -94,6 +103,10 @@ class Base extends Logger
   #get all ip on the nic
   ips: -> ips
 
+
+
 #publicise
 Base.Logger = Logger
+
+
 module.exports = Base

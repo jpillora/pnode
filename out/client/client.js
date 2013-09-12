@@ -189,9 +189,9 @@ module.exports = Client = (function(_super) {
     if (typeof (meta != null ? meta.ping : void 0) !== "function") {
       return this.err("Invalid pnode host");
     }
-    this.log("got server remote", meta);
     this.remote = remote;
     this.ctx.getMeta(meta);
+    this.log("EMIT REMOTE");
     this.emit('remote', this.remote, this);
     this.setStatus('up');
     return this.ping();
@@ -255,11 +255,14 @@ module.exports = Client = (function(_super) {
     var args,
       _this = this;
     args = arguments;
+    this.log("GET REMOTE");
     return this.server(function(remote) {
+      _this.log("GOT REMOTE");
       if (!_this.ctx.events[args[0]]) {
         _this.log("server " + _this.ctx.id + " isnt subscribed to " + args[0]);
         return;
       }
+      _this.log("publishing a " + args[0]);
       return remote._pnode.publish.apply(null, args);
     });
   };

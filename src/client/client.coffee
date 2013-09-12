@@ -168,11 +168,12 @@ module.exports = class Client extends Base
     unless typeof meta?.ping is "function"
       return @err "Invalid pnode host"
 
-    @log "got server remote", meta
+    # @log "got server remote", meta
 
     @remote = remote
     @ctx.getMeta meta
     
+    @log "EMIT REMOTE"
     @emit 'remote', @remote, @
     @setStatus 'up'
     @ping()
@@ -220,10 +221,13 @@ module.exports = class Client extends Base
   #pubsub to server remote
   publish: ->
     args = arguments
+    @log "GET REMOTE"
     @server (remote) =>
+      @log "GOT REMOTE"
       unless @ctx.events[args[0]]
         @log "server #{@ctx.id} isnt subscribed to #{args[0]}"
         return
+      @log "publishing a #{args[0]}"
       remote._pnode.publish.apply null, args
 
   subscribe: (event, fn) ->

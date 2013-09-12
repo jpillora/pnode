@@ -80,21 +80,26 @@ Base = (function(_super) {
 
   Base.prototype.name = 'Base';
 
-  function Base(opts, parent) {
-    var log;
-    this.opts = opts != null ? opts : {};
-    if (_.isString(this.opts)) {
-      this.opts = {
-        id: this.opts
-      };
+  function Base(incoming) {
+    this.guid = guid();
+    if ((incoming != null ? incoming.name : void 0) === 'LocalPeer') {
+      this.opts = incoming;
+      this.id = incoming.id || this.guid;
+      this.pubsub = incoming.pubsub;
+      this.exposed = incoming.exposed;
+    } else {
+      this.opts = incoming || {};
+      if (_.isString(this.opts)) {
+        this.opts = {
+          id: this.opts
+        };
+      }
+      this.id = this.opts.id || this.guid;
+      this.pubsub = new EventEmitter2;
+      this.exposed = this.defaultExposed();
     }
     _.defaults(this.opts, this.defaults);
-    this.guid = guid();
-    this.id = this.opts.id || this.guid;
     _.bindAll(this);
-    log = this.log;
-    this.pubsub = parent ? parent.pubsub : new EventEmitter2;
-    this.exposed = parent ? parent.exposed : this.defaultExposed();
   }
 
   Base.prototype.defaultExposed = function() {

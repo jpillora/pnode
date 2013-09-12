@@ -18,8 +18,9 @@
     "browser"
   ],
   "scripts": {
-    "build": "node node_modules/coffee-script/bin/coffee -m -b -c -o out/ src/", 
-    "test": "npm run-script build && node node_modules/mocha/bin/mocha --watch --bail",
+    "build": "node node_modules/coffee-script/bin/coffee -m    -b -c -o out/ src/",
+    "mocha": "node node_modules/mocha/bin/mocha",
+    "test": "npm run-script build && npm run-script mocha",
     "start": "node node_modules/coffee-script/bin/coffee -m -w -b -c -o out/ src/",
     "prepublish": "npm run-script build && cd browser && npm install && sh build.sh"
   },
@@ -62,7 +63,8 @@
     "coffee-script": "~1.6.3",
     "phantom": "~0.5.2",
     "colors": "~0.6.2",
-    "tape": "~1.1.0"
+    "tape": "~1.1.0",
+    "sinon": "~1.7.3"
   },
   "browser": {
     "os": false,

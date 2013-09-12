@@ -15,8 +15,7 @@ module.exports = class LocalPeer extends Base
   defaults:
     debug: false
     wait: 1000
-    providePeers: true
-    extractPeers: true
+    learn: false
 
   constructor: ->
     super
@@ -24,13 +23,14 @@ module.exports = class LocalPeer extends Base
     @servers = {}
     @peers = ObjectIndex "id", "guid"
 
-    if @opts.providePeers
+    #provide self serialization method
+    if @opts.learn
       @expose 
         _pnode:
           serialize: @exposeDynamic => @serialize()
 
   bindOn: ->
-    server = new Server @opts, @
+    server = new Server @
     server.on 'error', (err) => @emit 'error', err
     server.on 'connection', @onPeer
     server.bindOn.apply server, arguments
@@ -40,7 +40,7 @@ module.exports = class LocalPeer extends Base
       delete @servers[server.guid]
 
   bindTo: ->
-    client = new Client @opts, @
+    client = new Client @
     client.on 'error', (err) => @emit 'error', err
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
@@ -67,6 +67,9 @@ module.exports = class LocalPeer extends Base
     unless guid
       return @log 'peer missing guid'
     
+    #extract peers
+    # if @opts.learn
+
     peer = @peers.get guid
 
     unless peer
@@ -119,4 +122,12 @@ module.exports = class LocalPeer extends Base
     @on 'peer', check
 
   publish: ->
-  subscribe: ->
+    for peer in @peers
+      @log "publish to #{peer.id} (#{typeof peer.publish})"
+      peer.publish?.apply peer, arguments
+
+  subscribe: (event, fn) ->
+    @pubsub.on event, fn
+    for peer in @peers
+      peer.subscribe? event
+

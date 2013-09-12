@@ -26,27 +26,33 @@ module.exports = RemotePeer = (function(_super) {
 
   RemotePeer.prototype.add = function(cliconn) {
     var _this = this;
-    this.log("add connection (required:" + (!this.up) + ")");
+    this.log("add connection (first remote:" + (!this.up) + ")");
     this.ctx.combine(cliconn.ctx);
     if (!this.up) {
       this.remote = cliconn.remote;
     }
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
-      _this.log("LOST CONNECTION TO", cliconn.id);
+      _this.log("LOST CONNECTION (from " + _this.local.id + ")");
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
-      return _this.setRemote();
+      return _this.setActive();
     });
-    return this.setRemote();
+    return this.setActive();
   };
 
-  RemotePeer.prototype.setRemote = function() {
-    var _ref;
-    this.remote = (_ref = this.cliconns[0]) != null ? _ref.remote : void 0;
+  RemotePeer.prototype.setActive = function() {
+    var c;
+    c = this.cliconns[0];
+    this.remote = c ? c.remote : null;
+    this.publish = c ? c.publish.bind(c) : null;
+    this.subscribe = c ? c.subscribe.bind(c) : null;
     return this.isUp(typeof this.remote === 'object');
   };
 
   RemotePeer.prototype.isUp = function(up) {
+    if (this.up === up) {
+      return;
+    }
     if (up) {
       this.up = true;
       this.emit('up');

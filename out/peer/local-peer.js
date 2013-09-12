@@ -27,8 +27,7 @@ module.exports = LocalPeer = (function(_super) {
   LocalPeer.prototype.defaults = {
     debug: false,
     wait: 1000,
-    providePeers: true,
-    extractPeers: true
+    learn: false
   };
 
   function LocalPeer() {
@@ -36,7 +35,7 @@ module.exports = LocalPeer = (function(_super) {
     LocalPeer.__super__.constructor.apply(this, arguments);
     this.servers = {};
     this.peers = ObjectIndex("id", "guid");
-    if (this.opts.providePeers) {
+    if (this.opts.learn) {
       this.expose({
         _pnode: {
           serialize: this.exposeDynamic(function() {
@@ -50,7 +49,7 @@ module.exports = LocalPeer = (function(_super) {
   LocalPeer.prototype.bindOn = function() {
     var server,
       _this = this;
-    server = new Server(this.opts, this);
+    server = new Server(this);
     server.on('error', function(err) {
       return _this.emit('error', err);
     });
@@ -65,7 +64,7 @@ module.exports = LocalPeer = (function(_super) {
   LocalPeer.prototype.bindTo = function() {
     var client,
       _this = this;
-    client = new Client(this.opts, this);
+    client = new Client(this);
     client.on('error', function(err) {
       return _this.emit('error', err);
     });
@@ -171,9 +170,29 @@ module.exports = LocalPeer = (function(_super) {
     return this.on('peer', check);
   };
 
-  LocalPeer.prototype.publish = function() {};
+  LocalPeer.prototype.publish = function() {
+    var peer, _i, _len, _ref, _ref1, _results;
+    _ref = this.peers;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      peer = _ref[_i];
+      this.log("publish to " + peer.id + " (" + (typeof peer.publish) + ")");
+      _results.push((_ref1 = peer.publish) != null ? _ref1.apply(peer, arguments) : void 0);
+    }
+    return _results;
+  };
 
-  LocalPeer.prototype.subscribe = function() {};
+  LocalPeer.prototype.subscribe = function(event, fn) {
+    var peer, _i, _len, _ref, _results;
+    this.pubsub.on(event, fn);
+    _ref = this.peers;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      peer = _ref[_i];
+      _results.push(typeof peer.subscribe === "function" ? peer.subscribe(event) : void 0);
+    }
+    return _results;
+  };
 
   return LocalPeer;
 

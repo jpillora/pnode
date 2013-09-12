@@ -32,14 +32,14 @@ module.exports = class Connection extends Base.Logger
     write.once 'end', @d.end
 
     @d.once 'end', =>
-      @log "DNODE END"
+      @log "DNODE END (from #{@server.id})"
       @emit 'down'
 
     #splice!
     read.pipe(@d).pipe(write)
 
   unbind: ->
-    @log "EXPLICIT UNBIND"
+    @log "EXPLICIT UNBIND (from #{@server.id})"
     @d.end() if @d
 
   #recieve a remote interface
@@ -50,8 +50,12 @@ module.exports = class Connection extends Base.Logger
       d.end()
       return
 
+    @log "!", meta
+
     {@id, @guid} = meta
     @ctx.getMeta meta
+
+    @log "!"
 
     @remote = remote
     @emit 'remote', remote
@@ -62,7 +66,8 @@ module.exports = class Connection extends Base.Logger
     args = arguments
     unless @ctx.events[args[0]]
       @log "not subscribed to event: #{args[0]}"
-      return 
+      return
+    @log "publishing a #{args[0]}"
     @remote._pnode.publish.apply null, args
 
   subscribe: (event, fn) ->
