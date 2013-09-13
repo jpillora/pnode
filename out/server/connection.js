@@ -28,8 +28,9 @@ module.exports = Connection = (function(_super) {
     this.subs = {};
     this.ctx = new RemoteContext;
     this.ctx.getAddr(read);
-    this.d = dnode(this.server.exposeWith(this.ctx));
-    helper.proxyEvents(this.d, this, 'error', 'fail');
+    this.d = dnode(this.server.wrapObject(this.server.exposed, this.ctx));
+    this.d.on('error', this.onError.bind(this));
+    this.d.on('fail', this.onFail.bind(this));
     this.d.once('remote', this.onRemote.bind(this));
     read.once('close', this.d.end);
     read.once('end', this.d.end);
@@ -43,8 +44,9 @@ module.exports = Connection = (function(_super) {
 
   Connection.prototype.unbind = function() {
     if (this.d) {
-      return this.d.end();
+      this.d.end();
     }
+    return this.removeAllListeners();
   };
 
   Connection.prototype.onRemote = function(remote) {
@@ -55,11 +57,22 @@ module.exports = Connection = (function(_super) {
       d.end();
       return;
     }
+    this.server.wrapObject(remote);
     this.id = meta.id, this.guid = meta.guid;
     this.ctx.getMeta(meta);
     this.remote = remote;
     this.emit('remote', remote);
     this.emit('up');
+  };
+
+  Connection.prototype.onError = function(err) {
+    this.warn("dnode error: " + err);
+    return this.server.emit('error', err);
+  };
+
+  Connection.prototype.onFail = function(err) {
+    this.warn("dnode fail: " + err);
+    return this.server.emit('fail', err);
   };
 
   Connection.prototype.publish = function() {

@@ -20,10 +20,11 @@ module.exports = class Connection extends Base.Logger
     @ctx.getAddr read
 
     #provide a client-specific version of exposed
-    @d = dnode @server.exposeWith(@ctx)
-    
+    @d = dnode @server.wrapObject(@server.exposed, @ctx)
+
     #handle dnode event
-    helper.proxyEvents @d, @, 'error', 'fail'
+    @d.on 'error', @onError.bind(@)
+    @d.on 'fail', @onFail.bind(@)
     @d.once 'remote', @onRemote.bind(@)
 
     read.once 'close', @d.end
@@ -41,14 +42,19 @@ module.exports = class Connection extends Base.Logger
   unbind: ->
     # @log "EXPLICIT UNBIND (from #{@server.id})"
     @d.end() if @d
+    #remove all eventlisteners
+    @removeAllListeners()
 
   #recieve a remote interface
   onRemote: (remote) ->
+
     meta = remote._pnode
     unless meta
       @log "closing conn, not a pnode conn"
       d.end()
       return
+
+    @server.wrapObject(remote)
 
     {@id, @guid} = meta
     @ctx.getMeta meta
@@ -57,6 +63,14 @@ module.exports = class Connection extends Base.Logger
     @emit 'remote', remote
     @emit 'up'
     return
+
+  onError: (err) ->
+    @warn "dnode error: #{err}"
+    @server.emit 'error', err
+
+  onFail: (err) ->
+    @warn "dnode fail: #{err}"
+    @server.emit 'fail', err
 
   publish: ->
     args = arguments

@@ -88,12 +88,9 @@ Base = (function(_super) {
       this.pubsub = incoming.pubsub;
       this.exposed = incoming.exposed;
     } else {
-      this.opts = incoming || {};
-      if (_.isString(this.opts)) {
-        this.opts = {
-          id: this.opts
-        };
-      }
+      this.opts = _.isString(incoming) ? {
+        id: incoming
+      } : incoming || {};
       this.id = this.opts.id || this.guid;
       this.pubsub = new EventEmitter2;
       this.exposed = this.defaultExposed();
@@ -102,9 +99,14 @@ Base = (function(_super) {
     _.bindAll(this);
   }
 
+  Base.prototype.options = function(opts) {
+    return _.extend(this.opts, opts);
+  };
+
   Base.prototype.defaultExposed = function() {
-    var pubsub;
+    var id, pubsub;
     pubsub = this.pubsub;
+    id = this.id;
     return {
       _pnode: {
         id: this.id,
@@ -124,7 +126,6 @@ Base = (function(_super) {
           if (typeof args[0] === 'function') {
             cb = args.shift();
           }
-          console.log("REMOTE " + this.id + " PUBLISHED " + event);
           pubsub.emit.apply(pubsub, args);
           if (cb) {
             return cb(true);
@@ -148,64 +149,49 @@ Base = (function(_super) {
     return _.merge(this.exposed, obj);
   };
 
-  Base.prototype.exposeWith = function(ctx) {
-    var _this = this;
-    if (!(ctx instanceof RemoteContext)) {
-      return this.err("must bound remote to a context");
-    }
-    return _.merge({}, this.exposed, function(a, b) {
-      var k, v, _ref2, _ref3;
-      if (b instanceof DynamicExposed) {
-        return b.fn();
-      }
-      if (typeof b === "function") {
-        name = null;
-        _ref2 = _this.exposed;
-        for (k in _ref2) {
-          v = _ref2[k];
-          if (b === v) {
-            name = k;
-          }
-        }
-        if (!name) {
-          _ref3 = _this.exposed._pnode;
-          for (k in _ref3) {
-            v = _ref3[k];
-            if (b === v) {
-              name = k;
-            }
-          }
-        }
-        return _this.timeoutify(name, b, ctx);
-      }
-      return a;
-    });
+  Base.prototype.wrapObject = function(input, ctx) {
+    return this.wrapObjectAcc('root', input, ctx);
   };
 
-  Base.prototype.timeoutify = function(name, fn, ctx) {
-    var inst;
-    if (ctx == null) {
-      ctx = this;
+  Base.prototype.wrapObjectAcc = function(name, input, ctx) {
+    var inst, k, type, v;
+    if (input instanceof DynamicExposed) {
+      return input.fn();
+    }
+    type = typeof input;
+    if (input && type === 'object') {
+      for (k in input) {
+        v = input[k];
+        input[k] = this.wrapObjectAcc(k, v, ctx);
+      }
+    }
+    if (type !== 'function') {
+      return input;
     }
     inst = this;
     return function() {
-      var a, i, t, _j, _len1;
-      console.log("!!!!CALL " + name + "!!!!!");
-      for (i = _j = 0, _len1 = arguments.length; _j < _len1; i = ++_j) {
-        a = arguments[i];
+      var a, args, i, t, timedout, _j, _len1;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      timedout = false;
+      for (i = _j = 0, _len1 = args.length; _j < _len1; i = ++_j) {
+        a = args[i];
         if (typeof a === 'function') {
-          arguments[i] = function() {
+          args[i] = function() {
             clearTimeout(t);
-            inst.emit('timein', ctx, arguments);
-            return a.apply(this, arguments);
+            if (timedout) {
+              return;
+            }
+            inst.emit('timein', name, args, ctx);
+            a.apply(this, arguments);
           };
           t = setTimeout(function() {
-            return inst.emit('timeout', ctx, arguments);
-          }, this.opts.timeout);
+            timedout = false;
+            inst.emit('timeout', name, args, ctx);
+          }, inst.opts.timeout);
           break;
         }
       }
-      return fn.apply(this, arguments);
+      return input.apply(ctx, args);
     };
   };
 

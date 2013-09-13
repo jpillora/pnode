@@ -195,6 +195,10 @@ module.exports = LocalPeer = (function(_super) {
     }
   };
 
+  LocalPeer.prototype.unsubscribe = function(event, fn) {
+    return this.pubsub.off(event, fn);
+  };
+
   return LocalPeer;
 
 })(Base);

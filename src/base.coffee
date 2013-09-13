@@ -50,8 +50,7 @@ class Base extends Logger
       @pubsub = incoming.pubsub
       @exposed = incoming.exposed
     else
-      @opts = incoming or {}
-      @opts = { id:@opts } if _.isString @opts
+      @opts = if _.isString incoming then { id:incoming } else incoming or {}
       @id = @opts.id or @guid
       @pubsub = new EventEmitter2
       @exposed = @defaultExposed()
@@ -61,9 +60,13 @@ class Base extends Logger
 
     _.bindAll @
 
+  options: (opts) ->
+    _.extend @opts, opts
+
   defaultExposed: ->
     pubsub = @pubsub
 
+    id = @id
     return {
       _pnode:
         id: @id
@@ -78,7 +81,6 @@ class Base extends Logger
         publish: (args...) ->
           if typeof args[0] is 'function'
             cb = args.shift()
-          console.log "REMOTE #{this.id} PUBLISHED #{event}"
           pubsub.emit.apply pubsub, args
           cb true if cb
         ping: (cb) ->
@@ -93,43 +95,44 @@ class Base extends Logger
   expose: (obj) ->
     _.merge @exposed, obj
 
-  #provide an interface which has all methods bound to this context
-  exposeWith: (ctx) ->
-    
-    unless ctx instanceof RemoteContext
-      return @err "must bound remote to a context"
+  #recursively timeoutify functions and eval dynamic values
+  wrapObject: (input, ctx) ->
+    @wrapObjectAcc 'root', input, ctx
 
-    return _.merge {}, @exposed, (a,b) =>
-      if b instanceof DynamicExposed
-        return b.fn()
-      if typeof b is "function"
+  wrapObjectAcc: (name, input, ctx) ->
 
-        name = null
-        for k, v of @exposed
-          name = k if b is v
-        unless name
-          for k, v of @exposed._pnode
-            name = k if b is v
-        return @timeoutify name, b, ctx
-      return a
+    if input instanceof DynamicExposed
+      return input.fn()
 
-  timeoutify: (name, fn, ctx = @) ->
+    type = typeof input
+
+    if input and type is 'object'
+      for k,v of input
+        input[k] = @wrapObjectAcc k, v, ctx
+
+    if type isnt 'function'
+      return input
+
     inst = @
-    return ->
-      console.log "!!!!CALL #{name}!!!!!"
-      #place timeout on first function argument
-      for a, i in arguments
+    return (args...) ->
+      timedout = false
+      # place timeout on first function parameter
+      for a, i in args
         if typeof a is 'function'
-          arguments[i] = ->
+          args[i] = ->
             clearTimeout t
-            inst.emit 'timein', ctx, arguments
+            return if timedout
+            inst.emit 'timein', name, args, ctx
             a.apply @, arguments
+            return
           t = setTimeout ->
-            inst.emit 'timeout', ctx, arguments
-          , @opts.timeout
+            timedout = false
+            inst.emit 'timeout', name, args, ctx
+            return
+          , inst.opts.timeout
           break
-      #call original fn
-      fn.apply @, arguments
+      # call original fn
+      input.apply ctx, args
 
   #get all ip on the nic
   ips: -> ips

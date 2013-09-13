@@ -96,7 +96,7 @@ module.exports = class Client extends Base
 
     #server context, exposed to remote api
     @ctx = new RemoteContext
-    @d = dnode @exposeWith(@ctx)
+    @d = dnode @wrapObject(@exposed, @ctx)
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
     @d.once 'error', @onError
@@ -169,6 +169,7 @@ module.exports = class Client extends Base
       return @err "Invalid pnode host"
 
     # @log "got server remote", meta
+    @wrapObject(remote)
 
     @remote = remote
     @ctx.getMeta meta

@@ -134,3 +134,6 @@ module.exports = class LocalPeer extends Base
         peer.subscribe? event
     return
 
+  unsubscribe: (event, fn) ->
+    @pubsub.off event, fn
+

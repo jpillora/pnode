@@ -120,7 +120,7 @@ module.exports = Client = (function(_super) {
     this.connecting = true;
     this.reset();
     this.ctx = new RemoteContext;
-    this.d = dnode(this.exposeWith(this.ctx));
+    this.d = dnode(this.wrapObject(this.exposed, this.ctx));
     this.d.once('remote', this.onRemote);
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
@@ -190,6 +190,7 @@ module.exports = Client = (function(_super) {
     if (typeof (meta != null ? meta.ping : void 0) !== "function") {
       return this.err("Invalid pnode host");
     }
+    this.wrapObject(remote);
     this.remote = remote;
     this.ctx.getMeta(meta);
     this.log("EMIT REMOTE");
