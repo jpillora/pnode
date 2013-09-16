@@ -3,7 +3,7 @@ _ = require "../vendor/lodash"
 pnode = require "../"
 
 LO = 10
-HI = 50
+HI = 100
 
 describe "rpc timeout > ", ->
 
@@ -30,7 +30,7 @@ describe "rpc timeout > ", ->
   describe "server timeout > ", ->
 
     beforeEach ->
-      server.options {timeout: (HI+LO)/2}
+      server.options {timeout: LO+10}
 
     it "should NOT timeout", (done) ->
 
@@ -53,7 +53,7 @@ describe "rpc timeout > ", ->
   describe "client timeout > ", ->
 
     beforeEach ->
-      client.options {timeout: (HI+LO)/2}
+      client.options {timeout: LO+10}
 
     it "should NOT timeout", (done) ->
 
