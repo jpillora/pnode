@@ -13,11 +13,12 @@ describe "server clients pubsub > ", ->
     server = pnode.server('server-1')
     server.bind 'tcp://0.0.0.0:8000'
 
-  afterEach ->
+  afterEach (done) ->
     server.unbind()
     client1?.unbind()
     client2?.unbind()
     client3?.unbind()
+    setTimeout done, 10
 
   it "should publish to server", (done) ->
 
@@ -34,11 +35,11 @@ describe "server clients pubsub > ", ->
       expect(foo).to.deep.equal({bar: 42})
       check()
 
-    client1 = pnode.client('client-1')
+    client1 = pnode.client('client-P1')
     client1.bind 'tcp://localhost:8000'
     client1.publish('bars', {bazz: 13})
 
-    client2 = pnode.client('client-2')
+    client2 = pnode.client('client-P2')
     client2.bind 'tcp://localhost:8000'
     client2.publish('foos', {bar: 42})
   
@@ -51,21 +52,21 @@ describe "server clients pubsub > ", ->
         done()
 
     #subscribe then bind
-    client1 = pnode.client({id:'client-1',debug:false})
+    client1 = pnode.client({id:'client-P1',debug:false})
     client1.subscribe 'foos', checkFoo
     setTimeout ->
       client1.bind 'tcp://localhost:8000'
     , 10
 
     #bind then subscribe
-    client2 = pnode.client('client-2')
+    client2 = pnode.client('client-P2')
     client2.bind 'tcp://localhost:8000'
     setTimeout ->
       client2.subscribe 'foos', checkFoo
     , 10
 
     #delay both
-    client3 = pnode.client('client-3')
+    client3 = pnode.client('client-P3')
     setTimeout ->
       client3.subscribe 'foos', checkFoo
       client3.bind 'tcp://localhost:8000'

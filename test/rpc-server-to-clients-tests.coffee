@@ -8,7 +8,7 @@ describe "server to clients > ", ->
   client1 = null
   client2 = null
 
-  before ->
+  beforeEach (done) ->
     server = pnode.server('server-1')
     server.bind 'tcp://0.0.0.0:8000'
 
@@ -22,8 +22,13 @@ describe "server to clients > ", ->
       two: (n, cb) -> cb n + 14
     client2.bind 'tcp://localhost:8000'
 
-  after ->
+    setTimeout done, 10
+
+  afterEach (done) ->
     server.unbind()
+    client1.unbind()
+    client2.unbind()
+    setTimeout done, 10
 
   it "should connect to client-1", (done) ->
     server.client 'client-1', (remote) ->
@@ -39,7 +44,7 @@ describe "server to clients > ", ->
 
   it "'three' should be missing", (done) ->
     server.client 'client-2', (remote) ->    
-      expect(remote.three).to.undefined
+      expect(remote.three).not.to.be.defined
       done()
 
 

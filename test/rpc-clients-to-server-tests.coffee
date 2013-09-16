@@ -8,20 +8,26 @@ describe "clients to server > ", ->
   client1 = null
   client2 = null
 
-  before ->
-    server = pnode.server('server-1')
+  beforeEach (done) ->
+    server = pnode.server({id:'server-1', debug: false})
     server.expose
       foo: (n, cb) -> cb n + 7
     server.bind 'tcp://0.0.0.0:8000'
 
-    client1 = pnode.client('client-1')
-    client1.bind 'tcp://localhost:8000'
+    client1 = pnode.client({id:'client-ONE', debug: false})
+    client2 = pnode.client('client-TWO')
 
-    client2 = pnode.client('client-2')
-    client2.bind 'tcp://localhost:8000'
+    setTimeout ->
+      client1.bind 'tcp://localhost:8000'
+      client2.bind 'tcp://localhost:8000'
+      done()
+    , 10
 
-  after ->
+  afterEach (done) ->
     server.unbind()
+    client1.unbind()
+    client2.unbind()
+    setTimeout done, 10
 
   it "should connect to server from client-1", (done) ->
     client1.server (remote) ->
