@@ -48,13 +48,13 @@ module.exports = class Connection extends Base.Logger
   #recieve a remote interface
   onRemote: (remote) ->
 
+    remote = @server.wrapObject(remote)
+
     meta = remote._pnode
     unless meta
       @log "closing conn, not a pnode conn"
       d.end()
       return
-
-    @server.wrapObject(remote)
 
     {@id, @guid} = meta
     @ctx.getMeta meta
@@ -81,3 +81,6 @@ module.exports = class Connection extends Base.Logger
 
   subscribe: (event, fn) ->
     @remote._pnode.subscribe event
+
+  toString: ->
+    "#{@name}: #{@server.id}>#{@id}:"

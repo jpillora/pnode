@@ -13,7 +13,7 @@ describe "peers pubsub > ", ->
     peer1?.unbind()
     peer2?.unbind()
     peer3?.unbind()
-    setTimeout done, 100
+    setTimeout done, 10
 
   describe "counts >", (done) ->
 
@@ -52,9 +52,9 @@ describe "peers pubsub > ", ->
     beforeEach (done) ->
 
       spys =
-        '1':sinon.spy()
-        '2':sinon.spy()
-        '3':sinon.spy()
+        '1': sinon.spy()
+        '2': sinon.spy()
+        '3': sinon.spy()
 
       peer1 = pnode.peer {id:'peer1', debug:false}
       peer1.bindOn 'tcp://localhost:8001'
@@ -101,7 +101,9 @@ describe "peers pubsub > ", ->
 
       peer1.publish 'foo', {f:1}
       peer1.publish 'foo', {f:2}
+
       peer2.publish 'foo', {f:3}
       peer2.publish 'foo', {f:4}
+
       peer3.publish 'foo', {f:5}
 

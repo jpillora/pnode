@@ -162,6 +162,7 @@ module.exports = class Client extends Base
   onRemote: (remote) ->
 
     @timeout(false)
+    remote = @wrapObject(remote)
 
     #ensure it's a pnode remote
     meta = remote?._pnode
@@ -169,8 +170,6 @@ module.exports = class Client extends Base
       return @err "Invalid pnode host"
 
     # @log "got server remote", meta
-    @wrapObject(remote)
-
     @remote = remote
     @ctx.getMeta meta
     

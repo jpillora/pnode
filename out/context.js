@@ -7,6 +7,8 @@ Socket = require("net").Socket;
 
 module.exports = RemoteContext = (function() {
   function RemoteContext() {
+    this.id = '...';
+    this.guid = '...';
     this.data = {};
     this.events = {};
   }
@@ -20,6 +22,9 @@ module.exports = RemoteContext = (function() {
   };
 
   RemoteContext.prototype.combine = function(ctx) {
+    if (ctx.id !== this.id || ctx.guid !== this.guid) {
+      return;
+    }
     this.data = ctx.data = _.merge(this.data, ctx.data);
     return this.events = ctx.events = _.merge(this.events, ctx.events);
   };

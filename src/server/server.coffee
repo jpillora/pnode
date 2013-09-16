@@ -51,7 +51,6 @@ module.exports = class Server extends Base
 
     conn = new Connection @, read, write
 
-
     conn.once 'up', =>
       #check for existing id or guid
       if @connections.getBy("id",  conn.id) or

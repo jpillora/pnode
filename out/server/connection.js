@@ -51,13 +51,13 @@ module.exports = Connection = (function(_super) {
 
   Connection.prototype.onRemote = function(remote) {
     var meta;
+    remote = this.server.wrapObject(remote);
     meta = remote._pnode;
     if (!meta) {
       this.log("closing conn, not a pnode conn");
       d.end();
       return;
     }
-    this.server.wrapObject(remote);
     this.id = meta.id, this.guid = meta.guid;
     this.ctx.getMeta(meta);
     this.remote = remote;
@@ -87,6 +87,10 @@ module.exports = Connection = (function(_super) {
 
   Connection.prototype.subscribe = function(event, fn) {
     return this.remote._pnode.subscribe(event);
+  };
+
+  Connection.prototype.toString = function() {
+    return "" + this.name + ": " + this.server.id + ">" + this.id + ":";
   };
 
   return Connection;

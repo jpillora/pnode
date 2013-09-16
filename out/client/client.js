@@ -186,11 +186,11 @@ module.exports = Client = (function(_super) {
   Client.prototype.onRemote = function(remote) {
     var meta;
     this.timeout(false);
+    remote = this.wrapObject(remote);
     meta = remote != null ? remote._pnode : void 0;
     if (typeof (meta != null ? meta.ping : void 0) !== "function") {
       return this.err("Invalid pnode host");
     }
-    this.wrapObject(remote);
     this.remote = remote;
     this.ctx.getMeta(meta);
     this.log("EMIT REMOTE");

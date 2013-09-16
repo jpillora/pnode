@@ -5,6 +5,8 @@ Socket = require("net").Socket
 #interface provided to each function exposed
 module.exports = class RemoteContext
   constructor: ->
+    @id = '...'
+    @guid = '...'
     @data = {}
     @events = {}
   
@@ -12,6 +14,8 @@ module.exports = class RemoteContext
   set: (k, v) -> @data[k] = v
   
   combine: (ctx) ->
+    if ctx.id isnt @id or ctx.guid isnt @guid
+      return
     @data   = ctx.data   = _.merge @data, ctx.data
     @events = ctx.events = _.merge @events, ctx.events
 

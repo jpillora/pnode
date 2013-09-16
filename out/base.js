@@ -150,20 +150,24 @@ Base = (function(_super) {
   };
 
   Base.prototype.wrapObject = function(input, ctx) {
-    return this.wrapObjectAcc('root', input, ctx);
+    return this.wrapObjectAcc('root', input, {}, ctx);
   };
 
-  Base.prototype.wrapObjectAcc = function(name, input, ctx) {
+  Base.prototype.wrapObjectAcc = function(name, input, output, ctx) {
     var inst, k, type, v;
     if (input instanceof DynamicExposed) {
       return input.fn();
     }
     type = typeof input;
+    if (input instanceof Array) {
+      return input;
+    }
     if (input && type === 'object') {
       for (k in input) {
         v = input[k];
-        input[k] = this.wrapObjectAcc(k, v, ctx);
+        output[k] = this.wrapObjectAcc(k, v, {}, ctx);
       }
+      return output;
     }
     if (type !== 'function') {
       return input;

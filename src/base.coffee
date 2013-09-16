@@ -97,18 +97,22 @@ class Base extends Logger
 
   #recursively timeoutify functions and eval dynamic values
   wrapObject: (input, ctx) ->
-    @wrapObjectAcc 'root', input, ctx
+    @wrapObjectAcc 'root', input, {}, ctx
 
-  wrapObjectAcc: (name, input, ctx) ->
+  wrapObjectAcc: (name, input, output, ctx) ->
 
     if input instanceof DynamicExposed
       return input.fn()
 
     type = typeof input
 
+    if input instanceof Array
+      return input
+
     if input and type is 'object'
       for k,v of input
-        input[k] = @wrapObjectAcc k, v, ctx
+        output[k] = @wrapObjectAcc k, v, {}, ctx
+      return output
 
     if type isnt 'function'
       return input

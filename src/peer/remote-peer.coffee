@@ -13,6 +13,8 @@ module.exports = class RemotePeer extends Base.Logger
     @opts = @local.opts
     @connecting = false
     @ctx = new RemoteContext
+    @ctx.id = id
+    @ctx.guid = guid
     @isUp(false)
     @cliconns = []
 

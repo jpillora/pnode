@@ -20,6 +20,8 @@ module.exports = RemotePeer = (function(_super) {
     this.opts = this.local.opts;
     this.connecting = false;
     this.ctx = new RemoteContext;
+    this.ctx.id = id;
+    this.ctx.guid = guid;
     this.isUp(false);
     this.cliconns = [];
   }

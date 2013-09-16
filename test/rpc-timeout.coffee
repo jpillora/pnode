@@ -3,7 +3,7 @@ _ = require "../vendor/lodash"
 pnode = require "../"
 
 LO = 10
-HI = 20
+HI = 50
 
 describe "rpc timeout > ", ->
 
