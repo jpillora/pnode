@@ -2,7 +2,7 @@ _ = require '../../vendor/lodash'
 pkg = require '../../package.json'
 
 #common code for http/https
-exports.createServer = (pserver, type, listenArgs, serverArgs) ->
+exports.createServer = (callback, pserver, type, listenArgs, serverArgs) ->
   
   httpModule = require type
 
@@ -12,10 +12,10 @@ exports.createServer = (pserver, type, listenArgs, serverArgs) ->
   hostname = if typeof listenArgs[1] is 'string' then listenArgs[1] else '0.0.0.0'
   port = listenArgs[0]
 
-  pserver.setInterface {
-    uri: "http://#{hostname}:#{port}"
-    unbind: -> s.close()
-  }
+  s.once 'listening', ->
+    callback
+      uri: "http://#{hostname}:#{port}"
+      unbind: (cb) -> s.close cb
   return
 
 #common code for http/https

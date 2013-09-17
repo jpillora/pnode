@@ -11,38 +11,33 @@ _ = require('../../../vendor/lodash');
 secure = require("../secure-common");
 
 exports.bindServer = function() {
-  var args, opts, pserver, si;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+  var args, callback, opts, pserver, si;
+  callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   pserver = this;
   si = {};
   if (typeof args[args.length - 1] === 'object') {
     opts = args.pop();
   }
   return secure.checkCerts(opts, function(opts) {
-    var cb, s;
+    var s;
     if (opts.rejectUnauthorized === undefined) {
       opts.rejectUnauthorized = false;
     }
     s = tls.createServer(opts, function(stream) {
       return pserver.handle(stream);
     });
-    if (typeof args[args.length - 1] === 'function') {
-      cb = args.pop();
-    }
-    args.push(function() {
+    s.once('listening', function() {
       var addr;
       addr = s.address();
-      pserver.setInterface({
+      callback({
         uri: "tls://" + addr.address + ":" + addr.port,
-        unbind: function() {
+        unbind: function(cb) {
+          s.once('close', cb);
           return s.close();
         }
       });
-      if (cb) {
-        return cb();
-      }
     });
-    return s.listen.apply(s, args);
+    s.listen.apply(s, args);
   });
 };
 

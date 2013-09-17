@@ -9,15 +9,15 @@ describe "rpc timeout > ", ->
 
   beforeEach ->
 
-    server = pnode.server {id:'server-1'}
+    server = pnode.server {id:'server-1', debug:false}
     server.expose
       fast: (cb) ->
-        setTimeout (-> cb true), 0
+        cb true
       slow: (cb) ->
         setTimeout (-> cb true), 1000
     server.bind 'tcp://0.0.0.0:8000'
     
-    client = pnode.client {id:'client-1'}
+    client = pnode.client {id:'client-1', debug:false}
     client.bind 'tcp://localhost:8000'
 
   afterEach ->
@@ -45,7 +45,7 @@ describe "rpc timeout > ", ->
 
       client.server (remote) ->
         remote.slow (callback) ->
-          done(new Error "timedin")
+          done(new Error "server timedin")
 
   describe "client timeout > ", ->
 
@@ -68,4 +68,4 @@ describe "rpc timeout > ", ->
 
       client.server (remote) ->
         remote.slow (callback) ->
-          done(new Error "timedin")
+          done(new Error "client timedin")

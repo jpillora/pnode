@@ -3,7 +3,7 @@ fs = require 'fs'
 _ = require '../../../vendor/lodash'
 secure = require "../secure-common"
 
-exports.bindServer = (args...) ->
+exports.bindServer = (callback, args...) ->
 
   pserver = @
   si = {}
@@ -18,19 +18,18 @@ exports.bindServer = (args...) ->
 
     s = tls.createServer opts, (stream) ->
       pserver.handle stream
-
-    #pull out cb
-    if typeof args[args.length-1] is 'function'
-      cb = args.pop()
     
-    args.push ->
+    s.once 'listening', ->
       addr = s.address()
-      pserver.setInterface
+      callback
         uri: "tls://#{addr.address}:#{addr.port}"
-        unbind: -> s.close()
-      cb() if cb
+        unbind: (cb) ->
+          s.once 'close', cb
+          s.close()
+      return
 
     s.listen.apply s, args
+    return
 
 exports.bindClient = (args...) ->
 

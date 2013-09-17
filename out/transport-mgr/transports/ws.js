@@ -21,8 +21,8 @@ exports.parse = function(str) {
 };
 
 exports.bindServer = function() {
-  var args, opts, pserver, s, sock, _i;
-  args = 2 <= arguments.length ? __slice.call(arguments, 0, _i = arguments.length - 1) : (_i = 0, []), opts = arguments[_i++];
+  var args, callback, opts, pserver, s, sock, _i;
+  callback = arguments[0], args = 3 <= arguments.length ? __slice.call(arguments, 1, _i = arguments.length - 1) : (_i = 1, []), opts = arguments[_i++];
   pserver = this;
   if (!opts) {
     pserver.err("Missing options");
@@ -34,15 +34,17 @@ exports.bindServer = function() {
     s = http.createServer();
     s.listen.apply(s, args);
   }
+  s.once('listening', function() {
+    return callback({
+      unbind: function(cb) {
+        return s.close(cb);
+      }
+    });
+  });
   sock = shoe(function(stream) {
     return pserver.handle(stream);
   });
   sock.install(s, opts);
-  return pserver.setInterface({
-    unbind: function() {
-      return s.close();
-    }
-  });
 };
 
 exports.bindClient = function() {

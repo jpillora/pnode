@@ -5,10 +5,10 @@ var http,
 http = require("../http-common");
 
 exports.bindServer = function() {
-  var args, pserver;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+  var args, callback, pserver;
+  callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   pserver = this;
-  http.createServer(pserver, 'http', args, [pserver.handle]);
+  http.createServer(callback, pserver, 'http', args, [pserver.handle]);
 };
 
 exports.bindClient = function() {

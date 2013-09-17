@@ -56,21 +56,18 @@ describe "server clients pubsub > ", ->
     client1.subscribe 'foos', checkFoo
     setTimeout ->
       client1.bind 'tcp://localhost:8000'
-    , 10
 
     #bind then subscribe
     client2 = pnode.client('client-P2')
     client2.bind 'tcp://localhost:8000'
     setTimeout ->
       client2.subscribe 'foos', checkFoo
-    , 10
 
     #delay both
     client3 = pnode.client('client-P3')
     setTimeout ->
       client3.subscribe 'foos', checkFoo
       client3.bind 'tcp://localhost:8000'
-    , 10
 
     #publish to all 3 clients when theyre up
     server.on 'remote', ->

@@ -2,7 +2,9 @@
 {EventEmitter2} = require 'eventemitter2'
 util = require 'util'
 _ = require '../vendor/lodash'
+transportMgr = require './transport-mgr'
 RemoteContext = require './context'
+RPC_ID = 1
 
 #base class of the base class
 class Logger extends EventEmitter2
@@ -60,6 +62,8 @@ class Base extends Logger
 
     _.bindAll @
 
+    @bound = false
+    
   options: (opts) ->
     _.extend @opts, opts
 
@@ -95,6 +99,35 @@ class Base extends Logger
   expose: (obj) ->
     _.merge @exposed, obj
 
+  bind: ->
+    return if @isBound or @binding
+    @binding = true
+
+    transportMgr.bind @, arguments, (@tInterface) =>
+      @binding = false
+      @setIsBound true
+      return
+    return
+
+  unbind: ->
+    return if not @isBound or @unbinding
+    @unbinding = true
+
+    #copy and iterate
+    for conn in Array::slice.call @connections
+      conn.unbind()
+
+    @tInterface.unbind =>
+      @unbinding = false
+      @setIsBound false
+      return
+    return
+
+  setIsBound: (flag) ->
+    @isBound = flag
+    @emit (if flag then '' else 'un')+'bound'
+    # @removeAllEventListeners()
+
   #recursively timeoutify functions and eval dynamic values
   wrapObject: (input, ctx) ->
     @wrapObjectAcc 'root', input, {}, ctx
@@ -119,22 +152,31 @@ class Base extends Logger
 
     inst = @
     return (args...) ->
+
+      id = RPC_ID++
+      t = null
       timedout = false
+
       # place timeout on first function parameter
       for a, i in args
         if typeof a is 'function'
           args[i] = ->
+            # inst.log "returned %s (%s) at %s", name, id, Date.now()
             clearTimeout t
             return if timedout
             inst.emit 'timein', name, args, ctx
             a.apply @, arguments
             return
           t = setTimeout ->
-            timedout = false
+            timedout = true
+            return unless inst.bound
+            # inst.log "timeout %s (%s) at %s", name, id, Date.now()
             inst.emit 'timeout', name, args, ctx
             return
           , inst.opts.timeout
           break
+
+      # inst.log "calling %s (%s) at %s", name, id, Date.now()
       # call original fn
       input.apply ctx, args
 

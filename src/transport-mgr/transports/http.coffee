@@ -1,9 +1,9 @@
 http = require "../http-common"
 
 #http specifc
-exports.bindServer = (args...) ->
+exports.bindServer = (callback, args...) ->
   pserver = @
-  http.createServer pserver, 'http', args, [pserver.handle]
+  http.createServer callback, pserver, 'http', args, [pserver.handle]
   return
 
 exports.bindClient = (args...) ->

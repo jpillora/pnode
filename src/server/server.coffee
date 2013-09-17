@@ -1,6 +1,5 @@
 dnode = require 'dnode'
 Base = require '../base'
-transportMgr = require '../transport-mgr'
 helper = require '../helper'
 ObjectIndex = require 'object-index'
 Connection = require './connection'
@@ -22,24 +21,6 @@ module.exports = class Server extends Base
 
     #alias
     @bindOn = @bind
-
-  #premade handlers
-  bind: ->
-    @unbind()
-    transportMgr.bind @, arguments
-    @log "bind server!"
-    return
-
-  unbind: ->
-    #copy and iterate
-    for conn in Array::slice.call @connections
-      conn.unbind()
-    try
-      if typeof @si?.unbind is 'function'
-        @si.unbind()
-    @si = null
-    @emit 'unbind'
-    return
 
   handle: (read, write) ->
 
@@ -103,9 +84,13 @@ module.exports = class Server extends Base
         conn.subscribe event
     return
 
-  setInterface: (obj) -> @si = obj
-  uri: -> @si?.uri
-  serialize: -> @uri()
+  setInterface: (obj) ->
+    @si = obj
+    @log "bound server on #{@uri()}!"
+  uri: ->
+    @si?.uri
+  serialize: ->
+    @uri()
 
 #unbind all servers on exit
 process.on? 'exit', ->

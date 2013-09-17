@@ -22,7 +22,8 @@ exports.parse = (str) ->
 #   transport://host:port, ...rest
 # which will translate to
 #   transport, port, host, ...rest
-exports.bind = (context, args) ->
+
+prebind = (context, args, callback) ->
   args = Array::slice.call args
   transport = args.shift()
 
@@ -43,10 +44,24 @@ exports.bind = (context, args) ->
   parseFn = obj.parse or exports.parse
 
   #prepend parsed args
-  args = parseFn(uri).concat(args)
+  args = [callback].concat(parseFn(uri)).concat(args)
 
-  fn = obj["bind#{context.name}"]
-  fn.apply context, args
+  context.log "bind args", args
+
+  return obj
+
+
+exports.bindClient = (context, args, callback) ->
+
+  try
+    # ...
+  catch e
+    # ...
+  
+
+exports.bindServer = (context, args, callback) ->
+
+
 
 exports.add = (name, obj) ->
   if typeof obj.bindServer isnt 'function' or

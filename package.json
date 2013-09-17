@@ -43,7 +43,7 @@
     "eventemitter2": "~0.4.13"
   },
   "testling": {
-    "server": "test/testling/server.js",
+    "server": "test/testling/testling-server.js",
     "files": "test/testling/*-tests.js",
     "browsers": [
       "ie/6..latest",

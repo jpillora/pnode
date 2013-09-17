@@ -7,14 +7,14 @@ http = require("../http-common");
 secure = require("../secure-common");
 
 exports.bindServer = function() {
-  var args, opts, pserver;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+  var args, callback, opts, pserver;
+  callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   pserver = this;
   if (typeof args[args.length - 1] === 'object') {
     opts = args.pop();
   }
   return secure.checkCerts(opts, function(opts) {
-    return http.createServer(pserver, 'https', args, [opts, pserver.handle]);
+    return http.createServer(callback, pserver, 'https', args, [opts, pserver.handle]);
   });
 };
 

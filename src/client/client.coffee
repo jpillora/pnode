@@ -2,7 +2,6 @@ _ = require '../../vendor/lodash'
 dnode = require 'dnode'
 Base = require '../base'
 helper = require '../helper'
-transportMgr = require '../transport-mgr'
 RemoteContext = require '../context'
 
 module.exports = class Client extends Base
@@ -20,7 +19,6 @@ module.exports = class Client extends Base
   constructor: ->
     super
 
-    @bound = false
     @stream = {}
     @count = { ping: 0, pong: 0, attempt: 0 }
     @connecting = false
@@ -31,29 +29,19 @@ module.exports = class Client extends Base
     @ping = _.throttle @ping, @opts.pingInterval
 
     #alias
-    @bindTo = @bind    
+    @bindTo = @bind
 
-  #premade connection creators
-  bind: ->
-    @unbind()
-    #call the appropriate {transport}.bindClient()
-    @bound = true
-    transportMgr.bind @, arguments
-    @log "bind to #{@uri()}!"
-    return
-
-  unbind: ->
-    @log "unbind!" if @bound
-    @bound = false
-    @count.attempt = 0
-    @reset()
-    @stream.duplex?.close?()
-    @stream.read?.close?()
-    @stream.write?.close?()
-    @stream = {}
-    @ci = null
-    @emit 'unbind'
-    return
+  # unbind: ->
+  #   @log "unbind!" if @bound
+  #   @count.attempt = 0
+  #   @reset()
+  #   @stream.duplex?.close?()
+  #   @stream.read?.close?()
+  #   @stream.write?.close?()
+  #   @stream = {}
+  #   @ci = null
+  #   super
+  #   return
 
   createConnection: (fn) ->
     unless typeof fn is 'function'
@@ -83,7 +71,7 @@ module.exports = class Client extends Base
   unget: (callback) ->
     @removeListener 'remote', callback
 
-  reconnect: ->
+  reconnect: (callback) ->
     if @status is 'up' or
        @connecting or
        @count.attempt >= @opts.maxRetries
@@ -106,7 +94,7 @@ module.exports = class Client extends Base
       @reset()
       @reconnect()
 
-    @log "connection attempt #{@count.attempt} (#{@uri()})"
+    @log "connection attempt #{@count.attempt} to #{@uri()}..."
     @emit 'connecting'
     #get stream and splice in
     switch @getConnectionFn.length

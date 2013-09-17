@@ -11,7 +11,7 @@ exports.parse = (str) ->
     args.push(RegExp.$4)
   return args
 
-exports.bindServer = (args..., opts) ->
+exports.bindServer = (callback, args..., opts) ->
 
   pserver = @
 
@@ -25,11 +25,13 @@ exports.bindServer = (args..., opts) ->
     s = http.createServer()
     s.listen.apply s, args
 
+  s.once 'listening', ->
+    callback
+      unbind: (cb) -> s.close cb
+
   sock = shoe (stream) -> pserver.handle stream
   sock.install s, opts
-
-  pserver.setInterface
-    unbind: -> s.close()
+  return
 
 exports.bindClient = ->
   # see 'browser/src/transports/ws.coffee'

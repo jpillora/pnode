@@ -5,18 +5,20 @@ _ = require('../../vendor/lodash');
 
 pkg = require('../../package.json');
 
-exports.createServer = function(pserver, type, listenArgs, serverArgs) {
+exports.createServer = function(callback, pserver, type, listenArgs, serverArgs) {
   var hostname, httpModule, port, s;
   httpModule = require(type);
   s = httpModule.createServer.apply(null, serverArgs);
   s.listen.apply(s, listenArgs);
   hostname = typeof listenArgs[1] === 'string' ? listenArgs[1] : '0.0.0.0';
   port = listenArgs[0];
-  pserver.setInterface({
-    uri: "http://" + hostname + ":" + port,
-    unbind: function() {
-      return s.close();
-    }
+  s.once('listening', function() {
+    return callback({
+      uri: "http://" + hostname + ":" + port,
+      unbind: function(cb) {
+        return s.close(cb);
+      }
+    });
   });
 };
 
