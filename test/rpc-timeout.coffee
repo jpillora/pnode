@@ -2,9 +2,6 @@
 _ = require "../vendor/lodash"
 pnode = require "../"
 
-LO = 10
-HI = 100
-
 describe "rpc timeout > ", ->
 
   server = null
@@ -15,9 +12,9 @@ describe "rpc timeout > ", ->
     server = pnode.server {id:'server-1'}
     server.expose
       fast: (cb) ->
-        setTimeout (-> cb true), LO
+        setTimeout (-> cb true), 0
       slow: (cb) ->
-        setTimeout (-> cb true), HI
+        setTimeout (-> cb true), 1000
     server.bind 'tcp://0.0.0.0:8000'
     
     client = pnode.client {id:'client-1'}
@@ -30,7 +27,7 @@ describe "rpc timeout > ", ->
   describe "server timeout > ", ->
 
     beforeEach ->
-      server.options {timeout: LO+10}
+      server.options {timeout: 10}
 
     it "should NOT timeout", (done) ->
 
@@ -53,7 +50,7 @@ describe "rpc timeout > ", ->
   describe "client timeout > ", ->
 
     beforeEach ->
-      client.options {timeout: LO+10}
+      client.options {timeout: 10}
 
     it "should NOT timeout", (done) ->
 
