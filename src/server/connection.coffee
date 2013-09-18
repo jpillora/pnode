@@ -34,7 +34,7 @@ module.exports = class Connection extends Base.Logger
 
     @d.once 'end', =>
       # @log "DNODE END (from #{@server.id})"
-      @warn "DOWN"
+      @log "DOWN"
       @emit 'down'
 
     #splice!
@@ -49,8 +49,6 @@ module.exports = class Connection extends Base.Logger
   #recieve a remote interface
   onRemote: (remote) ->
 
-    @warn "REMOTE"
-
     remote = @server.wrapObject(remote)
 
     meta = remote._pnode
@@ -64,7 +62,7 @@ module.exports = class Connection extends Base.Logger
     
     @remote = remote
     @emit 'remote', remote
-    @warn "UP"
+    @log "UP"
     @emit 'up'
     return
 
@@ -87,4 +85,4 @@ module.exports = class Connection extends Base.Logger
     @remote._pnode.subscribe event
 
   toString: ->
-    "#{@name}: #{@server.id}>#{@id}:"
+    "#{@name}: #{@server.id} -> #{@id}:"

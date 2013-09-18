@@ -242,7 +242,6 @@ Base = (function(_super) {
     }
     parent = this;
     (_base = parent.timeoutify).id || (_base.id = 0);
-    this.log("timeoutify " + name + "!");
     type = ctx instanceof RemoteContext ? 'local' : 'remote';
     return function() {
       var a, args, i, id, t, timedout, _j, _len1;
@@ -254,7 +253,6 @@ Base = (function(_super) {
         a = args[i];
         if (typeof a === 'function') {
           args[i] = function() {
-            parent.log("returned %s %s (%s) at %s", type, name, id, Date.now());
             clearTimeout(t);
             if (timedout) {
               return;
@@ -267,13 +265,11 @@ Base = (function(_super) {
             if (!parent.isBound) {
               return;
             }
-            parent.log("timeout %s %s (%s) at %s", type, name, id, Date.now());
             parent.emit(['timeout', name], args, ctx);
           }, parent.opts.timeout);
           break;
         }
       }
-      parent.log("calling %s %s (%s) at %s %s", type, name, id, Date.now(), t === null ? '' : ' (with timer)');
       return fn.apply(ctx, args);
     };
   };

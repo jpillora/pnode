@@ -3,49 +3,66 @@ pkg = require '../../package.json'
 util = require 'util'
 http = require 'http'
 https = require 'https'
-stream = if process.version.match /^\v0\.8/
-  require 'readable-stream'
-else
-  require 'stream'
+# stream = if process.version.match /^\v0\.8/
+#   require 'readable-stream'
+# else
+#   require 'stream'
 
-class HTTPDuplex extends stream.Duplex
-  constructor: (type, opts) ->
-    unless @ instanceof HTTPDuplex
-      return new HTTPDuplex type, opts
-    
-    stream.Duplex.call @, type, opts
+# watch = (read, write) ->
+#   read.on 'data', ->
+#     console.log 'READ DATA: ' + arguments[0]
+#   read.on 'end', ->
+#     console.log 'READ END'
+#   w = write.write
+#   write.write = ->
+#     result = w.apply @, arguments
+#     console.log 'WRITE DATA: ('+result+')' + arguments[0]
+#     result
+#   write.on 'drain', ->
+#     console.log 'WRITE DRAIN'
+#   write.on 'end', ->
+#     console.log 'WRITE END'
 
-    @res = null
-    @http = if type is 'https' then https else http 
+# class HTTPDuplex extends stream.Duplex
+#   constructor: (type, opts) ->
+#     unless @ instanceof HTTPDuplex
+#       return new HTTPDuplex type, opts
+#     super
+#     @res = null
+#     @http = if type is 'https' then https else http 
+#     @req = @http.request(opts)
+#     @req.on "response", (res) =>
+#       console.log "RESPONSE"
+#       @res = res
+#       @res.on "data", (c) =>
+#         @res.pause() unless @push(c)
+#       @res.on "end", =>
+#         @push null
 
-    @req = @http.request(opts)
-    @req.on "response", (resp) =>
-      @res = resp
-      @emit "response", resp
-      resp.on "data", (c) =>
-        console.log 'READ HTTP DATA: ' + c
-        @res.pause()  unless @push(c)
-      resp.on "end", =>
-        @push null
+#       @emit "response", @res
 
-  _read: (n) ->
-    @res.resume()  if @res
+#       @res.on "readable", =>
+#         console.log "READABLE!"
+#         @emit "readable"
 
-  _write: (chunk, encoding, cb) ->
-    console.log 'WRITE HTTP DATA: ' + chunk
-    @req.write chunk, encoding, cb
-
-  end: (chunk, encoding, cb) ->
-    console.log 'HTTP END'
-    @req.end chunk, encoding, cb
+#   _read: (n) ->
+#     @res.resume()  if @res
+#   _write: (chunk, encoding, cb) ->
+#     succ = @req.write chunk, encoding, cb
+#     console.log "WRITE SUCCESS? ===> " + succ
+#     succ
+#   end: (chunk, encoding, cb) ->
+#     @req.end chunk, encoding, cb
 
 
 #common code for http/https
 exports.createServer = (callback, pserver, type, listenArgs, serverArgs) ->
   
-  httpModule = require type
+  s = (if type is 'https' then https else http).createServer.apply null, serverArgs
+  # s = (if type is 'https' then https else http).createServer (req, res) ->
+  #   watch req, res
+  #   serverArgs[0](req, res)
 
-  s = httpModule.createServer.apply null, serverArgs
   s.listen.apply s, listenArgs
 
   hostname = if typeof listenArgs[1] is 'string' then listenArgs[1] else '0.0.0.0'
@@ -82,12 +99,17 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
 
   pclient.createConnection (callback) ->
 
-    stream = HTTPDuplex type, opts
-    callback
-      uri: uri
-      stream: stream
+    write = (if type is 'https' then https else http).request opts
+    write.once 'response', (read) ->
+      callback { read }
+      return
+
+    callback {
+      uri
+      write
       unbind: (cb) ->
-        stream.end()
+        write.end()
         cb true
+    }
     return
   return

@@ -60,7 +60,7 @@ exports.bind = function(context, args, callback) {
     context.err("Transport: " + err);
   }
   if (context.name === 'Client') {
-    context.once('stream', function(obj) {
+    context.once('interface', function(obj) {
       return callback(obj);
     });
     trans.bindClient.apply(context, args);

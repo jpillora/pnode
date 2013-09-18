@@ -173,7 +173,6 @@ class Base extends Logger
     parent.timeoutify.id or= 0
     # splice in an interceptor function to the first
     # function argument (presumes a callback)
-    @log "timeoutify #{name}!"
 
     type = if ctx instanceof RemoteContext then 'local' else 'remote'
 
@@ -186,7 +185,7 @@ class Base extends Logger
       for a, i in args
         if typeof a is 'function'
           args[i] = ->
-            parent.log "returned %s %s (%s) at %s", type, name, id, Date.now()
+            # parent.log "returned %s %s (%s) at %s", type, name, id, Date.now()
             clearTimeout t
             return if timedout
             parent.emit ['timein',name], args, ctx
@@ -195,13 +194,13 @@ class Base extends Logger
           t = setTimeout ->
             timedout = true
             return unless parent.isBound
-            parent.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
+            # parent.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
             parent.emit ['timeout',name], args, ctx
             return
           , parent.opts.timeout
           break
 
-      parent.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
+      # parent.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
       # call original fn
       fn.apply ctx, args
 

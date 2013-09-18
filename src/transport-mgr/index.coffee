@@ -60,7 +60,7 @@ exports.bind = (context, args, callback) ->
 
   if context.name is 'Client'
     #listen for next stream...
-    context.once 'stream', (obj) ->
+    context.once 'interface', (obj) ->
       callback obj
     trans.bindClient.apply context, args
 

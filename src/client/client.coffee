@@ -103,44 +103,56 @@ module.exports = class Client extends Base
     @d.once 'error', @onError
     @d.once 'fail', @onStreamError
 
+    gotRead = false
     gotWrite = false
+    tInterface = {}
 
     @log "connection attempt #{@count.attempt} to #{@uri()}..."
     @emit 'connecting'
 
     spliceRead = (read) =>
       return if gotRead
+      unless helper.isReadable read
+        @err "Invalid read stream" 
+      read.on 'error', @onStreamError
+      #extract src ip and port
+      @ctx.getAddr read
+      #read to dnode
+      read.pipe(@d)
+      gotRead = true
 
     spliceWrite = (write) =>
       return if gotWrite
-      @log "SPLICE WRITE"
-
-    spliced = false
-    @getConnectionFn (obj) =>
-      return if spliced
-      spliced = true
-
-      {stream, unbind, uri} = obj
-
-      if typeof unbind isnt 'function'
-        @err "unbind function missing"
-
-      if typeof uri isnt 'string'
-        @err "uri string missing"
-
-      unless helper.isReadable stream
-        @err "Invalid read stream" 
-
-      unless helper.isWritable stream
+      unless helper.isWritable write
         @err "Invalid write stream" 
+      write.on 'error', @onStreamError
+      #write from dnode
+      @d.pipe(write)
+      gotWrite = true
 
-      @emit 'stream', {unbind,uri}
+    @getConnectionFn (obj) =>
 
-      stream.on 'error', @onStreamError
-      #extract src ip and port
-      @ctx.getAddr stream
-      #splice!
-      stream.pipe(@d).pipe(stream)
+      {stream, unbind, uri, read, write} = obj
+
+      tInterface.uri = uri if uri
+      tInterface.unbind = unbind if unbind
+
+      # if typeof unbind isnt 'function'
+      #   @err "unbind function missing"
+      # if typeof uri isnt 'string'
+      #   @err "uri string missing"
+
+      if tInterface.uri and tInterface.unbind
+        @emit 'interface', tInterface
+
+      if read
+        spliceRead read
+      if write
+        spliceWrite write
+      if stream
+        spliceRead stream
+        spliceWrite stream
+      return
     return
 
   #connection failed
@@ -175,7 +187,7 @@ module.exports = class Client extends Base
     @remote = remote
     @ctx.getMeta meta
     
-    @log "EMIT REMOTE", remote
+    # @log "EMIT REMOTE", remote
     @emit 'remote', @remote, @
     @setStatus 'up'
     @ping()

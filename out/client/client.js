@@ -85,7 +85,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.reconnect = function(callback) {
-    var gotWrite, spliceRead, spliceWrite, spliced,
+    var gotRead, gotWrite, spliceRead, spliceWrite, tInterface,
       _this = this;
     if (this.status === 'up' || this.connecting || this.count.attempt >= this.opts.maxRetries) {
       return;
@@ -99,47 +99,56 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
+    gotRead = false;
     gotWrite = false;
+    tInterface = {};
     this.log("connection attempt " + this.count.attempt + " to " + (this.uri()) + "...");
     this.emit('connecting');
     spliceRead = function(read) {
       if (gotRead) {
-
+        return;
       }
+      if (!helper.isReadable(read)) {
+        _this.err("Invalid read stream");
+      }
+      read.on('error', _this.onStreamError);
+      _this.ctx.getAddr(read);
+      read.pipe(_this.d);
+      return gotRead = true;
     };
     spliceWrite = function(write) {
       if (gotWrite) {
         return;
       }
-      return _this.log("SPLICE WRITE");
-    };
-    spliced = false;
-    this.getConnectionFn(function(obj) {
-      var stream, unbind, uri;
-      if (spliced) {
-        return;
-      }
-      spliced = true;
-      stream = obj.stream, unbind = obj.unbind, uri = obj.uri;
-      if (typeof unbind !== 'function') {
-        _this.err("unbind function missing");
-      }
-      if (typeof uri !== 'string') {
-        _this.err("uri string missing");
-      }
-      if (!helper.isReadable(stream)) {
-        _this.err("Invalid read stream");
-      }
-      if (!helper.isWritable(stream)) {
+      if (!helper.isWritable(write)) {
         _this.err("Invalid write stream");
       }
-      _this.emit('stream', {
-        unbind: unbind,
-        uri: uri
-      });
-      stream.on('error', _this.onStreamError);
-      _this.ctx.getAddr(stream);
-      return stream.pipe(_this.d).pipe(stream);
+      write.on('error', _this.onStreamError);
+      _this.d.pipe(write);
+      return gotWrite = true;
+    };
+    this.getConnectionFn(function(obj) {
+      var read, stream, unbind, uri, write;
+      stream = obj.stream, unbind = obj.unbind, uri = obj.uri, read = obj.read, write = obj.write;
+      if (uri) {
+        tInterface.uri = uri;
+      }
+      if (unbind) {
+        tInterface.unbind = unbind;
+      }
+      if (tInterface.uri && tInterface.unbind) {
+        _this.emit('interface', tInterface);
+      }
+      if (read) {
+        spliceRead(read);
+      }
+      if (write) {
+        spliceWrite(write);
+      }
+      if (stream) {
+        spliceRead(stream);
+        spliceWrite(stream);
+      }
     });
   };
 
@@ -170,7 +179,6 @@ module.exports = Client = (function(_super) {
     }
     this.remote = remote;
     this.ctx.getMeta(meta);
-    this.log("EMIT REMOTE", remote);
     this.emit('remote', this.remote, this);
     this.setStatus('up');
     return this.ping();

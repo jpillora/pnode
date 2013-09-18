@@ -39,7 +39,7 @@ module.exports = Connection = (function(_super) {
     write.once('close', this.d.end);
     write.once('end', this.d.end);
     this.d.once('end', function() {
-      _this.warn("DOWN");
+      _this.log("DOWN");
       return _this.emit('down');
     });
     read.pipe(this.d).pipe(write);
@@ -54,7 +54,6 @@ module.exports = Connection = (function(_super) {
 
   Connection.prototype.onRemote = function(remote) {
     var meta;
-    this.warn("REMOTE");
     remote = this.server.wrapObject(remote);
     meta = remote._pnode;
     if (!meta) {
@@ -66,7 +65,7 @@ module.exports = Connection = (function(_super) {
     this.ctx.getMeta(meta);
     this.remote = remote;
     this.emit('remote', remote);
-    this.warn("UP");
+    this.log("UP");
     this.emit('up');
   };
 
@@ -95,7 +94,7 @@ module.exports = Connection = (function(_super) {
   };
 
   Connection.prototype.toString = function() {
-    return "" + this.name + ": " + this.server.id + ">" + this.id + ":";
+    return "" + this.name + ": " + this.server.id + " -> " + this.id + ":";
   };
 
   return Connection;
