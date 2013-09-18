@@ -24,9 +24,22 @@ module.exports = class Client extends Base
     @connecting = false
     @status = 'down'
 
-    #throttle reconnects and pings
+    
+    #timeoutify and throttle reconnects
+    @reconnect = @timeoutify 'reconnect', @reconnect
     @reconnect = _.throttle @reconnect, @opts.retryInterval, {leading:true}
+
+    @on ['timeout','reconnect'], =>
+      @log "reconnect TIMEOUT!"
+      @reset()
+      @reconnect()
+
+    #throttle ping (already timeoutified from remote)
     @ping = _.throttle @ping, @opts.pingInterval
+
+    @on ['timeout','ping'], =>
+      @log "ping TIMEOUT!"
+      @setStatus 'down'
 
     #alias
     @bindTo = @bind
@@ -90,47 +103,49 @@ module.exports = class Client extends Base
     @d.once 'error', @onError
     @d.once 'fail', @onStreamError
 
-    @timeout =>
-      @reset()
-      @reconnect()
+    gotWrite = false
 
     @log "connection attempt #{@count.attempt} to #{@uri()}..."
     @emit 'connecting'
-    #get stream and splice in
-    switch @getConnectionFn.length
-      #user providing a duplex stream
-      when 1
-        @getConnectionFn (stream) =>
-          @err "Invalid duplex stream (not readable)" unless helper.isReadable stream
-          @err "Invalid duplex stream (not writable)" unless helper.isWritable stream
-          stream.on 'error', @onStreamError
 
-          #extract src ip and port
-          @ctx.getAddr stream
+    spliceRead = (read) =>
+      return if gotRead
 
-          stream.pipe(@d).pipe(stream)
-          @stream.duplex = stream
-      #user providing a read stream and a write stream
-      when 2
-        @getConnectionFn (read) =>
-          @err "Invalid read stream" unless helper.isReadable read
-          read.on 'error', @onStreamError
-          read.pipe(@d)
+    spliceWrite = (write) =>
+      return if gotWrite
+      @log "SPLICE WRITE"
 
-          #extract src ip and port
-          @ctx.getAddr read
+    spliced = false
+    @getConnectionFn (obj) =>
+      return if spliced
+      spliced = true
 
-          @stream.read = read
-        , (write) =>
-          @err "Invalid write stream" unless helper.isWritable write
-          write.on 'error', @onStreamError
-          @d.pipe(write)
-          @stream.write = write
+      {stream, unbind, uri} = obj
+
+      if typeof unbind isnt 'function'
+        @err "unbind function missing"
+
+      if typeof uri isnt 'string'
+        @err "uri string missing"
+
+      unless helper.isReadable stream
+        @err "Invalid read stream" 
+
+      unless helper.isWritable stream
+        @err "Invalid write stream" 
+
+      @emit 'stream', {unbind,uri}
+
+      stream.on 'error', @onStreamError
+      #extract src ip and port
+      @ctx.getAddr stream
+      #splice!
+      stream.pipe(@d).pipe(stream)
     return
 
   #connection failed
   onStreamError: (err) ->
-    return unless @bound
+    return unless @isBound
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"
     # else
@@ -142,14 +157,13 @@ module.exports = class Client extends Base
 
   #on rpc method exception
   onError: (err) ->
-    return unless @bound
-    @log "RPC Error: #{err.stack or err}"
-    @err err
+    return unless @isBound
+    msg = if err.stack then err.stack + "\n====" else err
+    @err msg
 
   #up events
   onRemote: (remote) ->
 
-    @timeout(false)
     remote = @wrapObject(remote)
 
     #ensure it's a pnode remote
@@ -161,30 +175,19 @@ module.exports = class Client extends Base
     @remote = remote
     @ctx.getMeta meta
     
-    @log "EMIT REMOTE"
+    @log "EMIT REMOTE", remote
     @emit 'remote', @remote, @
     @setStatus 'up'
     @ping()
 
-  #ping while 'up'
+  #throttled ping while 'up'
   ping: ->
     return if @status is 'down'
     @count.ping++
-    @timeout(true)
     # @log "ping #{@count.ping}!"
     @remote._pnode.ping (ok) =>
       @count.pong++ if ok is true
-      @timeout(false)
       @ping()
-
-  #timeout method
-  timeout: (cb) ->
-    clearTimeout @timeout.t
-    return if cb is false
-    @timeout.t = setTimeout =>
-      @setStatus 'down'
-      cb() if typeof cb is 'function'
-    , @opts.timeout
 
   #down events
   onEnd: ->
@@ -231,6 +234,4 @@ module.exports = class Client extends Base
         remote._pnode.subscribe event
     return
 
-  setInterface: (obj) -> @ci = obj
-  uri: -> @ci?.uri
   serialize: -> @uri()

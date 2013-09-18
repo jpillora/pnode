@@ -84,11 +84,6 @@ module.exports = class Server extends Base
         conn.subscribe event
     return
 
-  setInterface: (obj) ->
-    @si = obj
-    @log "bound server on #{@uri()}!"
-  uri: ->
-    @si?.uri
   serialize: ->
     @uri()
 

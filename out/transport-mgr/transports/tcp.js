@@ -28,7 +28,13 @@ exports.bindClient = function() {
   pclient.createConnection(function(callback) {
     var stream;
     stream = net.connect.apply(null, args);
-    return callback(callback);
+    return callback({
+      uri: uri,
+      stream: stream,
+      unbind: function() {
+        return stream.end();
+      }
+    });
   });
 };
 

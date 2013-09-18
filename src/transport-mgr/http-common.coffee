@@ -1,5 +1,44 @@
 _ = require '../../vendor/lodash'
 pkg = require '../../package.json'
+util = require 'util'
+http = require 'http'
+https = require 'https'
+stream = if process.version.match /^\v0\.8/
+  require 'readable-stream'
+else
+  require 'stream'
+
+class HTTPDuplex extends stream.Duplex
+  constructor: (type, opts) ->
+    unless @ instanceof HTTPDuplex
+      return new HTTPDuplex type, opts
+    
+    stream.Duplex.call @, type, opts
+
+    @res = null
+    @http = if type is 'https' then https else http 
+
+    @req = @http.request(opts)
+    @req.on "response", (resp) =>
+      @res = resp
+      @emit "response", resp
+      resp.on "data", (c) =>
+        console.log 'READ HTTP DATA: ' + c
+        @res.pause()  unless @push(c)
+      resp.on "end", =>
+        @push null
+
+  _read: (n) ->
+    @res.resume()  if @res
+
+  _write: (chunk, encoding, cb) ->
+    console.log 'WRITE HTTP DATA: ' + chunk
+    @req.write chunk, encoding, cb
+
+  end: (chunk, encoding, cb) ->
+    console.log 'HTTP END'
+    @req.end chunk, encoding, cb
+
 
 #common code for http/https
 exports.createServer = (callback, pserver, type, listenArgs, serverArgs) ->
@@ -14,14 +53,12 @@ exports.createServer = (callback, pserver, type, listenArgs, serverArgs) ->
 
   s.once 'listening', ->
     callback
-      uri: "http://#{hostname}:#{port}"
+      uri: "#{type}://#{hostname}:#{port}"
       unbind: (cb) -> s.close cb
   return
 
 #common code for http/https
 exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
-  
-  httpModule = require type
 
   opts =
     path: '/'+pkg.name
@@ -41,10 +78,16 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
   if typeof reqArgs[0] is 'string'
     opts.hostname = reqArgs.shift()
 
-  pclient.setInterface {
-    uri: "http://#{opts.hostname or 'localhost'}:#{opts.port}"
-  }
+  uri = "#{type}://#{opts.hostname or 'localhost'}:#{opts.port}"  
 
-  pclient.createConnection (readCallback, writeCallback) ->
-    writeCallback httpModule.request opts, readCallback
+  pclient.createConnection (callback) ->
+
+    stream = HTTPDuplex type, opts
+    callback
+      uri: uri
+      stream: stream
+      unbind: (cb) ->
+        stream.end()
+        cb true
+    return
   return

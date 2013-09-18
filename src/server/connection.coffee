@@ -12,7 +12,7 @@ module.exports = class Connection extends Base.Logger
 
   constructor: (@server, read, write) ->
 
-    @opts = @server.opts
+    @opts = { debug: true }
     @id = @guid = "..."
     @subs = {}
 
@@ -34,6 +34,7 @@ module.exports = class Connection extends Base.Logger
 
     @d.once 'end', =>
       # @log "DNODE END (from #{@server.id})"
+      @warn "DOWN"
       @emit 'down'
 
     #splice!
@@ -48,6 +49,8 @@ module.exports = class Connection extends Base.Logger
   #recieve a remote interface
   onRemote: (remote) ->
 
+    @warn "REMOTE"
+
     remote = @server.wrapObject(remote)
 
     meta = remote._pnode
@@ -61,6 +64,7 @@ module.exports = class Connection extends Base.Logger
     
     @remote = remote
     @emit 'remote', remote
+    @warn "UP"
     @emit 'up'
     return
 

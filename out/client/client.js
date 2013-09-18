@@ -29,6 +29,7 @@ module.exports = Client = (function(_super) {
   };
 
   function Client() {
+    var _this = this;
     Client.__super__.constructor.apply(this, arguments);
     this.stream = {};
     this.count = {
@@ -38,10 +39,20 @@ module.exports = Client = (function(_super) {
     };
     this.connecting = false;
     this.status = 'down';
+    this.reconnect = this.timeoutify('reconnect', this.reconnect);
     this.reconnect = _.throttle(this.reconnect, this.opts.retryInterval, {
       leading: true
     });
+    this.on(['timeout', 'reconnect'], function() {
+      _this.log("reconnect TIMEOUT!");
+      _this.reset();
+      return _this.reconnect();
+    });
     this.ping = _.throttle(this.ping, this.opts.pingInterval);
+    this.on(['timeout', 'ping'], function() {
+      _this.log("ping TIMEOUT!");
+      return _this.setStatus('down');
+    });
     this.bindTo = this.bind;
   }
 
@@ -74,7 +85,8 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.reconnect = function(callback) {
-    var _this = this;
+    var gotWrite, spliceRead, spliceWrite, spliced,
+      _this = this;
     if (this.status === 'up' || this.connecting || this.count.attempt >= this.opts.maxRetries) {
       return;
     }
@@ -87,49 +99,52 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
-    this.timeout(function() {
-      _this.reset();
-      return _this.reconnect();
-    });
+    gotWrite = false;
     this.log("connection attempt " + this.count.attempt + " to " + (this.uri()) + "...");
     this.emit('connecting');
-    switch (this.getConnectionFn.length) {
-      case 1:
-        this.getConnectionFn(function(stream) {
-          if (!helper.isReadable(stream)) {
-            _this.err("Invalid duplex stream (not readable)");
-          }
-          if (!helper.isWritable(stream)) {
-            _this.err("Invalid duplex stream (not writable)");
-          }
-          stream.on('error', _this.onStreamError);
-          _this.ctx.getAddr(stream);
-          stream.pipe(_this.d).pipe(stream);
-          return _this.stream.duplex = stream;
-        });
-        break;
-      case 2:
-        this.getConnectionFn(function(read) {
-          if (!helper.isReadable(read)) {
-            _this.err("Invalid read stream");
-          }
-          read.on('error', _this.onStreamError);
-          read.pipe(_this.d);
-          _this.ctx.getAddr(read);
-          return _this.stream.read = read;
-        }, function(write) {
-          if (!helper.isWritable(write)) {
-            _this.err("Invalid write stream");
-          }
-          write.on('error', _this.onStreamError);
-          _this.d.pipe(write);
-          return _this.stream.write = write;
-        });
-    }
+    spliceRead = function(read) {
+      if (gotRead) {
+
+      }
+    };
+    spliceWrite = function(write) {
+      if (gotWrite) {
+        return;
+      }
+      return _this.log("SPLICE WRITE");
+    };
+    spliced = false;
+    this.getConnectionFn(function(obj) {
+      var stream, unbind, uri;
+      if (spliced) {
+        return;
+      }
+      spliced = true;
+      stream = obj.stream, unbind = obj.unbind, uri = obj.uri;
+      if (typeof unbind !== 'function') {
+        _this.err("unbind function missing");
+      }
+      if (typeof uri !== 'string') {
+        _this.err("uri string missing");
+      }
+      if (!helper.isReadable(stream)) {
+        _this.err("Invalid read stream");
+      }
+      if (!helper.isWritable(stream)) {
+        _this.err("Invalid write stream");
+      }
+      _this.emit('stream', {
+        unbind: unbind,
+        uri: uri
+      });
+      stream.on('error', _this.onStreamError);
+      _this.ctx.getAddr(stream);
+      return stream.pipe(_this.d).pipe(stream);
+    });
   };
 
   Client.prototype.onStreamError = function(err) {
-    if (!this.bound) {
+    if (!this.isBound) {
       return;
     }
     this.log("stream error: " + err.message);
@@ -138,16 +153,16 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onError = function(err) {
-    if (!this.bound) {
+    var msg;
+    if (!this.isBound) {
       return;
     }
-    this.log("RPC Error: " + (err.stack || err));
-    return this.err(err);
+    msg = err.stack ? err.stack + "\n====" : err;
+    return this.err(msg);
   };
 
   Client.prototype.onRemote = function(remote) {
     var meta;
-    this.timeout(false);
     remote = this.wrapObject(remote);
     meta = remote != null ? remote._pnode : void 0;
     if (typeof (meta != null ? meta.ping : void 0) !== "function") {
@@ -155,7 +170,7 @@ module.exports = Client = (function(_super) {
     }
     this.remote = remote;
     this.ctx.getMeta(meta);
-    this.log("EMIT REMOTE");
+    this.log("EMIT REMOTE", remote);
     this.emit('remote', this.remote, this);
     this.setStatus('up');
     return this.ping();
@@ -167,28 +182,12 @@ module.exports = Client = (function(_super) {
       return;
     }
     this.count.ping++;
-    this.timeout(true);
     return this.remote._pnode.ping(function(ok) {
       if (ok === true) {
         _this.count.pong++;
       }
-      _this.timeout(false);
       return _this.ping();
     });
-  };
-
-  Client.prototype.timeout = function(cb) {
-    var _this = this;
-    clearTimeout(this.timeout.t);
-    if (cb === false) {
-      return;
-    }
-    return this.timeout.t = setTimeout(function() {
-      _this.setStatus('down');
-      if (typeof cb === 'function') {
-        return cb();
-      }
-    }, this.opts.timeout);
   };
 
   Client.prototype.onEnd = function() {
@@ -242,15 +241,6 @@ module.exports = Client = (function(_super) {
         return remote._pnode.subscribe(event);
       });
     }
-  };
-
-  Client.prototype.setInterface = function(obj) {
-    return this.ci = obj;
-  };
-
-  Client.prototype.uri = function() {
-    var _ref;
-    return (_ref = this.ci) != null ? _ref.uri : void 0;
   };
 
   Client.prototype.serialize = function() {

@@ -113,16 +113,6 @@ module.exports = Server = (function(_super) {
     }
   };
 
-  Server.prototype.setInterface = function(obj) {
-    this.si = obj;
-    return this.log("bound server on " + (this.uri()) + "!");
-  };
-
-  Server.prototype.uri = function() {
-    var _ref;
-    return (_ref = this.si) != null ? _ref.uri : void 0;
-  };
-
   Server.prototype.serialize = function() {
     return this.uri();
   };

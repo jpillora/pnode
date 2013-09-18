@@ -16,52 +16,59 @@ exports.parse = (str) ->
     args.push(hostname)
   return args
 
-#transport args must be in the format:
+# args must be in the format:
 #   transport, ...rest
 # or
-#   transport://host:port, ...rest
+#   "transport://host:port", ...rest
 # which will translate to
-#   transport, port, host, ...rest
+#   transport, port, host,   ...rest
 
-prebind = (context, args, callback) ->
-  args = Array::slice.call args
+extract = (args) ->
   transport = args.shift()
 
   unless transport
-    context.err "Transport argument missing"
+    throw "name missing"
 
   if re.test transport
     name = RegExp.$1
-    obj = exports.get name
+    trans = exports.get name
     uri = transport.replace re, ''
   else
     name = transport
-    obj = exports.get name
+    trans = exports.get name
 
-  unless obj
-    context.err "Transport: '#{transport}' not found"
+  unless trans
+    throw "'#{name}' not found"
   #get a parse function
-  parseFn = obj.parse or exports.parse
+  parseFn = trans.parse or exports.parse
 
   #prepend parsed args
-  args = [callback].concat(parseFn(uri)).concat(args)
+  parsed = parseFn(uri)
+  while parsed.length
+    args.unshift parsed.pop()
 
-  context.log "bind args", args
+  return trans
 
-  return obj
+exports.bind = (context, args, callback) ->
 
-
-exports.bindClient = (context, args, callback) ->
+  args = Array::slice.call args
 
   try
-    # ...
-  catch e
-    # ...
-  
+    trans = extract args
+  catch err
+    context.err "Transport: #{err}"
 
-exports.bindServer = (context, args, callback) ->
+  if context.name is 'Client'
+    #listen for next stream...
+    context.once 'stream', (obj) ->
+      callback obj
+    trans.bindClient.apply context, args
 
+  else if context.name is 'Server'
+    #include callback for
+    trans.bindServer.apply context, [callback].concat args
 
+  return
 
 exports.add = (name, obj) ->
   if typeof obj.bindServer isnt 'function' or

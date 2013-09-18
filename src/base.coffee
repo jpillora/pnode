@@ -4,7 +4,6 @@ util = require 'util'
 _ = require '../vendor/lodash'
 transportMgr = require './transport-mgr'
 RemoteContext = require './context'
-RPC_ID = 1
 
 #base class of the base class
 class Logger extends EventEmitter2
@@ -62,15 +61,14 @@ class Base extends Logger
 
     _.bindAll @
 
-    @bound = false
+    @isChanging = false
+    @isBound = false
     
   options: (opts) ->
     _.extend @opts, opts
 
   defaultExposed: ->
-    pubsub = @pubsub
-
-    id = @id
+    parent = @
     return {
       _pnode:
         id: @id
@@ -85,12 +83,13 @@ class Base extends Logger
         publish: (args...) ->
           if typeof args[0] is 'function'
             cb = args.shift()
-          pubsub.emit.apply pubsub, args
+          parent.pubsub.emit.apply null, args
           cb true if cb
         ping: (cb) ->
+          parent.log 'ping %s -> %s', parent.id, @id
           cb true
         events: @exposeDynamic ->
-          Object.keys pubsub._events
+          Object.keys parent.pubsub._events
     }
 
   exposeDynamic: (fn) ->
@@ -99,40 +98,55 @@ class Base extends Logger
   expose: (obj) ->
     _.merge @exposed, obj
 
+  uri: ->
+    @tInterface?.uri
+
   bind: ->
-    return if @isBound or @binding
-    @binding = true
+    if @isBound
+      @warn 'unbind in progress' if @isChanging
+      return
+
+    @setIsChanging true
 
     transportMgr.bind @, arguments, (@tInterface) =>
-      @binding = false
+      @setIsChanging false
       @setIsBound true
       return
     return
 
   unbind: ->
-    return if not @isBound or @unbinding
-    @unbinding = true
+    unless @isBound
+      @warn 'bind in progress' if @isChanging
+      return
 
-    #copy and iterate
-    for conn in Array::slice.call @connections
-      conn.unbind()
+    @setIsChanging true
 
     @tInterface.unbind =>
-      @unbinding = false
+      @setIsChanging false
       @setIsBound false
       return
     return
 
+  setIsChanging: (flag) ->
+    @isChanging = flag
+    if flag
+      action = (if @isBound then 'un' else '')+'binding'
+      @emit action
+      @log action
+
   setIsBound: (flag) ->
     @isBound = flag
-    @emit (if flag then '' else 'un')+'bound'
+    action = (if flag then '' else 'un')+'bound'
+    @emit action
+    @log action
+
     # @removeAllEventListeners()
 
   #recursively timeoutify functions and eval dynamic values
   wrapObject: (input, ctx) ->
-    @wrapObjectAcc 'root', input, {}, ctx
+    @wrapObjectAcc 'root', input, ctx
 
-  wrapObjectAcc: (name, input, output, ctx) ->
+  wrapObjectAcc: (name, input, ctx) ->
 
     if input instanceof DynamicExposed
       return input.fn()
@@ -143,45 +157,56 @@ class Base extends Logger
       return input
 
     if input and type is 'object'
+      #copy
+      output = {}
       for k,v of input
-        output[k] = @wrapObjectAcc k, v, {}, ctx
+        output[k] = @wrapObjectAcc k, v, ctx
       return output
 
-    if type isnt 'function'
-      return input
+    if type is 'function'
+      return @timeoutify name, input, ctx
 
-    inst = @
-    return (args...) ->
+    return input
 
-      id = RPC_ID++
+  timeoutify: (name, fn, ctx = @) ->
+    parent = @
+    parent.timeoutify.id or= 0
+    # splice in an interceptor function to the first
+    # function argument (presumes a callback)
+    @log "timeoutify #{name}!"
+
+    type = if ctx instanceof RemoteContext then 'local' else 'remote'
+
+    return (args...) =>
       t = null
       timedout = false
+      id = parent.timeoutify.id++
 
       # place timeout on first function parameter
       for a, i in args
         if typeof a is 'function'
           args[i] = ->
-            # inst.log "returned %s (%s) at %s", name, id, Date.now()
+            parent.log "returned %s %s (%s) at %s", type, name, id, Date.now()
             clearTimeout t
             return if timedout
-            inst.emit 'timein', name, args, ctx
+            parent.emit ['timein',name], args, ctx
             a.apply @, arguments
             return
           t = setTimeout ->
             timedout = true
-            return unless inst.bound
-            # inst.log "timeout %s (%s) at %s", name, id, Date.now()
-            inst.emit 'timeout', name, args, ctx
+            return unless parent.isBound
+            parent.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
+            parent.emit ['timeout',name], args, ctx
             return
-          , inst.opts.timeout
+          , parent.opts.timeout
           break
 
-      # inst.log "calling %s (%s) at %s", name, id, Date.now()
+      parent.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
       # call original fn
-      input.apply ctx, args
+      fn.apply ctx, args
 
   #get all ip on the nic
-  ips: -> ips
+  ips: ips
 
 #publicise
 Base.Logger = Logger
