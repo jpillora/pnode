@@ -39,6 +39,21 @@ exports.proxyEvents = function() {
   }
 };
 
+exports.callbacker = function(callback) {
+  var expecting, received;
+  received = 0;
+  expecting = 0;
+  return function() {
+    expecting++;
+    return function() {
+      received++;
+      if (expecting === received) {
+        callback();
+      }
+    };
+  };
+};
+
 /*
 //@ sourceMappingURL=helper.map
 */

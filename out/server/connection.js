@@ -23,9 +23,7 @@ module.exports = Connection = (function(_super) {
   function Connection(server, read, write) {
     var _this = this;
     this.server = server;
-    this.opts = {
-      debug: true
-    };
+    this.opts = this.server.opts;
     this.id = this.guid = "...";
     this.subs = {};
     this.ctx = new RemoteContext;
@@ -45,10 +43,8 @@ module.exports = Connection = (function(_super) {
     read.pipe(this.d).pipe(write);
   }
 
-  Connection.prototype.unbind = function() {
-    if (this.d) {
-      this.d.end();
-    }
+  Connection.prototype.unbind = function(cb) {
+    this.d.end(cb);
     return this.removeAllListeners();
   };
 

@@ -174,7 +174,7 @@ Base = (function(_super) {
     });
   };
 
-  Base.prototype.unbind = function() {
+  Base.prototype.unbind = function(callback) {
     var _this = this;
     if (!this.isBound) {
       if (this.isChanging) {
@@ -186,6 +186,9 @@ Base = (function(_super) {
     this.tInterface.unbind(function() {
       _this.setIsChanging(false);
       _this.setIsBound(false);
+      if (callback) {
+        callback(true);
+      }
     });
   };
 
@@ -194,8 +197,8 @@ Base = (function(_super) {
     this.isChanging = flag;
     if (flag) {
       action = (this.isBound ? 'un' : '') + 'binding';
-      this.emit(action);
-      return this.log(action);
+      this.log(action);
+      return this.emit(action);
     }
   };
 
@@ -203,8 +206,8 @@ Base = (function(_super) {
     var action;
     this.isBound = flag;
     action = (flag ? '' : 'un') + 'bound';
-    this.emit(action);
-    return this.log(action);
+    this.log(action);
+    return this.emit(action);
   };
 
   Base.prototype.wrapObject = function(input, ctx) {

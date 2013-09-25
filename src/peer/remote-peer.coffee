@@ -1,5 +1,6 @@
 Base = require '../base'
 RemoteContext = require '../context'
+helper = require '../helper'
 
 # a remote peer contains all connections to and from it
 # identified by its 'guid', all remotes with this guid
@@ -50,9 +51,12 @@ module.exports = class RemotePeer extends Base.Logger
       @emit 'down'
     return
 
-  unbind: ->
+  unbind: (callback) ->
+
+    cb = helper.callbacker callback
+
     for cliconn in Array::slice.call @cliconns
-      cliconn.unbind()
+      cliconn.unbind cb()
     return
 
   #custom serialisation

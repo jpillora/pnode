@@ -108,8 +108,8 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
       uri
       write
       unbind: (cb) ->
+        write.once 'end', cb
         write.end()
-        cb true
     }
     return
   return

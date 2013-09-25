@@ -21,6 +21,8 @@ exports.bindClient = (args...) ->
     callback
       uri: uri
       stream: stream
-      unbind: -> stream.end()
+      unbind: (cb) ->
+        stream.once 'end', cb
+        stream.end()
 
   return

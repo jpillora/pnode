@@ -22,3 +22,17 @@ exports.proxyEvents = (src, dest, events...) ->
       dest.emit e, a1, a2, a3, a4
   return
 
+exports.callbacker = (callback) ->
+  received = 0
+  expecting = 0
+  #callback maker
+  ->
+    expecting++
+    #return a sub-callback
+    ->
+      received++
+      if expecting is received
+        callback()
+      return
+
+

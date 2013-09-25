@@ -11,10 +11,9 @@ _ = require('../../../vendor/lodash');
 secure = require("../secure-common");
 
 exports.bindServer = function() {
-  var args, callback, opts, pserver, si;
+  var args, callback, opts, pserver;
   callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   pserver = this;
-  si = {};
   if (typeof args[args.length - 1] === 'object') {
     opts = args.pop();
   }
@@ -32,8 +31,7 @@ exports.bindServer = function() {
       callback({
         uri: "tls://" + addr.address + ":" + addr.port,
         unbind: function(cb) {
-          s.once('close', cb);
-          return s.close();
+          return s.close(cb);
         }
       });
     });
@@ -42,7 +40,7 @@ exports.bindServer = function() {
 };
 
 exports.bindClient = function() {
-  var args, opts, pclient;
+  var args, opts, pclient, uri;
   args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
   opts = {};
   if (typeof args[0] === 'number') {
@@ -57,12 +55,21 @@ exports.bindClient = function() {
   if (opts.rejectUnauthorized === undefined) {
     opts.rejectUnauthorized = false;
   }
+  uri = "tls://" + (opts.hostname || 'localhost') + ":" + opts.port;
   pclient = this;
   pclient.createConnection(function(callback) {
-    return callback(tls.connect.call(null, opts));
-  });
-  pclient.setInterface({
-    uri: "tls://" + (opts.hostname || 'localhost') + ":" + opts.port
+    var stream;
+    stream = tls.connect.call(null, opts);
+    return stream.once('secureConnect', function() {
+      return callback({
+        uri: uri,
+        stream: stream,
+        unbind: function(cb) {
+          stream.once('end', cb);
+          return stream.end();
+        }
+      });
+    });
   });
 };
 

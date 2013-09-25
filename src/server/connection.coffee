@@ -12,7 +12,7 @@ module.exports = class Connection extends Base.Logger
 
   constructor: (@server, read, write) ->
 
-    @opts = { debug: true }
+    @opts = @server.opts # {debug: true}
     @id = @guid = "..."
     @subs = {}
 
@@ -40,9 +40,9 @@ module.exports = class Connection extends Base.Logger
     #splice!
     read.pipe(@d).pipe(write)
 
-  unbind: ->
+  unbind: (cb) ->
     # @log "EXPLICIT UNBIND (from #{@server.id})"
-    @d.end() if @d
+    @d.end(cb)
     #remove all eventlisteners
     @removeAllListeners()
 

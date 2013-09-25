@@ -45,12 +45,17 @@ module.exports = class LocalPeer extends Base
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
 
-  unbind: ->
+  unbind: (callback) ->
     @log "UNBIND SELF AND ALL PEERS"
+
+    cb = helper.callbacker callback
+
     for peer in @peers
-      peer.unbind()
+      peer.unbind cb()
     for guid, server of @servers
-      server.unbind()
+      server.unbind cb()
+
+    return
 
   # new peer connection (client / server connection)
   # must have a remote which must have a guid

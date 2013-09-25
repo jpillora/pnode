@@ -1,6 +1,7 @@
 {expect} = require "chai"
 _ = require "../vendor/lodash"
 pnode = require "../"
+sinon = require "sinon"
 
 #use static certs to speed up tests
 certs =
@@ -26,16 +27,79 @@ tests =
     client: ['https://127.0.0.1:8000']
     server: ['https://0.0.0.0:8000', certs]
 
-run = (name, test, done) ->
 
-  server = pnode.server("#{name}-server")
+# =======================
+# basic bind+unbind server test using each transport
+
+bindTest = (name, test, done) ->
+
+  #spies (named fns for sinon debugging)
+  spyFns = [
+    `function bindingServer(){}`
+    `function boundServer(){}`
+    `function bindingClient(){}`
+    `function boundClient(){}`
+    `function unbindingClient(){}`
+    `function unboundClient(){}`
+    `function unbindingServer(){}`
+    `function unboundServer(){}`
+  ]
+  spies = {}
+  spies[fn.name] = sinon.spy(fn) for fn in spyFns
+
+  server = pnode.server({id:"bind-#{name}-server", debug:true})
+
+  #listen for server events
+  server.once 'bound', spies.boundServer
+  server.once 'binding', spies.bindingServer
+  server.once 'unbound', spies.unboundServer
+  server.once 'unbinding', spies.unbindingServer
+
+  server.once 'bound', ->
+    #server up
+    client = pnode.client({id:"bind-#{name}-client", debug:true})
+
+    #listen for client events
+    client.once 'bound', spies.boundClient
+    client.once 'binding', spies.bindingClient
+    client.once 'unbound', spies.unboundClient
+    client.once 'unbinding', spies.unbindingClient
+
+    client.once 'bound', ->
+      client.unbind ->
+        server.unbind ->
+          #pull in spies in order
+          order = []
+          for name,spy of spies
+            order.push spy
+          #assert sequence
+          sinon.assert.callOrder.apply null, order
+          done()
+
+    #kick off client
+    client.bind.apply client, test.client
+
+  #kick off server
+  server.bind.apply server, test.server
+
+
+describe.only "basic bind/unbind client and server > ", ->
+  _.each tests, (obj, name) ->
+    it "bind+unbind #{name} should work", (done) ->
+      bindTest name, obj, done
+
+# =======================
+# basic rpc test using each transport
+rpcTest = (name, test, done) ->
+
+  server = pnode.server("rpc-#{name}-server")
   server.expose
     foo: (callback) -> callback 42
 
-  #insert callback at 1th position
+  #insert callback at 2nd position
   test.server.splice 1, 0, ->
     #server up
-    client = pnode.client("#{name}-client")
+    client = pnode.client("rpc-#{name}-client")
     client.bind.apply client, test.client
 
     client.server (remote) ->
@@ -43,15 +107,14 @@ run = (name, test, done) ->
       expect(remote.foo).to.be.a('function')
       remote.foo (result) ->
         expect(result).to.equal(42)
-        server.unbind()
-        done()
+        server.unbind -> done()
   
   server.bind.apply server, test.server
 
 describe "basic rpc > ", ->
   _.each tests, (obj, name) ->
-    it "#{name} should work", (done) ->
-      run name, obj, done
+    it "rpc #{name} should work", (done) ->
+      rpcTest name, obj, done
 
 
 

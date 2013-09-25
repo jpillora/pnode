@@ -74,21 +74,20 @@ module.exports = LocalPeer = (function(_super) {
     return client.bindTo.apply(client, arguments);
   };
 
-  LocalPeer.prototype.unbind = function() {
-    var guid, peer, server, _i, _len, _ref, _ref1, _results;
+  LocalPeer.prototype.unbind = function(callback) {
+    var cb, guid, peer, server, _i, _len, _ref, _ref1;
     this.log("UNBIND SELF AND ALL PEERS");
+    cb = helper.callbacker(callback);
     _ref = this.peers;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       peer = _ref[_i];
-      peer.unbind();
+      peer.unbind(cb());
     }
     _ref1 = this.servers;
-    _results = [];
     for (guid in _ref1) {
       server = _ref1[guid];
-      _results.push(server.unbind());
+      server.unbind(cb());
     }
-    return _results;
   };
 
   LocalPeer.prototype.onPeer = function(cliconn) {

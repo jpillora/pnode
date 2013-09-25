@@ -22,6 +22,14 @@ module.exports = class Server extends Base
     #alias
     @bindOn = @bind
 
+    @on 'unbinding', @unbinding
+
+  unbinding: ->
+    #unbind requested - close all client connections
+    for conn in Array::slice.call @connections
+      conn.unbind()
+    return
+
   handle: (read, write) ->
 
     if read.write and not write?.write

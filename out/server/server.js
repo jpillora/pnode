@@ -31,7 +31,17 @@ module.exports = Server = (function(_super) {
     Server.__super__.constructor.apply(this, arguments);
     this.connections = ObjectIndex("id", "guid");
     this.bindOn = this.bind;
+    this.on('unbinding', this.unbinding);
   }
+
+  Server.prototype.unbinding = function() {
+    var conn, _i, _len, _ref;
+    _ref = Array.prototype.slice.call(this.connections);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      conn = _ref[_i];
+      conn.unbind();
+    }
+  };
 
   Server.prototype.handle = function(read, write) {
     var conn,

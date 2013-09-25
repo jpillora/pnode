@@ -62,8 +62,8 @@ exports.createClient = function(pclient, type, reqArgs, extraOpts) {
       uri: uri,
       write: write,
       unbind: function(cb) {
-        write.end();
-        return cb(true);
+        write.once('end', cb);
+        return write.end();
       }
     });
   });

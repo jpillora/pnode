@@ -114,7 +114,7 @@ class Base extends Logger
       return
     return
 
-  unbind: ->
+  unbind: (callback) ->
     unless @isBound
       @warn 'bind in progress' if @isChanging
       return
@@ -124,6 +124,7 @@ class Base extends Logger
     @tInterface.unbind =>
       @setIsChanging false
       @setIsBound false
+      callback(true) if callback
       return
     return
 
@@ -131,14 +132,14 @@ class Base extends Logger
     @isChanging = flag
     if flag
       action = (if @isBound then 'un' else '')+'binding'
-      @emit action
       @log action
+      @emit action
 
   setIsBound: (flag) ->
     @isBound = flag
     action = (if flag then '' else 'un')+'bound'
-    @emit action
     @log action
+    @emit action
 
     # @removeAllEventListeners()
 

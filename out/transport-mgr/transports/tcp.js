@@ -31,7 +31,8 @@ exports.bindClient = function() {
     return callback({
       uri: uri,
       stream: stream,
-      unbind: function() {
+      unbind: function(cb) {
+        stream.once('end', cb);
         return stream.end();
       }
     });
