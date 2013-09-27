@@ -37,8 +37,8 @@ module.exports = class Server extends Base
     if read.write and not write?.write
       write = read
 
-    @err "Invalid read stream" unless helper.isReadable read
-    @err "Invalid write stream" unless helper.isWritable write
+    @err new Error "Invalid read stream" unless helper.isReadable read
+    @err new Error "Invalid write stream" unless helper.isWritable write
 
     conn = new Connection @, read, write
 

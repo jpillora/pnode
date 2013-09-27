@@ -24,21 +24,22 @@ parse = (str) ->
 #   transport, port, host,   ...rest
 
 exports.get = (args) ->
+
   transport = args.shift()
 
-  unless transport
-    throw "name missing"
+  unless typeof transport is 'string'
+    throw new Error "invalid transport name"
 
   if re.test transport
     name = RegExp.$1
-    trans = exports.get name
+    trans = transports[name]
     uri = transport.replace re, ''
   else
     name = transport
-    trans = exports.get name
+    trans = transports[name]
 
   unless trans
-    throw "'#{name}' not found"
+    throw new Error "'#{name}' not found"
   #get a parse function
   parseFn = trans.parse or parse
 

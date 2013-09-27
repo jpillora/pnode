@@ -1,5 +1,4 @@
-
-Emitter = require './emitter'
+{EventEmitter2:Emitter} = require 'eventemitter2'
 util = require 'util'
 _ = require '../vendor/lodash'
 transportMgr = require './transport-mgr'
@@ -8,6 +7,9 @@ RemoteContext = require './context'
 #base class of the base class
 class Logger extends Emitter
   name: 'Logger'
+  constructor: ->
+    super {wildcard:true}
+  
   #debugging
   log: ->
     if @opts?.debug
@@ -15,10 +17,15 @@ class Logger extends Emitter
       console.log @.toString() + ' ' + util.format.apply null, arguments
   warn: ->
     console.warn 'WARNING: ' + @.toString() + ' ' + util.format.apply null, arguments
-  err: (str) ->
-    @emit 'error', new Error "#{@} #{str}"
+  err: (e) ->
+    if e instanceof Error
+      e.message = "#{@} #{e.message}"
+    else
+      e = new Error e
+    @emit 'error', e
+
   toString: ->
-    "#{@name}: #{@id}:"
+    "#{@name}: #{@id}#{if @subid then ' ('+@subid+')' else ''}:"
 
 #base class of client,server and peer
 crypto = require "crypto"
@@ -42,30 +49,42 @@ class Base extends Logger
 
   constructor: (incoming) ->
 
+    super()
+
     #all instances have unique ids
     @guid = guid()
 
     if incoming?.name is 'LocalPeer'
-      @opts = incoming.opts
-      @id = incoming.id or @guid
-      @pubsub = incoming.pubsub
-      @exposed = incoming.exposed
+      @parent = incoming
+      @opts = @parent.opts
+      @id = (@parent.id or @guid)
+      @subid = (if @name is "Server" then "s" else "c") +
+               (@parent.count[if @name is "Server" then "server" else "client"])
+      @pubsub = @parent.pubsub
+      @exposed = @parent.exposed
     else
       @opts = if _.isString incoming then { id:incoming } else incoming or {}
       @id = @opts.id or @guid
+      @subid = null
       @pubsub = new Emitter
       @exposed = @defaultExposed()
 
     #the class's apply defaults
     _.defaults @opts, @defaults
 
+    #error printer
+    if @opts.debug
+      @on 'error', (err) =>
+        console.error "ERROR EMITTED: #{err.stack or err}"
+
     _.bindAll @
+    @unbound = true
     
   options: (opts) ->
     _.extend @opts, opts
 
   defaultExposed: ->
-    parent = @
+    self = @
     return {
       _pnode:
         id: @id
@@ -80,13 +99,13 @@ class Base extends Logger
         publish: (args...) ->
           if typeof args[0] is 'function'
             cb = args.shift()
-          parent.pubsub.emit.apply null, args
+          self.pubsub.emit.apply null, args
           cb true if cb
         ping: (cb) ->
-          parent.log 'ping %s -> %s', parent.id, @id
+          self.log 'ping %s -> %s', @id, self.id
           cb true
         events: @exposeDynamic ->
-          Object.keys parent.pubsub._events
+          Object.keys self.pubsub._events
     }
 
   exposeDynamic: (fn) ->
@@ -95,10 +114,10 @@ class Base extends Logger
   expose: (obj) ->
     _.merge @exposed, obj
 
-  uri: ->
-    @tInterface?.uri
-
   bind: (args...) ->
+
+    @log "bind", args
+
     if @bound
       @warn 'unbind in progress' if @unbinding
       return
@@ -106,28 +125,30 @@ class Base extends Logger
     #reset emitter
     @tEmitter.removeAllListeners() if @tEmitter
     @tEmitter = new Emitter
-
     #finite states
     events = ['binding','bound','unbinding','unbound']
     
     inst = @
     #bubble up all events
-    @tEmitter.onAny (args...) =>
+    @tEmitter.onAny (args...) ->
       inst.log 'transport event ', @event
       #set appropriate state
       if @event in events
         for e in events
           inst[e] = e is @event
-      inst.emit.apply [@event].concat(args)
+      inst.emit.apply null, [@event].concat(args)
+      return
 
-    #get transport
+    #get transport (POTENTIAL USER CODE)
     try
       trans = transportMgr.get args
+      #prepend emitter
+      args.unshift @tEmitter
+      #bind server/client
+      trans["bind#{@name}"].apply null, args
     catch err
-      @err "Transport: #{err}"
-
-    #bind server/client
-    trans["bind#{@name}"].apply null, args
+      err.message = "Transport: #{err.message}"
+      @err err
     return
 
   unbind: (callback) ->
@@ -165,8 +186,8 @@ class Base extends Logger
     return input
 
   timeoutify: (name, fn, ctx = @) ->
-    parent = @
-    parent.timeoutify.id or= 0
+    self = @
+    self.timeoutify.id or= 0
     # splice in an interceptor function to the first
     # function argument (presumes a callback)
 
@@ -175,28 +196,28 @@ class Base extends Logger
     return (args...) =>
       t = null
       timedout = false
-      id = parent.timeoutify.id++
+      id = self.timeoutify.id++
 
       # place timeout on first function parameter
       for a, i in args
         if typeof a is 'function'
           args[i] = ->
-            # parent.log "returned %s %s (%s) at %s", type, name, id, Date.now()
+            # self.log "returned %s %s (%s) at %s", type, name, id, Date.now()
             clearTimeout t
             return if timedout
-            parent.emit ['timein',name], args, ctx
+            self.emit ['timein',name], args, ctx
             a.apply @, arguments
             return
           t = setTimeout ->
             timedout = true
-            return unless parent.bound
-            # parent.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
-            parent.emit ['timeout',name], args, ctx
+            return unless self.bound
+            # self.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
+            self.emit ['timeout',name], args, ctx
             return
-          , parent.opts.timeout
+          , self.opts.timeout
           break
 
-      # parent.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
+      # self.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
       # call original fn
       fn.apply ctx, args
 

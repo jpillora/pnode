@@ -30,13 +30,13 @@ module.exports = RemotePeer = (function(_super) {
 
   RemotePeer.prototype.add = function(cliconn) {
     var _this = this;
-    this.log("add connection (first remote:" + (!this.up) + ")");
     this.ctx.combine(cliconn.ctx);
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
       return _this.setActive();
     });
+    this.log("add connection (#conns:" + this.cliconns.length + ")");
     return this.setActive();
   };
 

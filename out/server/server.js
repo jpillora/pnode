@@ -51,10 +51,10 @@ module.exports = Server = (function(_super) {
       write = read;
     }
     if (!helper.isReadable(read)) {
-      this.err("Invalid read stream");
+      this.err(new Error("Invalid read stream"));
     }
     if (!helper.isWritable(write)) {
-      this.err("Invalid write stream");
+      this.err(new Error("Invalid write stream"));
     }
     conn = new Connection(this, read, write);
     conn.once('up', function() {

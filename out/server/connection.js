@@ -37,14 +37,16 @@ module.exports = Connection = (function(_super) {
     write.once('close', this.d.end);
     write.once('end', this.d.end);
     this.d.once('end', function() {
-      _this.log("DOWN");
       return _this.emit('down');
     });
     read.pipe(this.d).pipe(write);
   }
 
   Connection.prototype.unbind = function(cb) {
-    this.d.end(cb);
+    if (cb) {
+      this.d.once('end', cb);
+    }
+    this.d.end();
     return this.removeAllListeners();
   };
 
@@ -53,7 +55,7 @@ module.exports = Connection = (function(_super) {
     remote = this.server.wrapObject(remote);
     meta = remote._pnode;
     if (!meta) {
-      this.log("closing conn, not a pnode conn");
+      this.warn("Invalid pnode connection");
       d.end();
       return;
     }
@@ -61,7 +63,6 @@ module.exports = Connection = (function(_super) {
     this.ctx.getMeta(meta);
     this.remote = remote;
     this.emit('remote', remote);
-    this.log("UP");
     this.emit('up');
   };
 

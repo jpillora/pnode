@@ -11,7 +11,7 @@ client1.subscribe('foos', function(obj) {
   client1.log('incoming foo', obj);
 });
 setTimeout(function(){
-  client1.bind('tcp://localhost:8000');
+  client1.bind('https://localhost:8000');
 }, 500);
 
 //START CLIENT 2

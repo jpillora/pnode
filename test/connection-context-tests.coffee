@@ -12,7 +12,7 @@ describe "shared peer contexts > ", ->
   afterEach (done) ->
     async.parallel [peer1.unbind, peer2.unbind], done
 
-  it.only "should maintain context across channels", (done) ->
+  it "should maintain context across channels", (done) ->
 
     peer1 = pnode.peer({id:'peer1',debug:true})
 
@@ -25,7 +25,7 @@ describe "shared peer contexts > ", ->
         catch e
           return done e
         @set 'foo', n
-        cb()
+        cb(true)
       get: (cb) ->
         cb @get 'foo'
 
@@ -37,13 +37,20 @@ describe "shared peer contexts > ", ->
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'
       peer2.peer 'peer1', (remote) ->
-        remote.set 7, ->
+        remote.set 7, (res) ->
+          try
+            expect(res).to.equal(true)
+          catch e
+            return done e
           peer2.unbind getContext
 
     getContext = ->
       peer2.bindTo 'http://localhost:8001'
+
       peer2.peer 'peer1', (remote) ->
+        console.log "GET HTTP PEER1"
         remote.get (n) ->
+          console.log "GOT ANSWER ",n
           try
             expect(n).to.equal(7)
           catch e

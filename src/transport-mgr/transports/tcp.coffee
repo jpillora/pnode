@@ -2,13 +2,12 @@ net = require 'net'
 
 exports.bindServer = (emitter, args...) ->
 
-  emitter 'uri', "tcp://#{typeof args[1] is 'string' and args[1] or '0.0.0.0'}:#{args[0]}"
-
+  emitter.emit 'uri', "tcp://#{if typeof args[1] is 'string' then args[1] else '0.0.0.0'}:#{args[0]}"
   emitter.emit 'binding'
 
   s = net.createServer()
 
-  s.on 'connnection', (stream) ->
+  s.on 'connection', (stream) ->
     emitter.emit 'stream', stream
 
   s.listen.apply s, args
@@ -20,31 +19,27 @@ exports.bindServer = (emitter, args...) ->
       s.close()
 
   s.once 'close', ->
-    emitter.emitter 'unbound'
+    emitter.emit 'unbound'
 
   return
 
 exports.bindClient = (emitter, args...) ->
 
-  uri = "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
+  emitter.emit 'uri', "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
+  emitter.emit 'binding'
 
-  pclient.createConnection () ->
+  stream = net.connect.apply null, args
+  
+  emitter.emit 'stream', stream
 
-    emitter.emit 'uri', uri
-    emitter.emit 'binding'
+  stream.once 'connect', ->
+    emitter.emit 'bound'
 
-    stream = net.connect.apply null, args
+  emitter.once 'unbind', ->
+    emitter.emit 'unbinding'
+    stream.end()
 
-    emitter.emit 'stream', stream
-
-    stream.once 'connect', ->
-      emitter.emit 'bound'
-
-    emitter.once 'unbind', ->
-      emitter.emit 'unbinding'
-      stream.end()
-
-    stream.once 'end', ->
-      emitter.emitter 'unbound'
+  stream.once 'end', ->
+    emitter.emit 'unbound'
 
   return

@@ -21,7 +21,6 @@ module.exports = class RemotePeer extends Base.Logger
 
   #will be a client (outgoing) OR connection (incoming)
   add: (cliconn) ->
-    @log "add connection (first remote:#{not @up})"
 
     @ctx.combine cliconn.ctx
   
@@ -31,6 +30,7 @@ module.exports = class RemotePeer extends Base.Logger
       @cliconns.splice @cliconns.indexOf(cliconn), 1
       @setActive()
 
+    @log "add connection (#conns:#{@cliconns.length})"
     @setActive()
 
   setActive: ->

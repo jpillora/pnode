@@ -28,19 +28,19 @@ parse = function(str) {
 exports.get = function(args) {
   var name, parseFn, parsed, trans, transport, uri;
   transport = args.shift();
-  if (!transport) {
-    throw "name missing";
+  if (typeof transport !== 'string') {
+    throw new Error("invalid transport name");
   }
   if (re.test(transport)) {
     name = RegExp.$1;
-    trans = exports.get(name);
+    trans = transports[name];
     uri = transport.replace(re, '');
   } else {
     name = transport;
-    trans = exports.get(name);
+    trans = transports[name];
   }
   if (!trans) {
-    throw "'" + name + "' not found";
+    throw new Error("'" + name + "' not found");
   }
   parseFn = trans.parse || parse;
   parsed = parseFn(uri);

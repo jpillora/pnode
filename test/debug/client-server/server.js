@@ -10,7 +10,7 @@ var server = pnode.server({
 //   server.log('incoming bar', obj);
 // });
 
-server.bind('tcp://0.0.0.0:8000', function(){
+server.bind('https://0.0.0.0:8000', function(){
   server.log('bound to all interfaces on port 8000');
 });
 
@@ -20,4 +20,4 @@ server.bind('tcp://0.0.0.0:8000', function(){
 
 setTimeout(function() {
   server.publish('foos', {foo:42});
-}, 5000);
+}, 2000);

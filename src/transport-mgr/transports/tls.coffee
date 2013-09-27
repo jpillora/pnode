@@ -3,32 +3,41 @@ fs = require 'fs'
 _ = require '../../../vendor/lodash'
 secure = require "../secure-common"
 
-exports.bindServer = (callback, args...) ->
-
-  pserver = @
+exports.bindServer = (emitter, args...) ->
 
   #pull out opts
   opts = args.pop() if typeof args[args.length-1] is 'object'
 
+  emitter.emit 'uri', "tls://#{if typeof args[1] is 'string' then args[1] else '0.0.0.0'}:#{args[0]}"
+  emitter.emit 'configuring'
+
   secure.checkCerts opts, (opts) ->
+
+    emitter.emit 'binding'
+
     #default allow unauthorized
     if opts.rejectUnauthorized is `undefined`
       opts.rejectUnauthorized = false
 
-    s = tls.createServer opts, (stream) ->
-      pserver.handle stream
-    
-    s.once 'listening', ->
-      addr = s.address()
-      callback
-        uri: "tls://#{addr.address}:#{addr.port}"
-        unbind: (cb) -> s.close cb
-      return
+    s = tls.createServer(opts)
+
+    s.on 'secureConnection', (stream) ->
+      emitter.emit 'stream', stream
 
     s.listen.apply s, args
-    return
 
-exports.bindClient = (args...) ->
+    s.once 'listening', ->
+      emitter.emit 'bound'
+      emitter.once 'unbind', ->
+        emitter.emit 'unbinding'
+        s.close()
+
+    s.once 'close', ->
+      emitter.emit 'unbound'
+
+  return
+
+exports.bindClient = (emitter, args...) ->
 
   opts = {}
   if typeof args[0] is 'number'
@@ -42,18 +51,23 @@ exports.bindClient = (args...) ->
   if opts.rejectUnauthorized is `undefined`
     opts.rejectUnauthorized = false
 
-  uri = "tls://#{opts.hostname or 'localhost'}:#{opts.port}"
+  emitter.emit 'uri', "tls://#{opts.hostname or 'localhost'}:#{opts.port}"
+  emitter.emit 'binding'
 
-  pclient = @
-  pclient.createConnection (callback) ->
-    stream = tls.connect.call null, opts
-    stream.once 'secureConnect', ->
-      callback
-        uri: uri
-        stream: stream
-        unbind: (cb) ->
-          stream.once 'end', cb
-          stream.end()
+  stream = tls.connect.call null, opts
+
+  emitter.emit 'stream', stream
+
+  stream.once 'secureConnect', ->
+    emitter.emit 'bound'
+
+  emitter.once 'unbind', ->
+    emitter.emit 'unbinding'
+    stream.end()
+
+  stream.once 'end', ->
+    emitter.emit 'unbound'
+
 
   return
 

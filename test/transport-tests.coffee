@@ -83,12 +83,13 @@ bindTest = (name, test, done) ->
   server.bind.apply server, test.server
 
 
-describe "basic bind/unbind client and server > ", ->
-  _.each tests, (obj, name) ->
-    # obj = tests.http
-    # name = 'http'
-    it "bind/unbind #{name} should work", (done) ->
-      bindTest name, obj, done
+describe "basic bind/unbind > ", ->
+  describe "client and server > ", ->
+    _.each tests, (obj, name) ->
+      # name = 'http'
+      # obj = tests[name]
+      it "#{name} should work", (done) ->
+        bindTest name, obj, done
 
 # =======================
 # basic rpc test using each transport
@@ -114,9 +115,10 @@ rpcTest = (name, test, done) ->
   server.bind.apply server, test.server
 
 describe "basic rpc > ", ->
-  _.each tests, (obj, name) ->
-    it "rpc #{name} should work", (done) ->
-      rpcTest name, obj, done
+  describe "client and server > ", ->
+    _.each tests, (obj, name) ->
+      it "#{name} should work", (done) ->
+        rpcTest name, obj, done
 
 
 

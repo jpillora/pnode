@@ -7,10 +7,10 @@ net = require('net');
 exports.bindServer = function() {
   var args, emitter, s;
   emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  emitter('uri', "tcp://" + (typeof args[1] === 'string' && args[1] || '0.0.0.0') + ":" + args[0]);
+  emitter.emit('uri', "tcp://" + (typeof args[1] === 'string' ? args[1] : '0.0.0.0') + ":" + args[0]);
   emitter.emit('binding');
   s = net.createServer();
-  s.on('connnection', function(stream) {
+  s.on('connection', function(stream) {
     return emitter.emit('stream', stream);
   });
   s.listen.apply(s, args);
@@ -22,30 +22,26 @@ exports.bindServer = function() {
     });
   });
   s.once('close', function() {
-    return emitter.emitter('unbound');
+    return emitter.emit('unbound');
   });
 };
 
 exports.bindClient = function() {
-  var args, emitter, uri;
+  var args, emitter, stream;
   emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  uri = "tcp://" + (typeof args[1] === 'string' && args[1] || 'localhost') + ":" + args[0];
-  pclient.createConnection(function() {
-    var stream;
-    emitter.emit('uri', uri);
-    emitter.emit('binding');
-    stream = net.connect.apply(null, args);
-    emitter.emit('stream', stream);
-    stream.once('connect', function() {
-      return emitter.emit('bound');
-    });
-    emitter.once('unbind', function() {
-      emitter.emit('unbinding');
-      return stream.end();
-    });
-    return stream.once('end', function() {
-      return emitter.emitter('unbound');
-    });
+  emitter.emit('uri', "tcp://" + (typeof args[1] === 'string' && args[1] || 'localhost') + ":" + args[0]);
+  emitter.emit('binding');
+  stream = net.connect.apply(null, args);
+  emitter.emit('stream', stream);
+  stream.once('connect', function() {
+    return emitter.emit('bound');
+  });
+  emitter.once('unbind', function() {
+    emitter.emit('unbinding');
+    return stream.end();
+  });
+  stream.once('end', function() {
+    return emitter.emit('unbound');
   });
 };
 

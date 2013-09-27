@@ -1,8 +1,9 @@
 {expect} = require "chai"
+async = require "async"
 _ = require "../vendor/lodash"
 pnode = require "../"
 
-describe "rpc peer to peer > ", ->
+describe.only "rpc peer to peer > ", ->
 
   peer1 = null
   peer2 = null
@@ -14,40 +15,48 @@ describe "rpc peer to peer > ", ->
 
     log = {total:0}
     logCall = (str) ->
+      console.log "LOG ", str
       log.total++
       log[str] or= 0
       log[str]++
       updated() if updated
 
-    peer1 = pnode.peer {id:'peer1'}
+    peer1 = pnode.peer {id:'peer1', debug:false}
     peer1.expose
       log: ->
         logCall "#{@id}->peer1"
     peer1.bindOn 'tcp://localhost:8001'
-    setTimeout ->
-      peer1.bindTo 'tcp://localhost:8002'
 
-    peer2 = pnode.peer {id:'peer2', debug:false}
+    peer2 = pnode.peer {id:'peer2', debug:true}
     peer2.expose
       log: -> 
         logCall "#{@id}->peer2"
     peer2.bindOn 'tcp://localhost:8002'
-    setTimeout ->
-      peer2.bindTo 'tcp://localhost:8003'
 
-    peer3 = pnode.peer {id:'peer3', debug:false}
+    peer3 = pnode.peer {id:'peer3', debug:true}
     peer3.expose
       log: ->
         logCall "#{@id}->peer3"
     peer3.bindOn 'tcp://localhost:8003'
 
-    setTimeout done, 10
+    peer2.once '*.bound', ->
+      peer1.bindTo 'tcp://localhost:8002'
+
+    peer3.once '*.bound', ->
+      peer2.bindTo 'tcp://localhost:8003'
+
+    peer3.once 's1.remote', ->
+      console.log "SETUP!"
+      done()
+
 
   afterEach (done) ->
-    peer1.unbind()
-    peer2.unbind()
-    peer3.unbind()
-    setTimeout done, 10
+    console.log "TEAR DOWN!"
+    async.parallel [
+      peer1.unbind
+      peer2.unbind
+      peer3.unbind
+    ], done
 
   it "should call other peers", (done) ->
 

@@ -29,7 +29,8 @@ module.exports = Client = (function(_super) {
   };
 
   function Client() {
-    var _this = this;
+    var spliceRead, spliceWrite,
+      _this = this;
     Client.__super__.constructor.apply(this, arguments);
     this.count = {
       ping: 0,
@@ -51,17 +52,58 @@ module.exports = Client = (function(_super) {
     });
     this.bindTo = this.bind;
     this.on('unbound', function() {
-      _this.count.attempt = 0;
       if (_this.d) {
         _this.d.removeAllListeners().end();
         _this.d = null;
       }
     });
+    this.on('uri', function(uri) {
+      _this.uri = uri;
+    });
+    spliceRead = function(read) {
+      if (_this.d.splicedRead) {
+        _this.err(new Error("Already spliced read stream"));
+      }
+      if (!helper.isReadable(read)) {
+        _this.err(new Error("Invalid read stream"));
+      }
+      read.on('error', _this.onStreamError);
+      _this.ctx.getAddr(read);
+      _this.d.splicedRead = true;
+      return read.pipe(_this.d);
+    };
+    spliceWrite = function(write) {
+      if (_this.d.spliceWrite) {
+        _this.err(new Error("Already spliced write stream"));
+      }
+      if (!helper.isWritable(write)) {
+        _this.err(new Error("Invalid write stream"));
+      }
+      write.on('error', _this.onStreamError);
+      _this.d.spliceWrite = true;
+      return _this.d.pipe(write);
+    };
+    this.on('read', function(read) {
+      return spliceRead(read);
+    });
+    this.on('write', function(write) {
+      return spliceWrite(write);
+    });
+    this.on('stream', function(stream) {
+      spliceRead(stream);
+      return spliceWrite(stream);
+    });
   }
 
   Client.prototype.bind = function() {
+    this.count.attempt = 0;
     this.bindArgs = arguments;
-    return Client.__super__.bind.apply(this, arguments);
+    return this.reconnect();
+  };
+
+  Client.prototype.unbind = function() {
+    this.count.attempt = Infinity;
+    return Client.__super__.unbind.apply(this, arguments);
   };
 
   Client.prototype.server = function(callback) {
@@ -78,49 +120,21 @@ module.exports = Client = (function(_super) {
     return this.removeListener('remote', callback);
   };
 
-  Client.prototype.reconnect = function(callback) {
-    var spliceRead, spliceWrite,
-      _this = this;
+  Client.prototype.reconnect = function() {
     if (!(this.unbound && this.count.attempt < this.opts.maxRetries)) {
       return;
     }
     this.count.attempt++;
     this.ctx = new RemoteContext;
     this.d = dnode(this.wrapObject(this.exposed, this.ctx));
+    this.d.splicedRead = false;
+    this.d.splicedWrite = false;
     this.d.once('remote', this.onRemote);
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
-    this.log("connection attempt " + this.count.attempt + " to " + (this.uri()) + "...");
-    this.bind.apply(this, this.bindArgs);
-    this.tEmitter.once('uri', function(uri) {
-      _this.uri = uri;
-    });
-    spliceRead = function(read) {
-      if (!helper.isReadable(read)) {
-        _this.err("Invalid read stream");
-      }
-      read.on('error', _this.onStreamError);
-      _this.ctx.getAddr(read);
-      return read.pipe(_this.d);
-    };
-    spliceWrite = function(write) {
-      if (!helper.isWritable(write)) {
-        _this.err("Invalid write stream");
-      }
-      write.on('error', _this.onStreamError);
-      return _this.d.pipe(write);
-    };
-    this.tEmitter.once('read', function(read) {
-      return spliceRead(read);
-    });
-    this.tEmitter.once('read', function(read) {
-      return spliceWrite(write);
-    });
-    this.tEmitter.once('stream', function(stream) {
-      spliceRead(stream);
-      return spliceWrite(stream);
-    });
+    this.log("connection attempt " + this.count.attempt + "...");
+    Base.prototype.bind.apply(this, this.bindArgs);
   };
 
   Client.prototype.onStreamError = function(err) {
@@ -137,7 +151,7 @@ module.exports = Client = (function(_super) {
       return;
     }
     msg = err.stack ? err.stack + "\n====" : err;
-    return this.err(msg);
+    return this.err(new Error(msg));
   };
 
   Client.prototype.onRemote = function(remote) {
@@ -145,10 +159,11 @@ module.exports = Client = (function(_super) {
     remote = this.wrapObject(remote);
     meta = remote != null ? remote._pnode : void 0;
     if (typeof (meta != null ? meta.ping : void 0) !== "function") {
-      return this.err("Invalid pnode host");
+      return this.err(new Error("Invalid pnode host"));
     }
     this.remote = remote;
     this.ctx.getMeta(meta);
+    this.log("server remote!");
     this.emit('remote', this.remote, this);
     return this.ping();
   };

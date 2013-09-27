@@ -11,37 +11,40 @@ _ = require('../../../vendor/lodash');
 secure = require("../secure-common");
 
 exports.bindServer = function() {
-  var args, callback, opts, pserver;
-  callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  pserver = this;
+  var args, emitter, opts;
+  emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   if (typeof args[args.length - 1] === 'object') {
     opts = args.pop();
   }
-  return secure.checkCerts(opts, function(opts) {
+  emitter.emit('uri', "tls://" + (typeof args[1] === 'string' ? args[1] : '0.0.0.0') + ":" + args[0]);
+  emitter.emit('configuring');
+  secure.checkCerts(opts, function(opts) {
     var s;
+    emitter.emit('binding');
     if (opts.rejectUnauthorized === undefined) {
       opts.rejectUnauthorized = false;
     }
-    s = tls.createServer(opts, function(stream) {
-      return pserver.handle(stream);
-    });
-    s.once('listening', function() {
-      var addr;
-      addr = s.address();
-      callback({
-        uri: "tls://" + addr.address + ":" + addr.port,
-        unbind: function(cb) {
-          return s.close(cb);
-        }
-      });
+    s = tls.createServer(opts);
+    s.on('secureConnection', function(stream) {
+      return emitter.emit('stream', stream);
     });
     s.listen.apply(s, args);
+    s.once('listening', function() {
+      emitter.emit('bound');
+      return emitter.once('unbind', function() {
+        emitter.emit('unbinding');
+        return s.close();
+      });
+    });
+    return s.once('close', function() {
+      return emitter.emit('unbound');
+    });
   });
 };
 
 exports.bindClient = function() {
-  var args, opts, pclient, uri;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+  var args, emitter, opts, stream;
+  emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   opts = {};
   if (typeof args[0] === 'number') {
     opts.port = args.shift();
@@ -55,21 +58,19 @@ exports.bindClient = function() {
   if (opts.rejectUnauthorized === undefined) {
     opts.rejectUnauthorized = false;
   }
-  uri = "tls://" + (opts.hostname || 'localhost') + ":" + opts.port;
-  pclient = this;
-  pclient.createConnection(function(callback) {
-    var stream;
-    stream = tls.connect.call(null, opts);
-    return stream.once('secureConnect', function() {
-      return callback({
-        uri: uri,
-        stream: stream,
-        unbind: function(cb) {
-          stream.once('end', cb);
-          return stream.end();
-        }
-      });
-    });
+  emitter.emit('uri', "tls://" + (opts.hostname || 'localhost') + ":" + opts.port);
+  emitter.emit('binding');
+  stream = tls.connect.call(null, opts);
+  emitter.emit('stream', stream);
+  stream.once('secureConnect', function() {
+    return emitter.emit('bound');
+  });
+  emitter.once('unbind', function() {
+    emitter.emit('unbinding');
+    return stream.end();
+  });
+  stream.once('end', function() {
+    return emitter.emit('unbound');
   });
 };
 

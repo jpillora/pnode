@@ -40,14 +40,52 @@ module.exports = class Client extends Base
     @bindTo = @bind
 
     @on 'unbound', =>
-      @count.attempt = 0
       if @d
         @d.removeAllListeners().end()
         @d = null
       return
 
+    #store URI
+    @on 'uri', (@uri) => 
+
+    #handle streams
+    spliceRead = (read) =>
+      if @d.splicedRead
+        @err new Error "Already spliced read stream" 
+      unless helper.isReadable read
+        @err new Error "Invalid read stream" 
+      read.on 'error', @onStreamError
+      #extract src ip and port
+      @ctx.getAddr read
+      #read to dnode
+      @d.splicedRead = true
+      read.pipe(@d)
+
+    spliceWrite = (write) =>
+      if @d.spliceWrite
+        @err new Error "Already spliced write stream" 
+      unless helper.isWritable write
+        @err new Error "Invalid write stream" 
+      write.on 'error', @onStreamError
+      #write from dnode
+      @d.spliceWrite = true
+      @d.pipe(write)
+
+    @on 'read', (read) ->
+      spliceRead read
+    @on 'write', (write) ->
+      spliceWrite write
+    @on 'stream', (stream) ->
+      spliceRead stream
+      spliceWrite stream
+
   bind: ->
+    @count.attempt = 0 
     @bindArgs = arguments
+    @reconnect()
+
+  unbind: ->
+    @count.attempt = Infinity
     super
 
   server: (callback) ->
@@ -65,7 +103,8 @@ module.exports = class Client extends Base
   unget: (callback) ->
     @removeListener 'remote', callback
 
-  reconnect: (callback) ->
+  reconnect: ->
+
     unless @unbound and @count.attempt < @opts.maxRetries
       return
 
@@ -74,43 +113,17 @@ module.exports = class Client extends Base
     #server context, exposed to remote api
     @ctx = new RemoteContext
     @d = dnode @wrapObject(@exposed, @ctx)
+    @d.splicedRead = false
+    @d.splicedWrite = false
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
     @d.once 'error', @onError
     @d.once 'fail', @onStreamError
 
-    @log "connection attempt #{@count.attempt} to #{@uri()}..."
+    @log "connection attempt #{@count.attempt}..."
 
-    #reconnect using previous bind call
-    @bind.apply @, @bindArgs
-
-    #store URI
-    @tEmitter.once 'uri', (@uri) => 
-
-    spliceRead = (read) =>
-      unless helper.isReadable read
-        @err "Invalid read stream" 
-      read.on 'error', @onStreamError
-      #extract src ip and port
-      @ctx.getAddr read
-      #read to dnode
-      read.pipe(@d)
-
-    spliceWrite = (write) =>
-      unless helper.isWritable write
-        @err "Invalid write stream" 
-      write.on 'error', @onStreamError
-      #write from dnode
-      @d.pipe(write)
-
-    @tEmitter.once 'read', (read) ->
-      spliceRead read
-    @tEmitter.once 'read', (read) ->
-      spliceWrite write
-    @tEmitter.once 'stream', (stream) ->
-      spliceRead stream
-      spliceWrite stream
-
+    #reconnect using local bind call args
+    Base::bind.apply @, @bindArgs
     return
 
   #connection failed
@@ -128,7 +141,7 @@ module.exports = class Client extends Base
   onError: (err) ->
     return if @unbound or @unbinding
     msg = if err.stack then err.stack + "\n====" else err
-    @err msg
+    @err new Error msg
 
   #up events
   onRemote: (remote) ->
@@ -138,13 +151,13 @@ module.exports = class Client extends Base
     #ensure it's a pnode remote
     meta = remote?._pnode
     unless typeof meta?.ping is "function"
-      return @err "Invalid pnode host"
+      return @err new Error "Invalid pnode host"
 
     # @log "got server remote", meta
     @remote = remote
     @ctx.getMeta meta
     
-    # @log "EMIT REMOTE", remote
+    @log "server remote!"
     @emit 'remote', @remote, @
     @ping()
 

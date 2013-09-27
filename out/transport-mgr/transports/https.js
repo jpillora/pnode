@@ -7,22 +7,20 @@ http = require("../http-common");
 secure = require("../secure-common");
 
 exports.bindServer = function() {
-  var args, callback, opts, pserver;
-  callback = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  pserver = this;
+  var args, emitter, opts;
+  emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   if (typeof args[args.length - 1] === 'object') {
     opts = args.pop();
   }
   return secure.checkCerts(opts, function(opts) {
-    return http.createServer(callback, pserver, 'https', args, [opts, pserver.handle]);
+    return http.createServer(emitter, 'https', args, [opts]);
   });
 };
 
 exports.bindClient = function() {
-  var args, pclient;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  pclient = this;
-  http.createClient(pclient, 'https', args, {
+  var args, emitter;
+  emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+  http.createClient(emitter, 'https', args, {
     rejectUnauthorized: false
   });
 };

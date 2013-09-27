@@ -1,13 +1,11 @@
 http = require "../http-common"
 
 #http specifc
-exports.bindServer = (callback, args...) ->
-  pserver = @
-  http.createServer callback, pserver, 'http', args, [pserver.handle]
+exports.bindServer = (emitter, args...) ->
+  http.createServer emitter, 'http', args, []
   return
 
-exports.bindClient = (args...) ->
-  pclient = @
-  http.createClient pclient, 'http', args
+exports.bindClient = (emitter, args...) ->
+  http.createClient emitter, 'http', args, {}
   return
 

@@ -20,6 +20,7 @@ module.exports = class LocalPeer extends Base
   constructor: ->
     super
 
+    @count = { server:0, client:0 }
     @servers = {}
     @peers = ObjectIndex "id", "guid"
 
@@ -30,7 +31,16 @@ module.exports = class LocalPeer extends Base
           serialize: @exposeDynamic => @serialize()
 
   bindOn: ->
+    @count.server++
     server = new Server @
+
+    #proxy prefixed events
+    self = @
+    server.onAny (args...) ->
+      e = [].concat(server.subid).concat(@event)
+      args.unshift e
+      self.emit.apply null, args
+
     server.on 'error', (err) => @emit 'error', err
     server.on 'connection', @onPeer
     server.bindOn.apply server, arguments
@@ -40,7 +50,16 @@ module.exports = class LocalPeer extends Base
       delete @servers[server.guid]
 
   bindTo: ->
+    @count.client++
     client = new Client @
+
+    #proxy prefixed events
+    self = @
+    client.onAny (args...) ->
+      e = [].concat(client.subid).concat(@event)
+      args.unshift e
+      self.emit.apply null, args
+
     client.on 'error', (err) => @emit 'error', err
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments

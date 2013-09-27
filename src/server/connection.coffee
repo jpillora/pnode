@@ -34,7 +34,6 @@ module.exports = class Connection extends Base.Logger
 
     @d.once 'end', =>
       # @log "DNODE END (from #{@server.id})"
-      @log "DOWN"
       @emit 'down'
 
     #splice!
@@ -42,7 +41,8 @@ module.exports = class Connection extends Base.Logger
 
   unbind: (cb) ->
     # @log "EXPLICIT UNBIND (from #{@server.id})"
-    @d.end(cb)
+    @d.once 'end', cb if cb
+    @d.end()
     #remove all eventlisteners
     @removeAllListeners()
 
@@ -53,7 +53,7 @@ module.exports = class Connection extends Base.Logger
 
     meta = remote._pnode
     unless meta
-      @log "closing conn, not a pnode conn"
+      @warn "Invalid pnode connection"
       d.end()
       return
 
@@ -62,7 +62,6 @@ module.exports = class Connection extends Base.Logger
     
     @remote = remote
     @emit 'remote', remote
-    @log "UP"
     @emit 'up'
     return
 
