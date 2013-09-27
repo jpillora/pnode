@@ -48,7 +48,9 @@ module.exports = class LocalPeer extends Base
   unbind: (callback) ->
     @log "UNBIND SELF AND ALL PEERS"
 
-    cb = helper.callbacker callback
+    cb = helper.callbacker =>
+      @log "UNBOUND SELF! <======="
+      callback()
 
     for peer in @peers
       peer.unbind cb()
@@ -86,7 +88,7 @@ module.exports = class LocalPeer extends Base
         @emit 'peer', peer
         @emit 'remote', remote
       peer.on 'down', =>
-        @log "lost peer %s", guid
+        @log "lost peer %s", id
 
     peer.add cliconn
     return

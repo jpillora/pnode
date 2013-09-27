@@ -47,7 +47,7 @@ bindTest = (name, test, done) ->
   spies = {}
   spies[fn.name] = sinon.spy(fn) for fn in spyFns
 
-  server = pnode.server({id:"bind-#{name}-server", debug:true})
+  server = pnode.server({id:"bind-#{name}-server", debug:false})
 
   #listen for server events
   server.once 'bound', spies.boundServer
@@ -57,7 +57,7 @@ bindTest = (name, test, done) ->
 
   server.once 'bound', ->
     #server up
-    client = pnode.client({id:"bind-#{name}-client", debug:true})
+    client = pnode.client({id:"bind-#{name}-client", debug:false})
 
     #listen for client events
     client.once 'bound', spies.boundClient
@@ -83,9 +83,11 @@ bindTest = (name, test, done) ->
   server.bind.apply server, test.server
 
 
-describe.only "basic bind/unbind client and server > ", ->
+describe "basic bind/unbind client and server > ", ->
   _.each tests, (obj, name) ->
-    it "bind+unbind #{name} should work", (done) ->
+    # obj = tests.http
+    # name = 'http'
+    it "bind/unbind #{name} should work", (done) ->
       bindTest name, obj, done
 
 # =======================

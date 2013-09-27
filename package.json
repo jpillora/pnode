@@ -54,7 +54,7 @@
       "iphone/6",
       "ipad/6"
     ],
-    "harness" : "mocha",
+    "harness": "mocha",
     "files": "test/testling/*-tests.js",
     "server": "test/testling/testling-server.js"
   },
@@ -65,7 +65,8 @@
     "phantom": "~0.5.2",
     "colors": "~0.6.2",
     "tape": "~1.1.0",
-    "sinon": "~1.7.3"
+    "sinon": "~1.7.3",
+    "async": "~0.2.9"
   },
   "browser": {
     "os": false,

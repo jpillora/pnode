@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "emitter.js",
+  "sourceRoot": "..",
+  "sources": [
+    "src/emitter.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAAA,IAAA,SAAA;;AAAC,CAAD,EAAkB,IAAA,MAAlB,EAAkB;;AAElB,CAFA,EAEiB,GAAX,CAAN,MAFA"
+}

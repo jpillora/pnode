@@ -7,7 +7,7 @@ re = /^([a-z]+):\/\//
 transports = {}
 
 #extract protocol, hostname, port from string
-exports.parse = (str) ->
+parse = (str) ->
   args = []
   if typeof str is 'string' and /^(.+?)(:(\d+))?$/.test str
     hostname = RegExp.$1
@@ -23,7 +23,7 @@ exports.parse = (str) ->
 # which will translate to
 #   transport, port, host,   ...rest
 
-extract = (args) ->
+exports.get = (args) ->
   transport = args.shift()
 
   unless transport
@@ -40,7 +40,7 @@ extract = (args) ->
   unless trans
     throw "'#{name}' not found"
   #get a parse function
-  parseFn = trans.parse or exports.parse
+  parseFn = trans.parse or parse
 
   #prepend parsed args
   parsed = parseFn(uri)
@@ -48,27 +48,6 @@ extract = (args) ->
     args.unshift parsed.pop()
 
   return trans
-
-exports.bind = (context, args, callback) ->
-
-  args = Array::slice.call args
-
-  try
-    trans = extract args
-  catch err
-    context.err "Transport: #{err}"
-
-  if context.name is 'Client'
-    #listen for next stream...
-    context.once 'interface', (obj) ->
-      callback obj
-    trans.bindClient.apply context, args
-
-  else if context.name is 'Server'
-    #include callback for
-    trans.bindServer.apply context, [callback].concat args
-
-  return
 
 exports.add = (name, obj) ->
   if typeof obj.bindServer isnt 'function' or
@@ -78,14 +57,11 @@ exports.add = (name, obj) ->
   if /[^a-z]/.test name
     throw "Transport name must be lowercase letters only"
 
-  if exports.get name
+  if transports[name]
     throw "Transport '#{name}' already exists"
 
   transports[name] = obj
   true
-
-exports.get = (name) ->
-  return transports[name]
 
 #init
 unless process.browser

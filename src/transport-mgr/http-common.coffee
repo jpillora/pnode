@@ -101,15 +101,17 @@ exports.createClient = (pclient, type, reqArgs, extraOpts = {}) ->
 
     write = (if type is 'https' then https else http).request opts
     write.once 'response', (read) ->
-      callback { read }
+      callback {
+        read
+        unbind: (cb) ->
+          read.socket.once 'end', cb
+          read.socket.end()
+      }
       return
 
     callback {
       uri
       write
-      unbind: (cb) ->
-        write.once 'end', cb
-        write.end()
     }
     return
   return

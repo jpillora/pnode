@@ -55,16 +55,16 @@ exports.createClient = function(pclient, type, reqArgs, extraOpts) {
     write = (type === 'https' ? https : http).request(opts);
     write.once('response', function(read) {
       callback({
-        read: read
+        read: read,
+        unbind: function(cb) {
+          read.socket.once('end', cb);
+          return read.socket.end();
+        }
       });
     });
     callback({
       uri: uri,
-      write: write,
-      unbind: function(cb) {
-        write.once('end', cb);
-        return write.end();
-      }
+      write: write
     });
   });
 };

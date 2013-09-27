@@ -27,21 +27,22 @@ module.exports = Server = (function(_super) {
   };
 
   function Server() {
+    var _this = this;
     servers.push(this);
     Server.__super__.constructor.apply(this, arguments);
     this.connections = ObjectIndex("id", "guid");
     this.bindOn = this.bind;
-    this.on('unbinding', this.unbinding);
+    this.on('unbinding', function() {
+      var conn, _i, _len, _ref;
+      _ref = Array.prototype.slice.call(_this.connections);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        conn = _ref[_i];
+        conn.unbind();
+      }
+    });
+    this.on('stream', this.handle);
+    return;
   }
-
-  Server.prototype.unbinding = function() {
-    var conn, _i, _len, _ref;
-    _ref = Array.prototype.slice.call(this.connections);
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      conn = _ref[_i];
-      conn.unbind();
-    }
-  };
 
   Server.prototype.handle = function(read, write) {
     var conn,
@@ -64,13 +65,12 @@ module.exports = Server = (function(_super) {
       }
       _this.connections.add(conn);
       _this.emit('remote', conn.remote);
-      return _this.emit('connection', conn, _this);
+      _this.emit('connection', conn, _this);
     });
-    return conn.once('down', function() {
-      if (!_this.connections.remove(conn)) {
-        return;
+    conn.once('down', function() {
+      if (_this.connections.remove(conn)) {
+        _this.emit('disconnection', conn);
       }
-      return _this.emit('disconnection', conn);
     });
   };
 
@@ -124,7 +124,7 @@ module.exports = Server = (function(_super) {
   };
 
   Server.prototype.serialize = function() {
-    return this.uri();
+    return this.uri;
   };
 
   return Server;

@@ -64,12 +64,12 @@ module.exports = RemotePeer = (function(_super) {
   };
 
   RemotePeer.prototype.unbind = function(callback) {
-    var cb, cliconn, _i, _len, _ref;
-    cb = helper.callbacker(callback);
+    var cliconn, mkCb, _i, _len, _ref;
+    mkCb = helper.callbacker(callback);
     _ref = Array.prototype.slice.call(this.cliconns);
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       cliconn = _ref[_i];
-      cliconn.unbind(cb());
+      cliconn.unbind(mkCb());
     }
   };
 

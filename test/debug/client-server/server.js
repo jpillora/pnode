@@ -10,7 +10,7 @@ var server = pnode.server({
 //   server.log('incoming bar', obj);
 // });
 
-server.bind('http://0.0.0.0:8000', function(){
+server.bind('tcp://0.0.0.0:8000', function(){
   server.log('bound to all interfaces on port 8000');
 });
 

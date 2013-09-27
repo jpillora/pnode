@@ -1,12 +1,12 @@
 
-{EventEmitter2} = require 'eventemitter2'
+Emitter = require './emitter'
 util = require 'util'
 _ = require '../vendor/lodash'
 transportMgr = require './transport-mgr'
 RemoteContext = require './context'
 
 #base class of the base class
-class Logger extends EventEmitter2
+class Logger extends Emitter
   name: 'Logger'
   #debugging
   log: ->
@@ -53,16 +53,13 @@ class Base extends Logger
     else
       @opts = if _.isString incoming then { id:incoming } else incoming or {}
       @id = @opts.id or @guid
-      @pubsub = new EventEmitter2
+      @pubsub = new Emitter
       @exposed = @defaultExposed()
 
     #the class's apply defaults
     _.defaults @opts, @defaults
 
     _.bindAll @
-
-    @isChanging = false
-    @isBound = false
     
   options: (opts) ->
     _.extend @opts, opts
@@ -101,47 +98,45 @@ class Base extends Logger
   uri: ->
     @tInterface?.uri
 
-  bind: ->
-    if @isBound
-      @warn 'unbind in progress' if @isChanging
+  bind: (args...) ->
+    if @bound
+      @warn 'unbind in progress' if @unbinding
       return
 
-    @setIsChanging true
+    #reset emitter
+    @tEmitter.removeAllListeners() if @tEmitter
+    @tEmitter = new Emitter
 
-    transportMgr.bind @, arguments, (@tInterface) =>
-      @setIsChanging false
-      @setIsBound true
-      return
+    #finite states
+    events = ['binding','bound','unbinding','unbound']
+    
+    inst = @
+    #bubble up all events
+    @tEmitter.onAny (args...) =>
+      inst.log 'transport event ', @event
+      #set appropriate state
+      if @event in events
+        for e in events
+          inst[e] = e is @event
+      inst.emit.apply [@event].concat(args)
+
+    #get transport
+    try
+      trans = transportMgr.get args
+    catch err
+      @err "Transport: #{err}"
+
+    #bind server/client
+    trans["bind#{@name}"].apply null, args
     return
 
   unbind: (callback) ->
-    unless @isBound
-      @warn 'bind in progress' if @isChanging
+    if @unbound
+      @warn 'bind in progress' if @binding
       return
-
-    @setIsChanging true
-
-    @tInterface.unbind =>
-      @setIsChanging false
-      @setIsBound false
-      callback(true) if callback
-      return
+    @once 'unbound', callback if callback
+    @tEmitter.emit 'unbind'
     return
-
-  setIsChanging: (flag) ->
-    @isChanging = flag
-    if flag
-      action = (if @isBound then 'un' else '')+'binding'
-      @log action
-      @emit action
-
-  setIsBound: (flag) ->
-    @isBound = flag
-    action = (if flag then '' else 'un')+'bound'
-    @log action
-    @emit action
-
-    # @removeAllEventListeners()
 
   #recursively timeoutify functions and eval dynamic values
   wrapObject: (input, ctx) ->
@@ -194,7 +189,7 @@ class Base extends Logger
             return
           t = setTimeout ->
             timedout = true
-            return unless parent.isBound
+            return unless parent.bound
             # parent.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
             parent.emit ['timeout',name], args, ctx
             return

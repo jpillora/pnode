@@ -31,14 +31,11 @@ module.exports = Client = (function(_super) {
   function Client() {
     var _this = this;
     Client.__super__.constructor.apply(this, arguments);
-    this.stream = {};
     this.count = {
       ping: 0,
       pong: 0,
       attempt: 0
     };
-    this.connecting = false;
-    this.status = 'down';
     this.reconnect = this.timeoutify('reconnect', this.reconnect);
     this.reconnect = _.throttle(this.reconnect, this.opts.retryInterval, {
       leading: true
@@ -50,30 +47,27 @@ module.exports = Client = (function(_super) {
     });
     this.ping = _.throttle(this.ping, this.opts.pingInterval);
     this.on(['timeout', 'ping'], function() {
-      _this.log("ping TIMEOUT!");
-      return _this.setStatus('down');
+      return _this.log("ping TIMEOUT!");
     });
     this.bindTo = this.bind;
+    this.on('unbound', function() {
+      _this.count.attempt = 0;
+      if (_this.d) {
+        _this.d.removeAllListeners().end();
+        _this.d = null;
+      }
+    });
   }
 
-  Client.prototype.createConnection = function(fn) {
-    if (typeof fn !== 'function') {
-      this.err("must be a function");
-    }
-    if (!(fn.length === 1 || fn.length === 2)) {
-      this.err("must have arity 1 or 2");
-    }
-    this.getConnectionFn = fn;
-    this.reconnect();
+  Client.prototype.bind = function() {
+    this.bindArgs = arguments;
+    return Client.__super__.bind.apply(this, arguments);
   };
 
   Client.prototype.server = function(callback) {
-    if (!this.getConnectionFn) {
-      return this.err("no create connection method defined");
-    }
-    if (this.status === 'up') {
+    if (this.bound && this.remote) {
       return callback(this.remote);
-    } else if (this.status === 'down' && !this.connecting) {
+    } else if (this.unbound) {
       this.count.attempt = 0;
       this.reconnect();
     }
@@ -85,85 +79,61 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.reconnect = function(callback) {
-    var gotRead, gotWrite, spliceRead, spliceWrite, tInterface,
+    var spliceRead, spliceWrite,
       _this = this;
-    if (this.status === 'up' || this.connecting || this.count.attempt >= this.opts.maxRetries) {
+    if (!(this.unbound && this.count.attempt < this.opts.maxRetries)) {
       return;
     }
     this.count.attempt++;
-    this.connecting = true;
-    this.reset();
     this.ctx = new RemoteContext;
     this.d = dnode(this.wrapObject(this.exposed, this.ctx));
     this.d.once('remote', this.onRemote);
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
-    gotRead = false;
-    gotWrite = false;
-    tInterface = {};
     this.log("connection attempt " + this.count.attempt + " to " + (this.uri()) + "...");
-    this.emit('connecting');
+    this.bind.apply(this, this.bindArgs);
+    this.tEmitter.once('uri', function(uri) {
+      _this.uri = uri;
+    });
     spliceRead = function(read) {
-      if (gotRead) {
-        return;
-      }
       if (!helper.isReadable(read)) {
         _this.err("Invalid read stream");
       }
       read.on('error', _this.onStreamError);
       _this.ctx.getAddr(read);
-      read.pipe(_this.d);
-      return gotRead = true;
+      return read.pipe(_this.d);
     };
     spliceWrite = function(write) {
-      if (gotWrite) {
-        return;
-      }
       if (!helper.isWritable(write)) {
         _this.err("Invalid write stream");
       }
       write.on('error', _this.onStreamError);
-      _this.d.pipe(write);
-      return gotWrite = true;
+      return _this.d.pipe(write);
     };
-    this.getConnectionFn(function(obj) {
-      var read, stream, unbind, uri, write;
-      stream = obj.stream, unbind = obj.unbind, uri = obj.uri, read = obj.read, write = obj.write;
-      if (uri) {
-        tInterface.uri = uri;
-      }
-      if (unbind) {
-        tInterface.unbind = unbind;
-      }
-      if (tInterface.uri && tInterface.unbind) {
-        _this.emit('interface', tInterface);
-      }
-      if (read) {
-        spliceRead(read);
-      }
-      if (write) {
-        spliceWrite(write);
-      }
-      if (stream) {
-        spliceRead(stream);
-        spliceWrite(stream);
-      }
+    this.tEmitter.once('read', function(read) {
+      return spliceRead(read);
+    });
+    this.tEmitter.once('read', function(read) {
+      return spliceWrite(write);
+    });
+    this.tEmitter.once('stream', function(stream) {
+      spliceRead(stream);
+      return spliceWrite(stream);
     });
   };
 
   Client.prototype.onStreamError = function(err) {
-    if (!this.isBound) {
+    if (this.unbound || this.unbinding) {
       return;
     }
     this.log("stream error: " + err.message);
-    this.setStatus('down');
     this.reconnect();
   };
 
   Client.prototype.onError = function(err) {
     var msg;
-    if (!this.isBound) {
+    if (this.unbound || this.unbinding) {
       return;
     }
     msg = err.stack ? err.stack + "\n====" : err;
@@ -180,13 +150,12 @@ module.exports = Client = (function(_super) {
     this.remote = remote;
     this.ctx.getMeta(meta);
     this.emit('remote', this.remote, this);
-    this.setStatus('up');
     return this.ping();
   };
 
   Client.prototype.ping = function() {
     var _this = this;
-    if (this.status === 'down') {
+    if (this.unbound) {
       return;
     }
     this.count.ping++;
@@ -200,26 +169,7 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.onEnd = function() {
     this.log("server closed connection");
-    this.setStatus('down');
     return this.reconnect();
-  };
-
-  Client.prototype.setStatus = function(s) {
-    this.connecting = false;
-    if (!((s === 'up' || s === 'down') && s !== this.status)) {
-      return;
-    }
-    this.log(s);
-    this.status = s;
-    return this.emit(s);
-  };
-
-  Client.prototype.reset = function() {
-    this.setStatus('down');
-    if (this.d) {
-      this.d.removeAllListeners().end();
-      return this.d = null;
-    }
   };
 
   Client.prototype.publish = function() {
@@ -252,7 +202,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.serialize = function() {
-    return this.uri();
+    return this.uri;
   };
 
   return Client;

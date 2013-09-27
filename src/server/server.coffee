@@ -22,12 +22,14 @@ module.exports = class Server extends Base
     #alias
     @bindOn = @bind
 
-    @on 'unbinding', @unbinding
+    @on 'unbinding', =>
+      #unbind requested - close all client connections
+      for conn in Array::slice.call @connections
+        conn.unbind()
+      return
 
-  unbinding: ->
-    #unbind requested - close all client connections
-    for conn in Array::slice.call @connections
-      conn.unbind()
+    #new connection
+    @on 'stream', @handle
     return
 
   handle: (read, write) ->
@@ -52,10 +54,14 @@ module.exports = class Server extends Base
 
       @emit 'remote', conn.remote
       @emit 'connection', conn, @
+      return
 
     conn.once 'down', =>
-      return unless @connections.remove conn
-      @emit 'disconnection', conn
+      if @connections.remove conn
+        @emit 'disconnection', conn
+      return
+
+    return
 
   client: (id, callback) ->
     conn = @connections.get id
@@ -92,8 +98,7 @@ module.exports = class Server extends Base
         conn.subscribe event
     return
 
-  serialize: ->
-    @uri()
+  serialize: -> @uri
 
 #unbind all servers on exit
 process.on? 'exit', ->

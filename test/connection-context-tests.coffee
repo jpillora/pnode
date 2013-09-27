@@ -1,5 +1,6 @@
 {expect} = require "chai"
 _ = require "../vendor/lodash"
+async = require "async"
 pnode = require "../"
 
 describe "shared peer contexts > ", ->
@@ -8,10 +9,8 @@ describe "shared peer contexts > ", ->
   peer2 = null
   peer3 = null
 
-  afterEach ->
-    peer1.unbind()
-    peer2.unbind()
-    peer3?.unbind()
+  afterEach (done) ->
+    async.parallel [peer1.unbind, peer2.unbind], done
 
   it.only "should maintain context across channels", (done) ->
 
@@ -26,7 +25,7 @@ describe "shared peer contexts > ", ->
         catch e
           return done e
         @set 'foo', n
-        cb true
+        cb()
       get: (cb) ->
         cb @get 'foo'
 
@@ -42,7 +41,6 @@ describe "shared peer contexts > ", ->
           peer2.unbind getContext
 
     getContext = ->
-      
       peer2.bindTo 'http://localhost:8001'
       peer2.peer 'peer1', (remote) ->
         remote.get (n) ->

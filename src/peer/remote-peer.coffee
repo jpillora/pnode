@@ -53,10 +53,10 @@ module.exports = class RemotePeer extends Base.Logger
 
   unbind: (callback) ->
 
-    cb = helper.callbacker callback
+    mkCb = helper.callbacker callback
 
     for cliconn in Array::slice.call @cliconns
-      cliconn.unbind cb()
+      cliconn.unbind mkCb()
     return
 
   #custom serialisation
