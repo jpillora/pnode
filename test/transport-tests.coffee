@@ -4,7 +4,7 @@ pnode = require "../"
 sinon = require "sinon"
 
 #iteratively define tests
-describe.only "transports > ", ->
+describe "transports > ", ->
 
   #use static certs to speed up tests
   certs =
@@ -108,16 +108,14 @@ describe.only "transports > ", ->
   # basic rpc test using each transport
   rpcTest = (type, name, test, done) ->
 
-    console.log "TYPE", type
-
-    server = pnode[type.server.name]({id:"rpc-#{type.server.name}##{i++}", debug:true})
+    server = pnode[type.server.name]({id:"rpc-#{type.server.name}##{i++}", debug:false})
     server.expose
       foo: (callback) -> callback 42
 
-    client = pnode[type.client.name]({id:"rpc-#{type.client.name}##{i++}", debug:true})
+    client = pnode[type.client.name]({id:"rpc-#{type.client.name}##{i++}", debug:false})
 
     #insert callback at 2nd position
-    test.server.splice 1, 0, ->
+    server.once type.server.prefix+'bound', ->
       #server up
       client.bindTo.apply client, test.client
 
@@ -131,10 +129,8 @@ describe.only "transports > ", ->
         expect(remote.foo).to.be.a('function')
         remote.foo (result) ->
           expect(result).to.equal(42)
-
           client.unbind ->
             server.unbind ->
-              console.log "DONE==========="
               done()
 
     server.bindOn.apply server, test.server

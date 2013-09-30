@@ -15,17 +15,24 @@ module.exports = RemotePeer = (function(_super) {
   RemotePeer.prototype.name = 'RemotePeer';
 
   function RemotePeer(local, guid, id, ips) {
+    var _this = this;
     this.local = local;
     this.guid = guid;
     this.id = id;
     this.ips = ips;
     this.opts = this.local.opts;
+    this.cliconns = [];
+    Object.defineProperty(this, 'uri', {
+      get: function() {
+        var _ref;
+        return (_ref = _this.cliconns[0]) != null ? _ref.uri : void 0;
+      }
+    });
     this.connecting = false;
     this.ctx = new RemoteContext;
     this.ctx.id = id;
     this.ctx.guid = guid;
     this.isUp(false);
-    this.cliconns = [];
   }
 
   RemotePeer.prototype.add = function(cliconn) {
@@ -33,6 +40,7 @@ module.exports = RemotePeer = (function(_super) {
     this.ctx.combine(cliconn.ctx);
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
+      _this.log("LOST CONNECTION (" + _this.uri + ")");
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
       return _this.setActive();
     });
@@ -55,11 +63,13 @@ module.exports = RemotePeer = (function(_super) {
     }
     if (up) {
       this.up = true;
+      this.log("UP");
       this.emit('up');
     } else {
       this.up = false;
       this.remote = null;
       this.emit('down');
+      this.log("DOWN");
     }
   };
 

@@ -74,19 +74,11 @@ module.exports = class LocalPeer extends Base
     return
 
   unbind: (callback) ->
-    @log "UNBIND SELF AND ALL PEERS"
-
-    cb = helper.callbacker =>
-      @log "UNBOUND SELF! <======="
-      callback()
-
-    debugger
-
+    mkCb = helper.callbacker callback
     for guid, client of @clients
-      client.unbind cb()
+      client.unbind mkCb()
     for guid, server of @servers
-      server.unbind cb()
-
+      server.unbind mkCb()
     return
 
   # new peer connection (client / server connection)
@@ -114,9 +106,9 @@ module.exports = class LocalPeer extends Base
 
       @peers.add peer
 
-      peer.on 'up', (remote) =>
+      peer.on 'up', =>
         @emit 'peer', peer
-        @emit 'remote', remote
+        @emit 'remote', peer.remote
       peer.on 'down', =>
         @log "lost peer %s", id
 
@@ -138,9 +130,12 @@ module.exports = class LocalPeer extends Base
 
   peer: (id, callback) ->
     get = =>
-      @log "get #{id}"
       peer = @peers.get id
       return false unless peer?.up
+
+
+      @log "get #{id} IS UP!!!!"
+
       callback peer.remote
       return true
 

@@ -12,12 +12,13 @@ module.exports = class RemotePeer extends Base.Logger
 
   constructor: (@local, @guid, @id, @ips) ->
     @opts = @local.opts
+    @cliconns = []
+    Object.defineProperty @, 'uri', get: => @cliconns[0]?.uri
     @connecting = false
     @ctx = new RemoteContext
     @ctx.id = id
     @ctx.guid = guid
     @isUp(false)
-    @cliconns = []
 
   #will be a client (outgoing) OR connection (incoming)
   add: (cliconn) ->
@@ -26,7 +27,7 @@ module.exports = class RemotePeer extends Base.Logger
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
-      # @log "LOST CONNECTION (from #{@local.id})"
+      @log "LOST CONNECTION (#{@uri})"
       @cliconns.splice @cliconns.indexOf(cliconn), 1
       @setActive()
 
@@ -44,11 +45,13 @@ module.exports = class RemotePeer extends Base.Logger
     return if @up is up
     if up
       @up = true
+      @log "UP"
       @emit 'up'
     else
       @up = false
       @remote = null
       @emit 'down'
+      @log "DOWN"
     return
 
   #custom serialisation

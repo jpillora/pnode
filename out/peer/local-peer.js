@@ -107,23 +107,17 @@ module.exports = LocalPeer = (function(_super) {
   };
 
   LocalPeer.prototype.unbind = function(callback) {
-    var cb, client, guid, server, _ref, _ref1,
-      _this = this;
-    this.log("UNBIND SELF AND ALL PEERS");
-    cb = helper.callbacker(function() {
-      _this.log("UNBOUND SELF! <=======");
-      return callback();
-    });
-    debugger;
+    var client, guid, mkCb, server, _ref, _ref1;
+    mkCb = helper.callbacker(callback);
     _ref = this.clients;
     for (guid in _ref) {
       client = _ref[guid];
-      client.unbind(cb());
+      client.unbind(mkCb());
     }
     _ref1 = this.servers;
     for (guid in _ref1) {
       server = _ref1[guid];
-      server.unbind(cb());
+      server.unbind(mkCb());
     }
   };
 
@@ -145,9 +139,9 @@ module.exports = LocalPeer = (function(_super) {
     if (!peer) {
       peer = new RemotePeer(this, guid, id, ips);
       this.peers.add(peer);
-      peer.on('up', function(remote) {
+      peer.on('up', function() {
         _this.emit('peer', peer);
-        return _this.emit('remote', remote);
+        return _this.emit('remote', peer.remote);
       });
       peer.on('down', function() {
         return _this.log("lost peer %s", id);
@@ -181,11 +175,11 @@ module.exports = LocalPeer = (function(_super) {
       _this = this;
     get = function() {
       var peer;
-      _this.log("get " + id);
       peer = _this.peers.get(id);
       if (!(peer != null ? peer.up : void 0)) {
         return false;
       }
+      _this.log("get " + id + " IS UP!!!!");
       callback(peer.remote);
       return true;
     };

@@ -29,7 +29,7 @@ module.exports = Client = (function(_super) {
   };
 
   function Client() {
-    var spliceRead, spliceWrite,
+    var onRead, onWrite,
       _this = this;
     Client.__super__.constructor.apply(this, arguments);
     this.count = {
@@ -37,14 +37,8 @@ module.exports = Client = (function(_super) {
       pong: 0,
       attempt: 0
     };
-    this.reconnect = this.timeoutify('reconnect', this.reconnect);
     this.reconnect = _.throttle(this.reconnect, this.opts.retryInterval, {
       leading: true
-    });
-    this.on(['timeout', 'reconnect'], function() {
-      _this.log("reconnect TIMEOUT!");
-      _this.reset();
-      return _this.reconnect();
     });
     this.ping = _.throttle(this.ping, this.opts.pingInterval);
     this.on(['timeout', 'ping'], function() {
@@ -60,7 +54,7 @@ module.exports = Client = (function(_super) {
     this.on('uri', function(uri) {
       _this.uri = uri;
     });
-    spliceRead = function(read) {
+    onRead = function(read) {
       if (_this.d.splicedRead) {
         _this.err(new Error("Already spliced read stream"));
       }
@@ -72,26 +66,26 @@ module.exports = Client = (function(_super) {
       _this.d.splicedRead = true;
       return read.pipe(_this.d);
     };
-    spliceWrite = function(write) {
-      if (_this.d.spliceWrite) {
+    onWrite = function(write) {
+      if (_this.d.splicedWrite) {
         _this.err(new Error("Already spliced write stream"));
       }
       if (!helper.isWritable(write)) {
         _this.err(new Error("Invalid write stream"));
       }
       write.on('error', _this.onStreamError);
-      _this.d.spliceWrite = true;
+      _this.d.splicedWrite = true;
       return _this.d.pipe(write);
     };
     this.on('read', function(read) {
-      return spliceRead(read);
+      return onRead(read);
     });
     this.on('write', function(write) {
-      return spliceWrite(write);
+      return onWrite(write);
     });
     this.on('stream', function(stream) {
-      spliceRead(stream);
-      return spliceWrite(stream);
+      onRead(stream);
+      return onWrite(stream);
     });
   }
 
@@ -102,7 +96,6 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.unbind = function() {
-    this.log("CLIENT TRIGGER UNBIND");
     this.count.attempt = Infinity;
     return Client.__super__.unbind.apply(this, arguments);
   };

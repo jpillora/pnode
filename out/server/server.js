@@ -40,6 +40,9 @@ module.exports = Server = (function(_super) {
         conn.unbind();
       }
     });
+    this.on('uri', function(uri) {
+      _this.uri = uri;
+    });
     this.on('stream', this.handle);
     return;
   }

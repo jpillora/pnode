@@ -24,6 +24,12 @@ module.exports = Connection = (function(_super) {
     var _this = this;
     this.server = server;
     this.opts = this.server.opts;
+    Object.defineProperty(this, 'uri', {
+      get: function() {
+        return _this.server.uri;
+      }
+    });
+    this.uri = this.server.uri;
     this.id = this.guid = "...";
     this.subs = {};
     this.ctx = new RemoteContext;
@@ -37,7 +43,6 @@ module.exports = Connection = (function(_super) {
     write.once('close', this.d.end);
     write.once('end', this.d.end);
     this.d.once('end', function() {
-      _this.log("DNODE END (from " + _this.server.id + ")");
       return _this.emit('down');
     });
     read.pipe(this.d).pipe(write);

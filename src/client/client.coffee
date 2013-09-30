@@ -22,13 +22,13 @@ module.exports = class Client extends Base
     @count = { ping: 0, pong: 0, attempt: 0 }
     
     #timeoutify and throttle reconnects
-    @reconnect = @timeoutify 'reconnect', @reconnect
+    # @reconnect = @timeoutify 'reconnect', @reconnect
     @reconnect = _.throttle @reconnect, @opts.retryInterval, {leading:true}
 
-    @on ['timeout','reconnect'], =>
-      @log "reconnect TIMEOUT!"
-      @reset()
-      @reconnect()
+    # @on ['timeout','reconnect'], =>
+    #   @log "reconnect TIMEOUT!"
+    #   @reset()
+    #   @reconnect()
 
     #throttle ping (already timeoutified from remote)
     @ping = _.throttle @ping, @opts.pingInterval
@@ -49,7 +49,7 @@ module.exports = class Client extends Base
     @on 'uri', (@uri) => 
 
     #handle streams
-    spliceRead = (read) =>
+    onRead = (read) =>
       if @d.splicedRead
         @err new Error "Already spliced read stream" 
       unless helper.isReadable read
@@ -61,23 +61,23 @@ module.exports = class Client extends Base
       @d.splicedRead = true
       read.pipe(@d)
 
-    spliceWrite = (write) =>
-      if @d.spliceWrite
+    onWrite = (write) =>
+      if @d.splicedWrite
         @err new Error "Already spliced write stream" 
       unless helper.isWritable write
         @err new Error "Invalid write stream" 
       write.on 'error', @onStreamError
       #write from dnode
-      @d.spliceWrite = true
+      @d.splicedWrite = true
       @d.pipe(write)
 
     @on 'read', (read) ->
-      spliceRead read
+      onRead read
     @on 'write', (write) ->
-      spliceWrite write
+      onWrite write
     @on 'stream', (stream) ->
-      spliceRead stream
-      spliceWrite stream
+      onRead stream
+      onWrite stream
 
   bind: ->
     @count.attempt = 0 
@@ -85,7 +85,6 @@ module.exports = class Client extends Base
     @reconnect()
 
   unbind: ->
-    @log "CLIENT TRIGGER UNBIND"
     @count.attempt = Infinity
     super
 

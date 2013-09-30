@@ -13,8 +13,15 @@ module.exports = class Connection extends Base.Logger
   constructor: (@server, read, write) ->
 
     @opts = @server.opts # {debug: true}
+
+    Object.defineProperty @, 'uri', get: => @server.uri
+
+
+    @uri = @server.uri
     @id = @guid = "..."
     @subs = {}
+
+
 
     @ctx = new RemoteContext
     @ctx.getAddr read
@@ -33,7 +40,6 @@ module.exports = class Connection extends Base.Logger
     write.once 'end', @d.end
 
     @d.once 'end', =>
-      @log "DNODE END (from #{@server.id})"
       @emit 'down'
 
     #splice!

@@ -188,7 +188,6 @@ Base = (function(_super) {
     this.tEmitter.onAny(function() {
       var args, e, _j, _len1, _ref1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      inst.log('transport event ', this.event);
       if (_ref1 = this.event, __indexOf.call(events, _ref1) >= 0) {
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           e = events[_j];
@@ -209,7 +208,6 @@ Base = (function(_super) {
   };
 
   Base.prototype.unbind = function(callback) {
-    this.log("TRIGGER UNBIND");
     if (this.unbound) {
       if (this.binding) {
         this.warn('bind in progress');
@@ -268,6 +266,7 @@ Base = (function(_super) {
         a = args[i];
         if (typeof a === 'function') {
           args[i] = function() {
+            self.log("returned %s %s (%s) at %s", type, name, id, Date.now());
             clearTimeout(t);
             if (timedout) {
               return;
@@ -280,11 +279,13 @@ Base = (function(_super) {
             if (!self.bound) {
               return;
             }
+            self.log("timeout %s %s (%s) at %s", type, name, id, Date.now());
             self.emit(['timeout', name], args, ctx);
           }, self.opts.timeout);
           break;
         }
       }
+      self.log("calling %s %s (%s) at %s %s", type, name, id, Date.now(), t === null ? '' : ' (with timer)');
       return fn.apply(ctx, args);
     };
   };

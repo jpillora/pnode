@@ -28,6 +28,9 @@ module.exports = class Server extends Base
         conn.unbind()
       return
 
+    #store URI
+    @on 'uri', (@uri) => 
+    
     #new connection
     @on 'stream', @handle
     return
