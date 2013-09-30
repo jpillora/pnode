@@ -12,3 +12,5 @@ exports.addTransport = require('./transport-mgr').add
 exports.client = (opts) -> new Client opts
 exports.server = (opts) -> new Server opts
 exports.peer   = (opts) -> new LocalPeer opts
+
+exports.helper = require './helper'

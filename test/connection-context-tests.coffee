@@ -2,6 +2,7 @@
 _ = require "../vendor/lodash"
 async = require "async"
 pnode = require "../"
+helper = require "./helper"
 
 describe "shared peer contexts > ", ->
 
@@ -10,7 +11,7 @@ describe "shared peer contexts > ", ->
   peer3 = null
 
   afterEach (done) ->
-    async.parallel [peer1.unbind, peer2.unbind], done
+    helper.onDown peer1,peer2,peer3,done
 
   it "should maintain context across channels", (done) ->
 
@@ -27,6 +28,7 @@ describe "shared peer contexts > ", ->
         @set 'foo', n
         cb(true)
       get: (cb) ->
+        console.log 'GET CALL'
         cb @get 'foo'
 
     peer1.bindOn 'tcp://0.0.0.0:8000'
@@ -48,7 +50,7 @@ describe "shared peer contexts > ", ->
       peer2.bindTo 'http://localhost:8001'
 
       peer2.peer 'peer1', (remote) ->
-        console.log "GET HTTP PEER1"
+        console.log "GET HTTP PEER1", remote
         remote.get (n) ->
           console.log "GOT ANSWER ",n
           try

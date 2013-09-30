@@ -209,6 +209,7 @@ Base = (function(_super) {
   };
 
   Base.prototype.unbind = function(callback) {
+    this.log("TRIGGER UNBIND");
     if (this.unbound) {
       if (this.binding) {
         this.warn('bind in progress');

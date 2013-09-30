@@ -33,7 +33,7 @@ module.exports = class Connection extends Base.Logger
     write.once 'end', @d.end
 
     @d.once 'end', =>
-      # @log "DNODE END (from #{@server.id})"
+      @log "DNODE END (from #{@server.id})"
       @emit 'down'
 
     #splice!

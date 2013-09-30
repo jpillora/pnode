@@ -42,6 +42,10 @@ module.exports = class Server extends Base
 
     conn = new Connection @, read, write
 
+    #add to all
+    @connections.add conn
+    @emit 'connection', conn, @
+
     conn.once 'up', =>
       #check for existing id or guid
       if @connections.getBy("id",  conn.id) or
@@ -49,11 +53,7 @@ module.exports = class Server extends Base
         @warn "rejected duplicate conn with id #{conn.id} (#{conn.guid})"
         conn.unbind()
         return
-      #add to all
-      @connections.add conn
-
       @emit 'remote', conn.remote
-      @emit 'connection', conn, @
       return
 
     conn.once 'down', =>

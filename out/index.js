@@ -25,6 +25,8 @@ exports.peer = function(opts) {
   return new LocalPeer(opts);
 };
 
+exports.helper = require('./helper');
+
 /*
 //@ sourceMappingURL=index.map
 */

@@ -57,15 +57,15 @@ module.exports = Server = (function(_super) {
       this.err(new Error("Invalid write stream"));
     }
     conn = new Connection(this, read, write);
+    this.connections.add(conn);
+    this.emit('connection', conn, this);
     conn.once('up', function() {
       if (_this.connections.getBy("id", conn.id) || _this.connections.getBy("guid", conn.guid)) {
         _this.warn("rejected duplicate conn with id " + conn.id + " (" + conn.guid + ")");
         conn.unbind();
         return;
       }
-      _this.connections.add(conn);
       _this.emit('remote', conn.remote);
-      _this.emit('connection', conn, _this);
     });
     conn.once('down', function() {
       if (_this.connections.remove(conn)) {

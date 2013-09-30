@@ -152,6 +152,9 @@ class Base extends Logger
     return
 
   unbind: (callback) ->
+
+    @log "TRIGGER UNBIND"
+
     if @unbound
       @warn 'bind in progress' if @binding
       return

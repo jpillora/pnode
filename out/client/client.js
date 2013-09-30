@@ -102,6 +102,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.unbind = function() {
+    this.log("CLIENT TRIGGER UNBIND");
     this.count.attempt = Infinity;
     return Client.__super__.unbind.apply(this, arguments);
   };

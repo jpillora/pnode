@@ -51,14 +51,6 @@ module.exports = class RemotePeer extends Base.Logger
       @emit 'down'
     return
 
-  unbind: (callback) ->
-
-    mkCb = helper.callbacker callback
-
-    for cliconn in Array::slice.call @cliconns
-      cliconn.unbind mkCb()
-    return
-
   #custom serialisation
   serialize: ->
     id: @id
@@ -67,4 +59,5 @@ module.exports = class RemotePeer extends Base.Logger
     clients: helper.serialize @clients
 
   toString: ->
-    "#{@name}: #{@local.id}>#{@id}:"
+    type = if @cliconns[0]?.name is 'Client' then '>' else '<'
+    "#{@name}: #{@local.id}#{type}#{@id}:"

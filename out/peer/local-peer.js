@@ -39,6 +39,7 @@ module.exports = LocalPeer = (function(_super) {
       client: 0
     };
     this.servers = {};
+    this.clients = {};
     this.peers = ObjectIndex("id", "guid");
     if (this.opts.learn) {
       this.expose({
@@ -67,10 +68,14 @@ module.exports = LocalPeer = (function(_super) {
     server.on('error', function(err) {
       return _this.emit('error', err);
     });
-    server.on('connection', this.onPeer);
+    server.on('connection', function(conn) {
+      return conn.once('remote', function() {
+        return _this.onPeer(conn);
+      });
+    });
     server.bindOn.apply(server, arguments);
     this.servers[server.guid] = server;
-    return server.once('unbind', function() {
+    server.once('unbound', function() {
       return delete _this.servers[server.guid];
     });
   };
@@ -94,21 +99,26 @@ module.exports = LocalPeer = (function(_super) {
     client.on('remote', function() {
       return _this.onPeer(client);
     });
-    return client.bindTo.apply(client, arguments);
+    client.bindTo.apply(client, arguments);
+    this.clients[client.guid] = client;
+    client.once('unbound', function() {
+      return delete _this.clients[client.guid];
+    });
   };
 
   LocalPeer.prototype.unbind = function(callback) {
-    var cb, guid, peer, server, _i, _len, _ref, _ref1,
+    var cb, client, guid, server, _ref, _ref1,
       _this = this;
     this.log("UNBIND SELF AND ALL PEERS");
     cb = helper.callbacker(function() {
       _this.log("UNBOUND SELF! <=======");
       return callback();
     });
-    _ref = this.peers;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      peer = _ref[_i];
-      peer.unbind(cb());
+    debugger;
+    _ref = this.clients;
+    for (guid in _ref) {
+      client = _ref[guid];
+      client.unbind(cb());
     }
     _ref1 = this.servers;
     for (guid in _ref1) {

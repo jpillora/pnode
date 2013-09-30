@@ -22,6 +22,7 @@ module.exports = class LocalPeer extends Base
 
     @count = { server:0, client:0 }
     @servers = {}
+    @clients = {}
     @peers = ObjectIndex "id", "guid"
 
     #provide self serialization method
@@ -42,12 +43,15 @@ module.exports = class LocalPeer extends Base
       self.emit.apply null, args
 
     server.on 'error', (err) => @emit 'error', err
-    server.on 'connection', @onPeer
+    server.on 'connection', (conn) =>
+      conn.once 'remote', => @onPeer conn
+
     server.bindOn.apply server, arguments
 
     @servers[server.guid] = server
-    server.once 'unbind', =>
+    server.once 'unbound', =>
       delete @servers[server.guid]
+    return
 
   bindTo: ->
     @count.client++
@@ -64,6 +68,11 @@ module.exports = class LocalPeer extends Base
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
 
+    @clients[client.guid] = client
+    client.once 'unbound', =>
+      delete @clients[client.guid]
+    return
+
   unbind: (callback) ->
     @log "UNBIND SELF AND ALL PEERS"
 
@@ -71,8 +80,10 @@ module.exports = class LocalPeer extends Base
       @log "UNBOUND SELF! <======="
       callback()
 
-    for peer in @peers
-      peer.unbind cb()
+    debugger
+
+    for guid, client of @clients
+      client.unbind cb()
     for guid, server of @servers
       server.unbind cb()
 

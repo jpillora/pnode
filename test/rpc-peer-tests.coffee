@@ -2,8 +2,9 @@
 async = require "async"
 _ = require "../vendor/lodash"
 pnode = require "../"
+helper = require "./helper"
 
-describe.only "rpc peer to peer > ", ->
+describe "rpc peer to peer > ", ->
 
   peer1 = null
   peer2 = null
@@ -21,7 +22,7 @@ describe.only "rpc peer to peer > ", ->
       log[str]++
       updated() if updated
 
-    peer1 = pnode.peer {id:'peer1', debug:false}
+    peer1 = pnode.peer {id:'peer1', debug:true}
     peer1.expose
       log: ->
         logCall "#{@id}->peer1"
@@ -45,18 +46,11 @@ describe.only "rpc peer to peer > ", ->
     peer3.once '*.bound', ->
       peer2.bindTo 'tcp://localhost:8003'
 
-    peer3.once 's1.remote', ->
-      console.log "SETUP!"
-      done()
-
+    helper.onUp peer1,peer2,peer3,4,done
 
   afterEach (done) ->
-    console.log "TEAR DOWN!"
-    async.parallel [
-      peer1.unbind
-      peer2.unbind
-      peer3.unbind
-    ], done
+    
+    helper.onDown peer1,peer2,peer3,done
 
   it "should call other peers", (done) ->
 

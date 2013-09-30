@@ -85,6 +85,7 @@ module.exports = class Client extends Base
     @reconnect()
 
   unbind: ->
+    @log "CLIENT TRIGGER UNBIND"
     @count.attempt = Infinity
     super
 

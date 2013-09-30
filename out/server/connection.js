@@ -37,6 +37,7 @@ module.exports = Connection = (function(_super) {
     write.once('close', this.d.end);
     write.once('end', this.d.end);
     this.d.once('end', function() {
+      _this.log("DNODE END (from " + _this.server.id + ")");
       return _this.emit('down');
     });
     read.pipe(this.d).pipe(write);
