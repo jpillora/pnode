@@ -54,13 +54,16 @@ describe "rpc peer to peer > ", ->
 
     updated = ->
       if log.total is 4
-        if log['peer1->peer2'] is 1 and
-           log['peer2->peer1'] is 1 and
-           log['peer2->peer3'] is 1 and
-           log['peer3->peer2'] is 1
-          done()
-        else
-          done new Error "Invalid call log"
+        try
+          expect(log).to.deep.equal
+            "total": 4
+            "peer1->peer2": 1
+            "peer2->peer1": 1
+            "peer2->peer3": 1
+            "peer3->peer2": 1
+        catch e
+          return done e
+        done()
 
     #should call peer2
     peer1.all (remotes) ->

@@ -134,6 +134,7 @@ module.exports = class LocalPeer extends Base
     get = =>
       peer = @peers.get id
       return false unless peer?.up
+      @log "FOUND PEER: #{id}"
       callback peer.remote
       return true
 

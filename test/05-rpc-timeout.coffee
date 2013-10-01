@@ -12,7 +12,7 @@ describe "rpc timeout > ", ->
     server = pnode.server {id:'server-1', debug:false}
     server.expose
       fast: (cb) ->
-        cb true
+        setTimeout (-> cb true), 0
       slow: (cb) ->
         setTimeout (-> cb true), 1000
     server.bind 'tcp://0.0.0.0:8000'
@@ -31,8 +31,8 @@ describe "rpc timeout > ", ->
 
     it "should NOT timeout", (done) ->
 
-      server.on 'timeout', -> done(new Error "server timeout")
-      client.on 'timeout', -> done(new Error "client has no timeout")
+      server.on 'timeout.fast', -> done(new Error "server timeout")
+      client.on 'timeout.fast', -> done(new Error "client has no timeout")
 
       client.server (remote) ->
         remote.fast (callback) ->
@@ -40,8 +40,8 @@ describe "rpc timeout > ", ->
 
     it "should timeout", (done) ->
 
-      server.on 'timeout', -> done()
-      client.on 'timeout', -> done(new Error "client has no timeout")
+      server.on 'timeout.slow', -> done()
+      client.on 'timeout.slow', -> done(new Error "client has no timeout")
 
       client.server (remote) ->
         remote.slow (callback) ->
@@ -54,8 +54,8 @@ describe "rpc timeout > ", ->
 
     it "should NOT timeout", (done) ->
 
-      server.on 'timeout', -> done(new Error "server has no timeout")
-      client.on 'timeout', -> done(new Error "client timeout")
+      server.on 'timeout.fast', -> done(new Error "server has no timeout")
+      client.on 'timeout.fast', -> done(new Error "client timeout")
 
       client.server (remote) ->
         remote.fast (callback) ->
@@ -63,8 +63,8 @@ describe "rpc timeout > ", ->
 
     it "should timeout", (done) ->
 
-      server.on 'timeout', -> done(new Error "server has no timeout")
-      client.on 'timeout', -> done()
+      server.on 'timeout.slow', -> done(new Error "server has no timeout")
+      client.on 'timeout.slow', -> done()
 
       client.server (remote) ->
         remote.slow (callback) ->

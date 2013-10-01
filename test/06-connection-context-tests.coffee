@@ -15,7 +15,7 @@ describe "shared peer contexts > ", ->
 
   it "should maintain context across channels", (done) ->
 
-    peer1 = pnode.peer({id:'peer1',debug:false})
+    peer1 = pnode.peer({id:'peer1',debug:true})
 
     #peer1 maintains the same context for all clients
     peer1.expose
@@ -33,7 +33,7 @@ describe "shared peer contexts > ", ->
     peer1.bindOn 'tcp://0.0.0.0:8000'
     peer1.bindOn 'http://0.0.0.0:8001'
 
-    peer2 = pnode.peer({id:'peer2',debug:false})
+    peer2 = pnode.peer({id:'peer2',debug:true})
 
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'

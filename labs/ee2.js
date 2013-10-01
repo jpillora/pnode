@@ -14,8 +14,8 @@ e1.on(['foo'], function() {
   console.log('foo arr');
 })
 
-e1.on(['foo','*'], function() {
-  console.log('foo arr star');
+e1.on(['foo','*', 'bar'], function() {
+  console.log('foo arr star BAR');
 })
 
 e1.on('*.test', function() {
@@ -24,3 +24,5 @@ e1.on('*.test', function() {
 
 e1.emit('foo.test');
 e1.emit(['foo','test']);
+e1.emit(['foo','test','bar']);
+e1.emit('foo.testasdasdasdasdasdasd.bar');

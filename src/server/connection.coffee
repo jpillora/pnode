@@ -12,16 +12,11 @@ module.exports = class Connection extends Base.Logger
 
   constructor: (@server, read, write) ->
 
-    @opts = @server.opts # {debug: true}
-
+    @opts = @server.opts
     Object.defineProperty @, 'uri', get: => @server.uri
-
-
-    @uri = @server.uri
+    @accepted = false
     @id = @guid = "..."
     @subs = {}
-
-
 
     @ctx = new RemoteContext
     @ctx.getAddr read
@@ -73,11 +68,11 @@ module.exports = class Connection extends Base.Logger
 
   onError: (err) ->
     @warn "dnode error: #{err}"
-    @server.emit 'error', err
+    @emit 'error', err
 
   onFail: (err) ->
     @warn "dnode fail: #{err}"
-    @server.emit 'fail', err
+    @emit 'fail', err
 
   publish: ->
     args = arguments

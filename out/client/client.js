@@ -37,6 +37,7 @@ module.exports = Client = (function(_super) {
       pong: 0,
       attempt: 0
     };
+    this.reconnectTimer = this.timeoutify('reconnect', function() {});
     this.reconnect = _.throttle(this.reconnect, this.opts.retryInterval, {
       leading: true
     });
@@ -46,11 +47,7 @@ module.exports = Client = (function(_super) {
     });
     this.bindTo = this.bind;
     this.on('unbound', function() {
-      if (_this.d) {
-        _this.d.removeAllListeners().end();
-        _this.d = null;
-      }
-      _this.emit('down');
+      _this.reconnect();
     });
     this.on('uri', function(uri) {
       _this.uri = uri;
@@ -118,7 +115,13 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.reconnect = function() {
+    var _this = this;
     if (!(this.unbound && this.count.attempt < this.opts.maxRetries)) {
+      if (this.d) {
+        this.d.removeAllListeners().end();
+        this.d = null;
+      }
+      this.emit('down');
       return;
     }
     this.count.attempt++;
@@ -130,8 +133,21 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
+    this.reconnect.t = setTimeout(this.onReconnectTimeout, this.opts.timeout);
+    this.d.once('remote', function() {
+      return clearTimeout(_this.reconnect.t);
+    });
     this.log("connection attempt " + this.count.attempt + "...");
     Base.prototype.bind.apply(this, this.bindArgs);
+  };
+
+  Client.prototype.onReconnectTimeout = function() {
+    var _this = this;
+    this.log('RECONNECT TIMEOUT');
+    this.emit('timeout.reconnect');
+    return this.unbind(function() {
+      return _this.reconnect();
+    });
   };
 
   Client.prototype.onStreamError = function(err) {

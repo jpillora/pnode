@@ -29,7 +29,7 @@ module.exports = Connection = (function(_super) {
         return _this.server.uri;
       }
     });
-    this.uri = this.server.uri;
+    this.accepted = false;
     this.id = this.guid = "...";
     this.subs = {};
     this.ctx = new RemoteContext;
@@ -74,12 +74,12 @@ module.exports = Connection = (function(_super) {
 
   Connection.prototype.onError = function(err) {
     this.warn("dnode error: " + err);
-    return this.server.emit('error', err);
+    return this.emit('error', err);
   };
 
   Connection.prototype.onFail = function(err) {
     this.warn("dnode fail: " + err);
-    return this.server.emit('fail', err);
+    return this.emit('fail', err);
   };
 
   Connection.prototype.publish = function() {

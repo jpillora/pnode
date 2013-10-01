@@ -185,6 +185,7 @@ module.exports = LocalPeer = (function(_super) {
       if (!(peer != null ? peer.up : void 0)) {
         return false;
       }
+      _this.log("FOUND PEER: " + id);
       callback(peer.remote);
       return true;
     };

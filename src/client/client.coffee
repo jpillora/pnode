@@ -22,7 +22,8 @@ module.exports = class Client extends Base
     @count = { ping: 0, pong: 0, attempt: 0 }
     
     #timeoutify and throttle reconnects
-    # @reconnect = @timeoutify 'reconnect', @reconnect
+    @reconnectTimer = @timeoutify 'reconnect', ->
+
     @reconnect = _.throttle @reconnect, @opts.retryInterval, {leading:true}
 
     # @on ['timeout','reconnect'], =>
@@ -40,10 +41,7 @@ module.exports = class Client extends Base
     @bindTo = @bind
 
     @on 'unbound', =>
-      if @d
-        @d.removeAllListeners().end()
-        @d = null
-      @emit 'down'
+      @reconnect()
       return
 
     #store URI
@@ -107,6 +105,10 @@ module.exports = class Client extends Base
   reconnect: ->
 
     unless @unbound and @count.attempt < @opts.maxRetries
+      if @d
+        @d.removeAllListeners().end()
+        @d = null
+      @emit 'down'
       return
 
     @count.attempt++
@@ -121,11 +123,20 @@ module.exports = class Client extends Base
     @d.once 'error', @onError
     @d.once 'fail', @onStreamError
 
+    #timeout reconnects
+    @reconnect.t = setTimeout @onReconnectTimeout, @opts.timeout
+    @d.once 'remote', => clearTimeout @reconnect.t
+
     @log "connection attempt #{@count.attempt}..."
 
     #call transport bind using local bind call args
     Base::bind.apply @, @bindArgs
     return
+
+  onReconnectTimeout: ->
+    @log 'RECONNECT TIMEOUT'
+    @emit 'timeout.reconnect'
+    @unbind => @reconnect()
 
   #connection failed
   onStreamError: (err) ->

@@ -31,11 +31,6 @@ module.exports = Server = (function(_super) {
     servers.push(this);
     Server.__super__.constructor.apply(this, arguments);
     this.connections = helper.set();
-    this.connections.findBy = function(field, val) {
-      return this.find(function(conn) {
-        return conn[field] === val;
-      });
-    };
     this.bindOn = this.bind;
     this.on('unbinding', function() {
       var conn, _i, _len, _ref;
@@ -65,14 +60,16 @@ module.exports = Server = (function(_super) {
       this.err(new Error("Invalid write stream"));
     }
     conn = new Connection(this, read, write);
-    this.connections.add(conn);
-    this.emit('connection', conn, this);
+    conn.on('error', this.onError);
+    conn.on('fail', this.onFail);
     conn.once('up', function() {
-      if (_this.connections.findBy('id', conn.id) || _this.connections.findBy('guid', conn.guid)) {
+      _this.log("CONN UP " + conn.id);
+      if (_this.connections.findAllBy('id', conn.id).length >= 2 || _this.connections.findAllBy('guid', conn.guid).length >= 2) {
         _this.warn("rejected duplicate conn with id " + conn.id + " (" + conn.guid + ")");
         conn.unbind();
         return;
       }
+      conn.accepted = true;
       _this.emit('remote', conn.remote);
     });
     conn.once('down', function() {
@@ -80,20 +77,24 @@ module.exports = Server = (function(_super) {
         _this.emit('disconnection', conn);
       }
     });
+    this.connections.add(conn);
+    this.emit('connection', conn, this);
+  };
+
+  Server.prototype.onError = function(err) {
+    return this.emit('error', err);
+  };
+
+  Server.prototype.onFail = function(err) {
+    return this.emit('fail', err);
   };
 
   Server.prototype.client = function(id, callback) {
     var check, get, t,
       _this = this;
-    if (!callback) {
-      this.err("callback missing");
-    }
     get = function() {
       var conn;
-      conn = _this.connections.findBy('id', id);
-      if (!conn) {
-        conn = _this.connections.findBy('guid', id);
-      }
+      conn = _this.connections.findBy('id', id) || _this.connections.findBy('guid', id);
       if (!conn) {
         return false;
       }

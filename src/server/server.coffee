@@ -18,8 +18,6 @@ module.exports = class Server extends Base
     servers.push @
     super
     @connections = helper.set()
-    @connections.findBy = (field, val) ->
-      return @find (conn) -> conn[field] is val
 
     #alias
     @bindOn = @bind
@@ -47,17 +45,18 @@ module.exports = class Server extends Base
 
     conn = new Connection @, read, write
 
-    #add to all
-    @connections.add conn
-    @emit 'connection', conn, @
+    conn.on 'error', @onError
+    conn.on 'fail', @onFail
 
     conn.once 'up', =>
+      @log "CONN UP #{conn.id}"
       #check for existing id or guid
-      if @connections.findBy('id', conn.id) or
-         @connections.findBy('guid', conn.guid)
+      if @connections.findAllBy('id', conn.id).length >= 2 or
+         @connections.findAllBy('guid', conn.guid).length >= 2
         @warn "rejected duplicate conn with id #{conn.id} (#{conn.guid})"
         conn.unbind()
         return
+      conn.accepted = true
       @emit 'remote', conn.remote
       return
 
@@ -66,15 +65,23 @@ module.exports = class Server extends Base
         @emit 'disconnection', conn
       return
 
+    #add to all
+    @connections.add conn
+    @emit 'connection', conn, @
+
     return
+
+  onError: (err) ->
+    @emit 'error', err
+
+  onFail: (err) ->
+    @emit 'fail', err
 
   client: (id, callback) ->
 
-    @err "callback missing" unless callback
-
     get = =>
-      conn = @connections.findBy('id', id)
-      conn = @connections.findBy('guid', id) unless conn
+      conn = @connections.findBy('id', id) or
+             @connections.findBy('guid', id)
       return false unless conn
       callback conn.remote
       return true
