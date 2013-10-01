@@ -1,6 +1,7 @@
 {expect} = require "chai"
 _ = require "../vendor/lodash"
 pnode = require "../"
+helper = require "./helper"
 
 describe "server clients pubsub > ", ->
 
@@ -10,22 +11,16 @@ describe "server clients pubsub > ", ->
   client3 = null
 
   beforeEach ->
-    server = pnode.server('server-1')
+    server = pnode.server({id:'server-1', debug:false})
     server.bind 'tcp://0.0.0.0:8000'
 
   afterEach (done) ->
-    server.unbind()
-    client1?.unbind()
-    client2?.unbind()
-    client3?.unbind()
-    setTimeout done, 10
+    helper.unbindAfter server,client1,client2,client3,done
 
   it "should publish to server", (done) ->
 
     count = 0
-    check = ->
-      if ++count is 2
-        done()
+    check = -> done() if ++count is 2
 
     server.subscribe 'bars', (bar) ->
       expect(bar).to.deep.equal({bazz: 13})
@@ -35,11 +30,11 @@ describe "server clients pubsub > ", ->
       expect(foo).to.deep.equal({bar: 42})
       check()
 
-    client1 = pnode.client('client-P1')
+    client1 = pnode.client({id:'client-1', debug:false})
     client1.bind 'tcp://localhost:8000'
     client1.publish('bars', {bazz: 13})
 
-    client2 = pnode.client('client-P2')
+    client2 = pnode.client({id:'client-2', debug:false})
     client2.bind 'tcp://localhost:8000'
     client2.publish('foos', {bar: 42})
   

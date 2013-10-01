@@ -29,4 +29,30 @@ exports.callbacker = (callback) ->
         callback()
       return
 
+exports.set = ->
+
+  arr = []
+  arr.has = (o) ->
+    @indexOf(o) isnt -1
+
+  arr.add = (o) ->
+    return false if @has o
+    @push o
+    return true
+
+  arr.remove = (o) ->
+    i = @indexOf(o)
+    return false if i is -1
+    @splice i, 1
+    return true
+
+  arr.copy = ->
+    @slice()
+
+  arr.find = (fn) ->
+    for o in @
+      return o if fn(o)
+    return null
+  arr
+
 

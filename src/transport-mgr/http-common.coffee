@@ -57,17 +57,17 @@ exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
   emitter.emit 'binding'
 
   write = types[type].request opts, (read) ->
-
+    
     emitter.once 'unbind', ->
       emitter.emit 'unbinding'
       read.socket.end()
-
-    read.socket.once 'end', ->
+    
+    read.once 'end', ->
       emitter.emit 'unbound'
-
+    
     emitter.emit 'read', read
     emitter.emit 'bound'
     return
-
+  
   emitter.emit 'write', write
   return

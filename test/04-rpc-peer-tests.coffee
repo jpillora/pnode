@@ -16,25 +16,24 @@ describe "rpc peer to peer > ", ->
 
     log = {total:0}
     logCall = (str) ->
-      console.log "LOG ", str
       log.total++
       log[str] or= 0
       log[str]++
       updated() if updated
 
-    peer1 = pnode.peer {id:'peer1', debug:true}
+    peer1 = pnode.peer {id:'peer1', debug:false}
     peer1.expose
       log: ->
         logCall "#{@id}->peer1"
     peer1.bindOn 'tcp://localhost:8001'
 
-    peer2 = pnode.peer {id:'peer2', debug:true}
+    peer2 = pnode.peer {id:'peer2', debug:false}
     peer2.expose
       log: -> 
         logCall "#{@id}->peer2"
     peer2.bindOn 'tcp://localhost:8002'
 
-    peer3 = pnode.peer {id:'peer3', debug:true}
+    peer3 = pnode.peer {id:'peer3', debug:false}
     peer3.expose
       log: ->
         logCall "#{@id}->peer3"
@@ -49,8 +48,7 @@ describe "rpc peer to peer > ", ->
     helper.onUp peer1,peer2,peer3,4,done
 
   afterEach (done) ->
-    
-    helper.onDown peer1,peer2,peer3,done
+    helper.unbindAfter peer1,peer2,peer3,done
 
   it "should call other peers", (done) ->
 

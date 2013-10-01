@@ -44,7 +44,6 @@ module.exports = RemotePeer = (function(_super) {
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
       return _this.setActive();
     });
-    this.log("add connection (#conns:" + this.cliconns.length + ")");
     return this.setActive();
   };
 
@@ -63,14 +62,13 @@ module.exports = RemotePeer = (function(_super) {
     }
     if (up) {
       this.up = true;
-      this.log("UP");
       this.emit('up');
     } else {
       this.up = false;
       this.remote = null;
       this.emit('down');
-      this.log("DOWN");
     }
+    this.log("" + (this.up ? 'UP' : 'DOWN') + " (#conns:" + this.cliconns.length + ")");
   };
 
   RemotePeer.prototype.serialize = function() {
@@ -83,9 +81,7 @@ module.exports = RemotePeer = (function(_super) {
   };
 
   RemotePeer.prototype.toString = function() {
-    var type, _ref;
-    type = ((_ref = this.cliconns[0]) != null ? _ref.name : void 0) === 'Client' ? '>' : '<';
-    return "" + this.name + ": " + this.local.id + type + this.id + ":";
+    return "" + this.name + ": " + this.local.id + ": " + this.id + ":";
   };
 
   return RemotePeer;

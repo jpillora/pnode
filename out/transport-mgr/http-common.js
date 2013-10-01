@@ -64,7 +64,7 @@ exports.createClient = function(emitter, type, reqArgs, extraOpts) {
       emitter.emit('unbinding');
       return read.socket.end();
     });
-    read.socket.once('end', function() {
+    read.once('end', function() {
       return emitter.emit('unbound');
     });
     emitter.emit('read', read);

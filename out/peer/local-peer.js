@@ -107,8 +107,14 @@ module.exports = LocalPeer = (function(_super) {
   };
 
   LocalPeer.prototype.unbind = function(callback) {
-    var client, guid, mkCb, server, _ref, _ref1;
-    mkCb = helper.callbacker(callback);
+    var client, guid, mkCb, server, _ref, _ref1,
+      _this = this;
+    mkCb = helper.callbacker(function() {
+      if (callback) {
+        callback();
+      }
+      return _this.emit('unbound-all');
+    });
     _ref = this.clients;
     for (guid in _ref) {
       client = _ref[guid];
@@ -179,7 +185,6 @@ module.exports = LocalPeer = (function(_super) {
       if (!(peer != null ? peer.up : void 0)) {
         return false;
       }
-      _this.log("get " + id + " IS UP!!!!");
       callback(peer.remote);
       return true;
     };

@@ -41,6 +41,44 @@ exports.callbacker = function(callback) {
   };
 };
 
+exports.set = function() {
+  var arr;
+  arr = [];
+  arr.has = function(o) {
+    return this.indexOf(o) !== -1;
+  };
+  arr.add = function(o) {
+    if (this.has(o)) {
+      return false;
+    }
+    this.push(o);
+    return true;
+  };
+  arr.remove = function(o) {
+    var i;
+    i = this.indexOf(o);
+    if (i === -1) {
+      return false;
+    }
+    this.splice(i, 1);
+    return true;
+  };
+  arr.copy = function() {
+    return this.slice();
+  };
+  arr.find = function(fn) {
+    var o, _i, _len;
+    for (_i = 0, _len = this.length; _i < _len; _i++) {
+      o = this[_i];
+      if (fn(o)) {
+        return o;
+      }
+    }
+    return null;
+  };
+  return arr;
+};
+
 /*
 //@ sourceMappingURL=helper.map
 */

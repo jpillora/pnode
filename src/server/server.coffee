@@ -17,14 +17,16 @@ module.exports = class Server extends Base
   constructor: ->
     servers.push @
     super
-    @connections = ObjectIndex "id", "guid"
+    @connections = helper.set()
+    @connections.findBy = (field, val) ->
+      return @find (conn) -> conn[field] is val
 
     #alias
     @bindOn = @bind
 
     @on 'unbinding', =>
       #unbind requested - close all client connections
-      for conn in Array::slice.call @connections
+      for conn in @connections.copy()
         conn.unbind()
       return
 
@@ -51,8 +53,8 @@ module.exports = class Server extends Base
 
     conn.once 'up', =>
       #check for existing id or guid
-      if @connections.getBy("id",  conn.id) or
-         @connections.getBy("guid",conn.guid)
+      if @connections.findBy('id', conn.id) or
+         @connections.findBy('guid', conn.guid)
         @warn "rejected duplicate conn with id #{conn.id} (#{conn.guid})"
         conn.unbind()
         return
@@ -67,24 +69,29 @@ module.exports = class Server extends Base
     return
 
   client: (id, callback) ->
-    conn = @connections.get id
-    return conn unless callback
-    return callback(conn.remote) if conn
+
+    @err "callback missing" unless callback
+
+    get = =>
+      conn = @connections.findBy('id', id)
+      conn = @connections.findBy('guid', id) unless conn
+      return false unless conn
+      callback conn.remote
+      return true
+
+    return if get()
+
+    check = ->
+      return unless get()
+      @off 'remote', check
+      clearTimeout t
 
     t = setTimeout =>
-      @log "timeout waiting for #{id}"
-      @removeListener 'remote', cb
+      @off 'remote', check
+      @emit 'timeout', id
     , @opts.wait
 
-    cb = =>
-      @log "new remote! looking for #{id}"
-      conn = @connections.get id
-      return unless conn
-      clearTimeout t
-      @removeListener 'remote', cb
-      callback conn.remote
-
-    @on 'remote', cb
+    @on 'remote', check
     return
 
   #pubsub to ALL conn remotes

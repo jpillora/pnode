@@ -145,7 +145,7 @@ Base = (function(_super) {
           if (typeof args[0] === 'function') {
             cb = args.shift();
           }
-          self.pubsub.emit.apply(null, args);
+          self.pubsub.emit.apply(self.pubsub, args);
           if (cb) {
             return cb(true);
           }
@@ -188,6 +188,7 @@ Base = (function(_super) {
     this.tEmitter.onAny(function() {
       var args, e, _j, _len1, _ref1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      inst.log('T-EVENT', this.event);
       if (_ref1 = this.event, __indexOf.call(events, _ref1) >= 0) {
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           e = events[_j];
@@ -214,6 +215,7 @@ Base = (function(_super) {
       }
       return;
     }
+    this.log('unbind');
     if (callback) {
       this.once('unbound', callback);
     }

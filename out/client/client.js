@@ -50,11 +50,13 @@ module.exports = Client = (function(_super) {
         _this.d.removeAllListeners().end();
         _this.d = null;
       }
+      _this.emit('down');
     });
     this.on('uri', function(uri) {
       _this.uri = uri;
     });
     onRead = function(read) {
+      _this.read = read;
       if (_this.d.splicedRead) {
         _this.err(new Error("Already spliced read stream"));
       }
@@ -67,6 +69,7 @@ module.exports = Client = (function(_super) {
       return read.pipe(_this.d);
     };
     onWrite = function(write) {
+      _this.write = write;
       if (_this.d.splicedWrite) {
         _this.err(new Error("Already spliced write stream"));
       }
@@ -159,6 +162,7 @@ module.exports = Client = (function(_super) {
     this.ctx.getMeta(meta);
     this.log("server remote!");
     this.emit('remote', this.remote, this);
+    this.emit('up');
     return this.ping();
   };
 

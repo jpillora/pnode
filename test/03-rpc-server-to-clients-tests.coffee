@@ -1,15 +1,16 @@
 {expect} = require "chai"
 _ = require "../vendor/lodash"
 pnode = require "../"
+helper = require "./helper"
 
-describe "server to clients > ", ->
+describe.only "server to clients > ", ->
 
   server = null
   client1 = null
   client2 = null
 
   beforeEach (done) ->
-    server = pnode.server('server-1')
+    server = pnode.server({id:'server-1',debug:true})
     server.bind 'tcp://0.0.0.0:8000'
 
     client1 = pnode.client('client-1')
@@ -25,10 +26,7 @@ describe "server to clients > ", ->
     setTimeout done, 10
 
   afterEach (done) ->
-    server.unbind()
-    client1.unbind()
-    client2.unbind()
-    setTimeout done, 10
+    helper.unbindAfter server,client1,client2,done
 
   it "should connect to client-1", (done) ->
     server.client 'client-1', (remote) ->

@@ -99,7 +99,7 @@ class Base extends Logger
         publish: (args...) ->
           if typeof args[0] is 'function'
             cb = args.shift()
-          self.pubsub.emit.apply null, args
+          self.pubsub.emit.apply self.pubsub, args
           cb true if cb
         ping: (cb) ->
           self.log 'ping %s -> %s', @id, self.id
@@ -131,7 +131,7 @@ class Base extends Logger
     inst = @
     #bubble up all events
     @tEmitter.onAny (args...) ->
-      # inst.log 'transport event ', @event
+      inst.log 'T-EVENT', @event
       #set appropriate state
       if @event in events
         for e in events
@@ -156,6 +156,7 @@ class Base extends Logger
     if @unbound
       @warn 'bind in progress' if @binding
       return
+    @log 'unbind'
     @once 'unbound', callback if callback
     @tEmitter.emit 'unbind'
     return

@@ -74,7 +74,9 @@ module.exports = class LocalPeer extends Base
     return
 
   unbind: (callback) ->
-    mkCb = helper.callbacker callback
+    mkCb = helper.callbacker =>
+      callback() if callback
+      @emit 'unbound-all'
     for guid, client of @clients
       client.unbind mkCb()
     for guid, server of @servers
@@ -132,10 +134,6 @@ module.exports = class LocalPeer extends Base
     get = =>
       peer = @peers.get id
       return false unless peer?.up
-
-
-      @log "get #{id} IS UP!!!!"
-
       callback peer.remote
       return true
 

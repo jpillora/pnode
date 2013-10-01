@@ -31,7 +31,6 @@ module.exports = class RemotePeer extends Base.Logger
       @cliconns.splice @cliconns.indexOf(cliconn), 1
       @setActive()
 
-    @log "add connection (#conns:#{@cliconns.length})"
     @setActive()
 
   setActive: ->
@@ -45,13 +44,14 @@ module.exports = class RemotePeer extends Base.Logger
     return if @up is up
     if up
       @up = true
-      @log "UP"
       @emit 'up'
     else
       @up = false
       @remote = null
       @emit 'down'
-      @log "DOWN"
+  
+    @log "#{if @up then 'UP' else 'DOWN'} (#conns:#{@cliconns.length})"
+
     return
 
   #custom serialisation
@@ -62,5 +62,4 @@ module.exports = class RemotePeer extends Base.Logger
     clients: helper.serialize @clients
 
   toString: ->
-    type = if @cliconns[0]?.name is 'Client' then '>' else '<'
-    "#{@name}: #{@local.id}#{type}#{@id}:"
+    "#{@name}: #{@local.id}: #{@id}:"

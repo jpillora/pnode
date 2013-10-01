@@ -1,6 +1,7 @@
 {expect} = require "chai"
 _ = require "../vendor/lodash"
 pnode = require "../"
+helper = require "./helper"
 
 describe "clients to server > ", ->
 
@@ -24,10 +25,7 @@ describe "clients to server > ", ->
     , 10
 
   afterEach (done) ->
-    server.unbind()
-    client1.unbind()
-    client2.unbind()
-    setTimeout done, 10
+    helper.unbindAfter server,client1,client2,done
 
   it "should connect to server from client-1", (done) ->
     client1.server (remote) ->

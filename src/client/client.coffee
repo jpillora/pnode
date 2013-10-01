@@ -43,13 +43,14 @@ module.exports = class Client extends Base
       if @d
         @d.removeAllListeners().end()
         @d = null
+      @emit 'down'
       return
 
     #store URI
     @on 'uri', (@uri) => 
 
     #handle streams
-    onRead = (read) =>
+    onRead = (@read) =>
       if @d.splicedRead
         @err new Error "Already spliced read stream" 
       unless helper.isReadable read
@@ -61,7 +62,7 @@ module.exports = class Client extends Base
       @d.splicedRead = true
       read.pipe(@d)
 
-    onWrite = (write) =>
+    onWrite = (@write) =>
       if @d.splicedWrite
         @err new Error "Already spliced write stream" 
       unless helper.isWritable write
@@ -122,7 +123,7 @@ module.exports = class Client extends Base
 
     @log "connection attempt #{@count.attempt}..."
 
-    #reconnect using local bind call args
+    #call transport bind using local bind call args
     Base::bind.apply @, @bindArgs
     return
 
@@ -159,6 +160,7 @@ module.exports = class Client extends Base
     
     @log "server remote!"
     @emit 'remote', @remote, @
+    @emit 'up'
     @ping()
 
   #throttled ping while 'up'

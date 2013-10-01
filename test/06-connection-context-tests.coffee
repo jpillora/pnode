@@ -11,11 +11,11 @@ describe "shared peer contexts > ", ->
   peer3 = null
 
   afterEach (done) ->
-    helper.onDown peer1,peer2,peer3,done
+    helper.unbindAfter peer1,peer2,peer3,done
 
   it "should maintain context across channels", (done) ->
 
-    peer1 = pnode.peer({id:'peer1',debug:true})
+    peer1 = pnode.peer({id:'peer1',debug:false})
 
     #peer1 maintains the same context for all clients
     peer1.expose
@@ -28,13 +28,12 @@ describe "shared peer contexts > ", ->
         @set 'foo', n
         cb(true)
       get: (cb) ->
-        console.log 'GET CALL'
         cb @get 'foo'
 
     peer1.bindOn 'tcp://0.0.0.0:8000'
     peer1.bindOn 'http://0.0.0.0:8001'
 
-    peer2 = pnode.peer({id:'peer2',debug:true})
+    peer2 = pnode.peer({id:'peer2',debug:false})
 
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'
@@ -50,11 +49,9 @@ describe "shared peer contexts > ", ->
       peer2.bindTo 'http://localhost:8001'
 
       peer2.peer 'peer1', (remote) ->
-        console.log "GET HTTP PEER1", remote
-        remote.get (n) ->
-          console.log "GOT ANSWER ",n
+        remote.get (res) ->
           try
-            expect(n).to.equal(7)
+            expect(res).to.equal(7)
           catch e
             return done e
           done()
@@ -66,6 +63,8 @@ describe "shared peer contexts > ", ->
   it "should report correct sender", (done) ->
 
     peer1 = pnode.peer({id:'peer1',debug:false})
+    peer2 = pnode.peer({id:'peer2',debug:false})
+    peer3 = pnode.peer({id:'peer3',debug:false})
 
     #peer1 maintains the same context for all clients
     peer1.expose
@@ -79,15 +78,14 @@ describe "shared peer contexts > ", ->
         cb()
 
     peer1.bindOn 'tcp://0.0.0.0:8000'
-
-    peer2 = pnode.peer({id:'peer2',debug:false})
     peer2.bindTo 'tcp://localhost:8000'
-
-    peer3 = pnode.peer({id:'peer3',debug:false})
     peer3.bindTo 'tcp://localhost:8000'
 
+    mkCb = helper.callbacker 2, done
+
     peer2.peer 'peer1', (remote) ->
-      remote.test peer2.id, peer2.guid, ->
-        peer3.peer 'peer1', (remote) ->
-          remote.test peer3.id, peer3.guid, ->
-            done()
+      remote.test peer2.id, peer2.guid, mkCb()
+
+    peer3.peer 'peer1', (remote) ->
+      remote.test peer3.id, peer3.guid, mkCb()
+        

@@ -30,11 +30,16 @@ module.exports = Server = (function(_super) {
     var _this = this;
     servers.push(this);
     Server.__super__.constructor.apply(this, arguments);
-    this.connections = ObjectIndex("id", "guid");
+    this.connections = helper.set();
+    this.connections.findBy = function(field, val) {
+      return this.find(function(conn) {
+        return conn[field] === val;
+      });
+    };
     this.bindOn = this.bind;
     this.on('unbinding', function() {
       var conn, _i, _len, _ref;
-      _ref = Array.prototype.slice.call(_this.connections);
+      _ref = _this.connections.copy();
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         conn = _ref[_i];
         conn.unbind();
@@ -63,7 +68,7 @@ module.exports = Server = (function(_super) {
     this.connections.add(conn);
     this.emit('connection', conn, this);
     conn.once('up', function() {
-      if (_this.connections.getBy("id", conn.id) || _this.connections.getBy("guid", conn.guid)) {
+      if (_this.connections.findBy('id', conn.id) || _this.connections.findBy('guid', conn.guid)) {
         _this.warn("rejected duplicate conn with id " + conn.id + " (" + conn.guid + ")");
         conn.unbind();
         return;
@@ -78,30 +83,38 @@ module.exports = Server = (function(_super) {
   };
 
   Server.prototype.client = function(id, callback) {
-    var cb, conn, t,
+    var check, get, t,
       _this = this;
-    conn = this.connections.get(id);
     if (!callback) {
-      return conn;
+      this.err("callback missing");
     }
-    if (conn) {
-      return callback(conn.remote);
-    }
-    t = setTimeout(function() {
-      _this.log("timeout waiting for " + id);
-      return _this.removeListener('remote', cb);
-    }, this.opts.wait);
-    cb = function() {
-      _this.log("new remote! looking for " + id);
-      conn = _this.connections.get(id);
+    get = function() {
+      var conn;
+      conn = _this.connections.findBy('id', id);
       if (!conn) {
+        conn = _this.connections.findBy('guid', id);
+      }
+      if (!conn) {
+        return false;
+      }
+      callback(conn.remote);
+      return true;
+    };
+    if (get()) {
+      return;
+    }
+    check = function() {
+      if (!get()) {
         return;
       }
-      clearTimeout(t);
-      _this.removeListener('remote', cb);
-      return callback(conn.remote);
+      this.off('remote', check);
+      return clearTimeout(t);
     };
-    this.on('remote', cb);
+    t = setTimeout(function() {
+      _this.off('remote', check);
+      return _this.emit('timeout', id);
+    }, this.opts.wait);
+    this.on('remote', check);
   };
 
   Server.prototype.publish = function() {
