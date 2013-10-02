@@ -128,15 +128,15 @@ class Base extends Logger
     #finite states
     events = ['binding','bound','unbinding','unbound']
     
-    inst = @
+    self = @
     #bubble up all events
     @tEmitter.onAny (args...) ->
-      inst.log 'T-EVENT', @event
+      self.log 'T-EVENT', @event
       #set appropriate state
       if @event in events
         for e in events
-          inst[e] = e is @event
-      inst.emit.apply null, [@event].concat(args)
+          self[e] = e is @event
+      self.emit.apply null, [@event].concat(args)
       return
 
     #get transport (POTENTIAL USER CODE)
@@ -152,11 +152,9 @@ class Base extends Logger
     return
 
   unbind: (callback) ->
-
     if @unbound
       @warn 'bind in progress' if @binding
       return
-    @log 'unbind'
     @once 'unbound', callback if callback
     @tEmitter.emit 'unbind'
     return

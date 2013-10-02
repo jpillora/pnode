@@ -37,8 +37,7 @@ module.exports = Client = (function(_super) {
       pong: 0,
       attempt: 0
     };
-    this.reconnectTimer = this.timeoutify('reconnect', function() {});
-    this.reconnect = _.throttle(this.reconnect, this.opts.retryInterval, {
+    this.connect = _.throttle(this.connect, this.opts.retryInterval, {
       leading: true
     });
     this.ping = _.throttle(this.ping, this.opts.pingInterval);
@@ -96,6 +95,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.unbind = function() {
+    this.log("CLIENT UNBIND");
     this.count.attempt = Infinity;
     return Client.__super__.unbind.apply(this, arguments);
   };
@@ -115,7 +115,6 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.reconnect = function() {
-    var _this = this;
     if (!(this.unbound && this.count.attempt < this.opts.maxRetries)) {
       if (this.d) {
         this.d.removeAllListeners().end();
@@ -124,6 +123,12 @@ module.exports = Client = (function(_super) {
       this.emit('down');
       return;
     }
+    return this.connect();
+  };
+
+  Client.prototype.connect = function() {
+    var _this = this;
+    this.log("connecting....");
     this.count.attempt++;
     this.ctx = new RemoteContext;
     this.d = dnode(this.wrapObject(this.exposed, this.ctx));
@@ -133,18 +138,17 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
-    this.reconnect.t = setTimeout(this.onReconnectTimeout, this.opts.timeout);
+    this.connect.t = setTimeout(this.onConnectTimeout, this.opts.timeout);
     this.d.once('remote', function() {
-      return clearTimeout(_this.reconnect.t);
+      return clearTimeout(_this.connect.t);
     });
     this.log("connection attempt " + this.count.attempt + "...");
     Base.prototype.bind.apply(this, this.bindArgs);
   };
 
-  Client.prototype.onReconnectTimeout = function() {
+  Client.prototype.onConnectTimeout = function() {
     var _this = this;
-    this.log('RECONNECT TIMEOUT');
-    this.emit('timeout.reconnect');
+    this.emit('timeout.connect');
     return this.unbind(function() {
       return _this.reconnect();
     });
@@ -197,7 +201,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onEnd = function() {
-    this.log("server closed connection");
+    this.log("server closed reconnection");
     return this.reconnect();
   };
 

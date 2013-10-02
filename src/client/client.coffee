@@ -22,9 +22,7 @@ module.exports = class Client extends Base
     @count = { ping: 0, pong: 0, attempt: 0 }
     
     #timeoutify and throttle reconnects
-    @reconnectTimer = @timeoutify 'reconnect', ->
-
-    @reconnect = _.throttle @reconnect, @opts.retryInterval, {leading:true}
+    @connect = _.throttle @connect, @opts.retryInterval, {leading:true}
 
     # @on ['timeout','reconnect'], =>
     #   @log "reconnect TIMEOUT!"
@@ -84,6 +82,7 @@ module.exports = class Client extends Base
     @reconnect()
 
   unbind: ->
+    @log "CLIENT UNBIND"
     @count.attempt = Infinity
     super
 
@@ -103,13 +102,17 @@ module.exports = class Client extends Base
     @removeListener 'remote', callback
 
   reconnect: ->
-
     unless @unbound and @count.attempt < @opts.maxRetries
       if @d
         @d.removeAllListeners().end()
         @d = null
       @emit 'down'
       return
+    @connect()
+
+  connect: ->
+
+    @log "connecting...."
 
     @count.attempt++
 
@@ -124,8 +127,8 @@ module.exports = class Client extends Base
     @d.once 'fail', @onStreamError
 
     #timeout reconnects
-    @reconnect.t = setTimeout @onReconnectTimeout, @opts.timeout
-    @d.once 'remote', => clearTimeout @reconnect.t
+    @connect.t = setTimeout @onConnectTimeout, @opts.timeout
+    @d.once 'remote', => clearTimeout @connect.t
 
     @log "connection attempt #{@count.attempt}..."
 
@@ -133,12 +136,11 @@ module.exports = class Client extends Base
     Base::bind.apply @, @bindArgs
     return
 
-  onReconnectTimeout: ->
-    @log 'RECONNECT TIMEOUT'
-    @emit 'timeout.reconnect'
+  onConnectTimeout: ->
+    @emit 'timeout.connect'
     @unbind => @reconnect()
 
-  #connection failed
+  #reconnection failed
   onStreamError: (err) ->
     return if @unbound or @unbinding
     # if err.code is 'ECONNREFUSED'
@@ -185,21 +187,17 @@ module.exports = class Client extends Base
 
   #down events
   onEnd: ->
-    @log "server closed connection"
+    @log "server closed reconnection"
     @reconnect()
 
   #pubsub to server remote
   publish: (args...) ->
-
     #get remote
     @server (remote) =>
-
       event = if typeof args[0] is 'function' then args[1] else args[0]
-
       unless @ctx.events[event]
         @log "server #{@ctx.id} isnt subscribed to #{event}"
         return
-
       @log "publishing a #{event}"
       remote._pnode.publish.apply null, args
     return

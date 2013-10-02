@@ -95,7 +95,7 @@ module.exports = class Server extends Base
 
     t = setTimeout =>
       @off 'remote', check
-      @emit 'timeout', id
+      @emit 'waitout', id
     , @opts.wait
 
     @on 'remote', check

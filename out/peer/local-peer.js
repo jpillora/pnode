@@ -40,7 +40,7 @@ module.exports = LocalPeer = (function(_super) {
     };
     this.servers = {};
     this.clients = {};
-    this.peers = ObjectIndex("id", "guid");
+    this.peers = helper.set();
     if (this.opts.learn) {
       this.expose({
         _pnode: {
@@ -141,7 +141,7 @@ module.exports = LocalPeer = (function(_super) {
     if (!guid) {
       return this.log('peer missing guid');
     }
-    peer = this.peers.get(guid);
+    peer = this.peers.findBy('guid', guid);
     if (!peer) {
       peer = new RemotePeer(this, guid, id, ips);
       this.peers.add(peer);
@@ -159,16 +159,16 @@ module.exports = LocalPeer = (function(_super) {
   LocalPeer.prototype.serialize = function() {
     return {
       servers: helper.serialize(this.servers),
-      peers: helper.serialize(this.peers.list)
+      peers: helper.serialize(this.peers)
     };
   };
 
   LocalPeer.prototype.all = function(callback) {
-    var guid, peer, rems, _ref;
+    var peer, rems, _i, _len, _ref;
     rems = [];
     _ref = this.peers;
-    for (guid in _ref) {
-      peer = _ref[guid];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      peer = _ref[_i];
       if (peer.up) {
         rems.push(peer.remote);
       }
@@ -181,7 +181,7 @@ module.exports = LocalPeer = (function(_super) {
       _this = this;
     get = function() {
       var peer;
-      peer = _this.peers.get(id);
+      peer = _this.peers.findBy('id', id) || _this.peers.findBy('guid', id);
       if (!(peer != null ? peer.up : void 0)) {
         return false;
       }
@@ -193,6 +193,7 @@ module.exports = LocalPeer = (function(_super) {
       return;
     }
     check = function() {
+      this.log("CHECK PEER: " + id);
       if (!get()) {
         return;
       }
@@ -201,7 +202,7 @@ module.exports = LocalPeer = (function(_super) {
     };
     t = setTimeout(function() {
       _this.off('peer', check);
-      return _this.emit('timeout', id);
+      return _this.emit('waitout', id);
     }, this.opts.wait);
     return this.on('peer', check);
   };

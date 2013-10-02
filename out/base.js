@@ -170,7 +170,7 @@ Base = (function(_super) {
   };
 
   Base.prototype.bind = function() {
-    var args, err, events, inst, trans;
+    var args, err, events, self, trans;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     this.log("bind", args);
     if (this.bound) {
@@ -184,18 +184,18 @@ Base = (function(_super) {
     }
     this.tEmitter = new Emitter;
     events = ['binding', 'bound', 'unbinding', 'unbound'];
-    inst = this;
+    self = this;
     this.tEmitter.onAny(function() {
       var args, e, _j, _len1, _ref1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      inst.log('T-EVENT', this.event);
+      self.log('T-EVENT', this.event);
       if (_ref1 = this.event, __indexOf.call(events, _ref1) >= 0) {
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           e = events[_j];
-          inst[e] = e === this.event;
+          self[e] = e === this.event;
         }
       }
-      inst.emit.apply(null, [this.event].concat(args));
+      self.emit.apply(null, [this.event].concat(args));
     });
     try {
       trans = transportMgr.get(args);
@@ -215,7 +215,6 @@ Base = (function(_super) {
       }
       return;
     }
-    this.log('unbind');
     if (callback) {
       this.once('unbound', callback);
     }

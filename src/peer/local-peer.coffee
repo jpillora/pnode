@@ -23,7 +23,7 @@ module.exports = class LocalPeer extends Base
     @count = { server:0, client:0 }
     @servers = {}
     @clients = {}
-    @peers = ObjectIndex "id", "guid"
+    @peers = helper.set()
 
     #provide self serialization method
     if @opts.learn
@@ -101,7 +101,7 @@ module.exports = class LocalPeer extends Base
     #extract peers
     # if @opts.learn
 
-    peer = @peers.get guid
+    peer = @peers.findBy 'guid', guid
 
     unless peer
       peer = new RemotePeer @, guid, id, ips
@@ -118,21 +118,22 @@ module.exports = class LocalPeer extends Base
     return
   serialize: ->
     servers: helper.serialize @servers
-    peers: helper.serialize @peers.list
+    peers: helper.serialize @peers
 
   #peers can provide their peers to us
   # learn: (peers) ->
 
   all: (callback) ->
     rems = []
-    for guid, peer of @peers
+    for peer in @peers
       if peer.up
         rems.push peer.remote
     callback rems
 
   peer: (id, callback) ->
     get = =>
-      peer = @peers.get id
+      peer = @peers.findBy('id', id) or
+             @peers.findBy('guid', id)
       return false unless peer?.up
       @log "FOUND PEER: #{id}"
       callback peer.remote
@@ -141,13 +142,14 @@ module.exports = class LocalPeer extends Base
     return if get()
 
     check = ->
+      @log "CHECK PEER: #{id}"
       return unless get()
       @off 'peer', check
       clearTimeout t
 
     t = setTimeout =>
       @off 'peer', check
-      @emit 'timeout', id
+      @emit 'waitout', id
     , @opts.wait
 
     @on 'peer', check
@@ -160,6 +162,7 @@ module.exports = class LocalPeer extends Base
 
   subscribe: (event, fn) ->
     @pubsub.on event, fn
+    #first subscription - notify peers
     if @pubsub.listeners(event).length is 1
       for peer in @peers
         peer.subscribe? event

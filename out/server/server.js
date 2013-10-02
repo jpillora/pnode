@@ -113,7 +113,7 @@ module.exports = Server = (function(_super) {
     };
     t = setTimeout(function() {
       _this.off('remote', check);
-      return _this.emit('timeout', id);
+      return _this.emit('waitout', id);
     }, this.opts.wait);
     this.on('remote', check);
   };
