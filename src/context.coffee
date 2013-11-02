@@ -27,6 +27,7 @@ module.exports = class RemoteContext
       sock = stream
     else if stream.connection instanceof Socket
       sock = stream.connection
+    
     if sock
       @ip = sock.remoteAddress
       @port = sock.remotePort

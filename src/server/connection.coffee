@@ -31,8 +31,10 @@ module.exports = class Connection extends Base.Logger
 
     read.once 'close', @d.end
     read.once 'end', @d.end
-    write.once 'close', @d.end
-    write.once 'end', @d.end
+
+    if read isnt write
+      write.once 'close', @d.end
+      write.once 'end', @d.end
 
     @d.once 'end', =>
       @emit 'down'

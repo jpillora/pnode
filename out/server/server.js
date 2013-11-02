@@ -73,6 +73,7 @@ module.exports = Server = (function(_super) {
       _this.emit('remote', conn.remote);
     });
     conn.once('down', function() {
+      _this.log("CONN DOWN " + conn.id);
       if (_this.connections.remove(conn)) {
         _this.emit('disconnection', conn);
       }

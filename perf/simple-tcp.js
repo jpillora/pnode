@@ -6,10 +6,10 @@ var done = false;
 var pnode = require('../');
 
 if(process.argv.indexOf('server') > 0) {
-  var server = pnode.server();
+  var server = pnode.server('s1');
   server.expose({
     inc: function(data) {
-      server.client(0, function(remote) {
+      server.client('c1', function(remote) {
         total++;
         remote.inc(data);
       });
@@ -22,7 +22,7 @@ if(process.argv.indexOf('server') > 0) {
 }
 
 if(process.argv.indexOf('client') > 0) {
-  var client = pnode.client();
+  var client = pnode.client('c1');
   client.expose({
     inc: function(data) {
       client.server(function(remote) {
@@ -52,4 +52,4 @@ if(process.argv.indexOf('client') > 0) {
 }
 
 if(!server && !client)
-  console("usage: simple-tcp server | client [host]");
+  console.log("usage: simple-tcp server | client [host]");

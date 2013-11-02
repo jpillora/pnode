@@ -40,8 +40,7 @@ describe 'websockets', ->
               assert.fail result.error
             else if result.response
               expect(result.response).to.equal(49)
-              httpServer.close()
-              done()
+              server.unbind done
             else
               check()
         check()

@@ -16,7 +16,7 @@ describe "clients to server > ", ->
     server.bind 'tcp://0.0.0.0:8000'
 
     client1 = pnode.client({id:'client-ONE', debug: false})
-    client2 = pnode.client('client-TWO')
+    client2 = pnode.client({id:'client-TWO', debug: false})
 
     setTimeout ->
       client1.bind 'tcp://localhost:8000'

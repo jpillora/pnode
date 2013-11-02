@@ -102,7 +102,6 @@ class Base extends Logger
           self.pubsub.emit.apply self.pubsub, args
           cb true if cb
         ping: (cb) ->
-          self.log 'ping %s -> %s', @id, self.id
           cb true
         events: @exposeDynamic ->
           Object.keys self.pubsub._events
@@ -115,8 +114,6 @@ class Base extends Logger
     _.merge @exposed, obj
 
   bind: (args...) ->
-
-    @log "bind", args
 
     if @bound
       @warn 'unbind in progress' if @unbinding
@@ -202,7 +199,7 @@ class Base extends Logger
       for a, i in args
         if typeof a is 'function'
           args[i] = ->
-            self.log "returned %s %s (%s) at %s", type, name, id, Date.now()
+            # self.log "returned %s %s (%s) at %s", type, name, id, Date.now()
             clearTimeout t
             return if timedout
             self.emit ['timein',name], args, ctx
@@ -211,13 +208,13 @@ class Base extends Logger
           t = setTimeout ->
             timedout = true
             return unless self.bound
-            self.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
+            # self.log "timeout %s %s (%s) at %s", type, name, id, Date.now()
             self.emit ['timeout',name], args, ctx
             return
           , self.opts.timeout
           break
 
-      self.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
+      # self.log "calling %s %s (%s) at %s %s", type, name, id, Date.now(), if t is null then '' else ' (with timer)'
       # call original fn
       fn.apply ctx, args
 

@@ -40,8 +40,10 @@ module.exports = Connection = (function(_super) {
     this.d.once('remote', this.onRemote.bind(this));
     read.once('close', this.d.end);
     read.once('end', this.d.end);
-    write.once('close', this.d.end);
-    write.once('end', this.d.end);
+    if (read !== write) {
+      write.once('close', this.d.end);
+      write.once('end', this.d.end);
+    }
     this.d.once('end', function() {
       return _this.emit('down');
     });

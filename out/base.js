@@ -151,7 +151,6 @@ Base = (function(_super) {
           }
         },
         ping: function(cb) {
-          self.log('ping %s -> %s', this.id, self.id);
           return cb(true);
         },
         events: this.exposeDynamic(function() {
@@ -172,7 +171,6 @@ Base = (function(_super) {
   Base.prototype.bind = function() {
     var args, err, events, self, trans;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    this.log("bind", args);
     if (this.bound) {
       if (this.unbinding) {
         this.warn('unbind in progress');
@@ -267,7 +265,6 @@ Base = (function(_super) {
         a = args[i];
         if (typeof a === 'function') {
           args[i] = function() {
-            self.log("returned %s %s (%s) at %s", type, name, id, Date.now());
             clearTimeout(t);
             if (timedout) {
               return;
@@ -280,13 +277,11 @@ Base = (function(_super) {
             if (!self.bound) {
               return;
             }
-            self.log("timeout %s %s (%s) at %s", type, name, id, Date.now());
             self.emit(['timeout', name], args, ctx);
           }, self.opts.timeout);
           break;
         }
       }
-      self.log("calling %s %s (%s) at %s %s", type, name, id, Date.now(), t === null ? '' : ' (with timer)');
       return fn.apply(ctx, args);
     };
   };

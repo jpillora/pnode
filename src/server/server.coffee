@@ -61,6 +61,7 @@ module.exports = class Server extends Base
       return
 
     conn.once 'down', =>
+      @log "CONN DOWN #{conn.id}"
       if @connections.remove conn
         @emit 'disconnection', conn
       return

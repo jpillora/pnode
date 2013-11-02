@@ -27,7 +27,9 @@ exports.unbindAfter = (pnodes..., done) ->
   pnodes = pnodes.filter (p) -> p
   i = 0
   onUnbound = ->
+    # console.log("UNBOUND   #{i}")
     done() if ++i is pnodes.length
   for p, n in pnodes
+    # console.log("UNBINDING #{n}")
     p.unbind onUnbound
   return
