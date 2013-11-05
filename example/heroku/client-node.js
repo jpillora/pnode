@@ -1,5 +1,5 @@
 var pnode = require('../../');
-var client = pnode.client();
+var client = pnode.client({debug:true});
 
 client.bind('http://pnode-demo.herokuapp.com:80');
 // client.bind('http://localhost:3000');

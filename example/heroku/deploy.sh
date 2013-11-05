@@ -9,7 +9,9 @@ then
   exit 1
 fi
 
-git clone git@heroku.com:$PNODE_DEMO_APP.git heroku-tmp
+
+git clone git@heroku.com:$PNODE_DEMO_APP.git heroku-tmp || exit 1
+
 cp * heroku-tmp/
 cd heroku-tmp
 git add *
