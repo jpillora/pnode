@@ -20,7 +20,6 @@ exports.bindServer = function() {
   emitter.emit('configuring');
   secure.checkCerts(opts, function(opts) {
     var s;
-    emitter.emit('binding');
     if (opts.rejectUnauthorized === undefined) {
       opts.rejectUnauthorized = false;
     }
@@ -32,7 +31,6 @@ exports.bindServer = function() {
     s.once('listening', function() {
       emitter.emit('bound');
       return emitter.once('unbind', function() {
-        emitter.emit('unbinding');
         return s.close();
       });
     });
@@ -59,14 +57,12 @@ exports.bindClient = function() {
     opts.rejectUnauthorized = false;
   }
   emitter.emit('uri', "tls://" + (opts.hostname || 'localhost') + ":" + opts.port);
-  emitter.emit('binding');
   stream = tls.connect.call(null, opts);
   emitter.emit('stream', stream);
   stream.once('secureConnect', function() {
     return emitter.emit('bound');
   });
   emitter.once('unbind', function() {
-    emitter.emit('unbinding');
     return stream.end();
   });
   stream.once('end', function() {

@@ -13,8 +13,6 @@ exports.bindServer = (emitter, args...) ->
 
   secure.checkCerts opts, (opts) ->
 
-    emitter.emit 'binding'
-
     #default allow unauthorized
     if opts.rejectUnauthorized is `undefined`
       opts.rejectUnauthorized = false
@@ -29,7 +27,6 @@ exports.bindServer = (emitter, args...) ->
     s.once 'listening', ->
       emitter.emit 'bound'
       emitter.once 'unbind', ->
-        emitter.emit 'unbinding'
         s.close()
 
     s.once 'close', ->
@@ -52,8 +49,7 @@ exports.bindClient = (emitter, args...) ->
     opts.rejectUnauthorized = false
 
   emitter.emit 'uri', "tls://#{opts.hostname or 'localhost'}:#{opts.port}"
-  emitter.emit 'binding'
-
+  
   stream = tls.connect.call null, opts
 
   emitter.emit 'stream', stream
@@ -62,7 +58,6 @@ exports.bindClient = (emitter, args...) ->
     emitter.emit 'bound'
 
   emitter.once 'unbind', ->
-    emitter.emit 'unbinding'
     stream.end()
 
   stream.once 'end', ->

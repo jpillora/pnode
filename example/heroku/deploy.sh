@@ -1,7 +1,7 @@
 # script to setup heroku repo, update it, then tear it down
 
 # SET THIS TO YOUR APP NAME
-# PNODE_DEMO_APP=pnode-demo
+PNODE_DEMO_APP=pnode-demo
 
 if [ ! $PNODE_DEMO_APP ]
 then

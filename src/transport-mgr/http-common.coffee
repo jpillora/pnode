@@ -5,26 +5,50 @@ types =
   http: require 'http'
   https: require 'https'
 
+filterRequest = (req) ->
+  (/^pnode\/0\.1\.\d+$/).test req.headers['user-agent']
+
 #common code for http/https
-exports.createServer = (emitter, type, listenArgs, serverArgs) ->
+exports.createServer = (emitter, type, args, serverArgs) ->
   
-  hostname = if typeof listenArgs[1] is 'string' then listenArgs[1] else '0.0.0.0'
-  port = listenArgs[0]
-  emitter.emit 'uri', "#{type}://#{hostname}:#{port}"
-  emitter.emit 'binding'
+  http = types[type]
 
-  s = types[type].createServer.apply null, serverArgs
+  #provided server
+  if args[0] instanceof http.Server
+    s = args[0]
+    filter = if typeof args[1] is 'function' then args[1] else filterRequest
+  else
+    s = http.createServer.apply null, serverArgs
+    filter = filterRequest
+    s.listen.apply s, args
 
-  s.on 'request', (read, write) ->
-    emitter.emit 'stream', read, write
+  #hijack all requests
+  handlers = s.listeners('request').slice(0)
+  s.removeAllListeners 'request'
+  s.on 'request', (req, res) ->
+    #grab all pnode requests
+    if filter req
+      emitter.emit 'stream', req, res
+    #fallback to other handlers
+    else
+      handlers.forEach (fn) => fn.call @, req, res
 
-  s.listen.apply s, listenArgs
+  #check if already listening
+  addr = s.address()
 
-  s.once 'listening', ->
+  listening = ->
+    addr = s.address() unless addr
+    addr = "#{addr.address}:#{addr.port}" if typeof addr is 'object'
+    emitter.emit 'uri', "#{type}://#{addr}"
     emitter.emit 'bound'
+    #now we can accept unbind requests
     emitter.once 'unbind', ->
-      emitter.emit 'unbinding'
       s.close()
+
+  if addr
+    listening()
+  else
+    s.once 'listening', listening
 
   s.once 'close', ->
     emitter.emit 'unbound'
@@ -54,12 +78,11 @@ exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
     opts.hostname = reqArgs.shift()
 
   emitter.emit 'uri', "#{type}://#{opts.hostname or 'localhost'}:#{opts.port}"
-  emitter.emit 'binding'
 
   write = types[type].request opts, (read) ->
     
     emitter.once 'unbind', ->
-      emitter.emit 'unbinding'
+      console.log 'CALL HTTP UNBIND'
       read.socket.end()
     
     read.once 'end', ->

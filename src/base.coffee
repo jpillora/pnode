@@ -142,6 +142,7 @@ class Base extends Logger
       #prepend emitter
       args.unshift @tEmitter
       #bind server/client
+      @tEmitter.emit 'binding'
       trans["bind#{@name}"].apply null, args
     catch err
       err.message = "Transport: #{err.message}"
@@ -153,7 +154,9 @@ class Base extends Logger
       @warn 'bind in progress' if @binding
       return
     @once 'unbound', callback if callback
-    @tEmitter.emit 'unbind'
+
+    @tEmitter.emit 'unbinding'
+    @tEmitter.emit 'unbind' #trigger user code
     return
 
   #recursively timeoutify functions and eval dynamic values

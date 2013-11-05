@@ -1,3 +1,4 @@
+
 {expect} = require "chai"
 _ = require "../vendor/lodash"
 pnode = require "../"
@@ -5,6 +6,8 @@ sinon = require "sinon"
 
 #iteratively define tests
 describe "transports > ", ->
+
+
 
   #use static certs to speed up tests
   certs =
@@ -51,6 +54,8 @@ describe "transports > ", ->
   # basic bind+unbind server test using each transport
 
   bindTest = (type, name, test, done) ->
+
+    debugger
 
     #spies (named fns for sinon debugging)
     spyFns = [

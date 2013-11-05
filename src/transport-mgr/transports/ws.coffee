@@ -17,8 +17,6 @@ exports.parse = (str) ->
 
 exports.bindServer = (emitter, args..., opts) ->
 
-  emitter.emit 'binding'
-
   unless opts
     throw "Missing options"
 
@@ -36,7 +34,6 @@ exports.bindServer = (emitter, args..., opts) ->
   listening = ->
     emitter.emit 'bound'
     emitter.once 'unbind', ->
-      emitter.emit 'unbinding'
       c.destroy() for c in conns
       s.close()
 

@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "stream.js",
+  "sourceRoot": "../../..",
+  "sources": [
+    "src/transport-mgr/transports/stream.coffee"
+  ],
+  "names": [],
+  "mappings": ";AACA,CAAQ,EAAQ,EAAhB,EAAO,EAAU;CACf,CAAA,CAAA,CAAqD;CAArD,SAAM,iCAAN;IADc;CAAA;;AAGhB,CAHA,CAG+B,CAAV,IAAd,EAAe,CAAtB;CACE,CAAA,KAAA;CADmB;;AAIrB,CAPA,CAO+B,CAAV,IAAd,EAAe,CAAtB;CACE,CAAA,KAAA;CADmB"
+}

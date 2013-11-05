@@ -198,6 +198,7 @@ Base = (function(_super) {
     try {
       trans = transportMgr.get(args);
       args.unshift(this.tEmitter);
+      this.tEmitter.emit('binding');
       trans["bind" + this.name].apply(null, args);
     } catch (_error) {
       err = _error;
@@ -216,6 +217,7 @@ Base = (function(_super) {
     if (callback) {
       this.once('unbound', callback);
     }
+    this.tEmitter.emit('unbinding');
     this.tEmitter.emit('unbind');
   };
 

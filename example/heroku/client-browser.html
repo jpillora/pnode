@@ -17,27 +17,41 @@
       <pre id="output" style="width: 400px; height: 200px"/>
     </div>
 
-    <script type="text/javascript" src="http://jpillora.com/pnode/browser/dist/pnode.js"></script>
     <script type="text/javascript">
-      var client = pnode.client('browser');
+      //load local or live pnode.js
+      var LOCAL = window.location.host.match(/localhost/);
+      var src =  LOCAL ?   '../../browser/dist/pnode.debug.js' :
+       'http://jpillora.com/pnode/browser/dist/pnode.js';
+      document.write("<script src='"+src+"'><\/script>");
+    </script>
 
-      client.bind('ws:///pnode-ws');
+    <script type="text/javascript">
+
+      //create client
+      var client = pnode.client();
+
+      //get local or live ws host
+      var host = LOCAL ?   'localhost:3000' :
+              'pnode-demo.herokuapp.com:80';
+
+      //bind
+      client.bind('ws://'+host+'/pnode-ws');
 
       var input = document.getElementById("input"),
           output = document.getElementById("output");
 
+
       var t;
       input.onkeyup = function() {
-        clearTimeout(t);
+        clearTimeout(t);//typing delay...
         t = setTimeout(function() {
-
+          output.innerHTML = 'loading...';
           //transform text on server
           client.server(function(remote) {
             remote.transform(input.value, function(str) {
               output.innerHTML = str;
             });
           });
-
         }, 500);
       }
 

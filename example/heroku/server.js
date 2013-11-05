@@ -10,9 +10,9 @@ try {
   pnode = require('../../');
 }
 
-var pserver = pnode.server();
+var server = pnode.peer();
 
-pserver.expose({
+server.expose({
   //do not do this IRL
   evaluate: function(code, callback) {
     try {
@@ -20,33 +20,32 @@ pserver.expose({
     } catch(err) {
       callback(err);
     }
+  },
+  //transform text
+  transform: function(text, callback) {
+    if(typeof text !== "string")
+      callback('gimme a string');
+    else
+      callback(text.replace(/[aeiou]/g, 'z'));
   }
 });
 
 var port = process.env.PORT || 3000;
-//create a plain http server
-http.createServer(function(req, res) {
 
-  //only handle pnodes clients
-  if(/^pnode/.test(req.headers['user-agent'])) {
-    //could also check 'Authorisation' header for security (use https though!)
-    pserver.handle(req, res);
-
-  //otherwise assume browser...
-  } else {
-    res.end('this is a pnode server running over HTTP on port 80, '+
-            'to connect to this server, please see: ' +
-            'https://github.com/jpillora/pnode/blob/gh-pages/example/heroku/client.js');
-  }
-
-}).listen(port, function() {
-  console.log('bound to ' + port);
+//standard http server
+var s = http.createServer(function(req, res) {
+  res.writeHead(200);
+  res.end('this is a pnode server running over HTTP on port 80, '+
+          'to connect to this server, please see: https://github.com/jpillora/pnode/');
 });
-//note: you could equivalently do
-//pserver.bind('http', port);
-//although we wouldn't be able to conditionally handle requests
 
+s.listen(port, function(){
+  console.log('bound to all interfaces on port '+port);
+});
 
+//bind to existing server
+server.bindOn('http', s);
+server.bindOn('ws', s, '/pnode-ws');
 
 
 

@@ -44,7 +44,7 @@ exports.get = function(args) {
   }
   parseFn = trans.parse || parse;
   parsed = parseFn(uri);
-  while (parsed.length) {
+  while (parsed && parsed.length) {
     args.unshift(parsed.pop());
   }
   return trans;

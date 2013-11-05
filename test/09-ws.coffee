@@ -6,6 +6,11 @@ fs = require 'fs'
 #init phantomjs
 phantom = null
 before (done) ->
+
+
+  
+
+
   require('phantom').create (ph) ->
     phantom = ph
     done()

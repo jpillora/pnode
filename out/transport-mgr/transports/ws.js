@@ -23,7 +23,6 @@ exports.parse = function(str) {
 exports.bindServer = function() {
   var args, conns, emitter, listening, opts, s, sock, _i;
   emitter = arguments[0], args = 3 <= arguments.length ? __slice.call(arguments, 1, _i = arguments.length - 1) : (_i = 1, []), opts = arguments[_i++];
-  emitter.emit('binding');
   if (!opts) {
     throw "Missing options";
   }
@@ -42,7 +41,6 @@ exports.bindServer = function() {
     emitter.emit('bound');
     return emitter.once('unbind', function() {
       var c, _j, _len;
-      emitter.emit('unbinding');
       for (_j = 0, _len = conns.length; _j < _len; _j++) {
         c = conns[_j];
         c.destroy();

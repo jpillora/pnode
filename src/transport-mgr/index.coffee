@@ -45,7 +45,7 @@ exports.get = (args) ->
 
   #prepend parsed args
   parsed = parseFn(uri)
-  while parsed.length
+  while parsed and parsed.length
     args.unshift parsed.pop()
 
   return trans
