@@ -10,7 +10,7 @@ try {
   pnode = require('../../');
 }
 
-var server = pnode.peer();
+var server = pnode.peer({id:'s1', debug:true});
 
 server.expose({
   //do not do this IRL
@@ -44,8 +44,8 @@ s.listen(port, function(){
 });
 
 //bind to existing server
-server.bindOn('http', s);
 server.bindOn('ws', s, '/pnode-ws');
+server.bindOn('http', s);
 
 
 
