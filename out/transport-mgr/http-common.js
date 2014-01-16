@@ -88,7 +88,6 @@ exports.createClient = function(emitter, type, reqArgs, extraOpts) {
   emitter.emit('uri', "" + type + "://" + (opts.hostname || 'localhost') + ":" + opts.port);
   write = types[type].request(opts, function(read) {
     emitter.once('unbind', function() {
-      console.log('CALL HTTP UNBIND');
       return read.socket.end();
     });
     read.once('end', function() {

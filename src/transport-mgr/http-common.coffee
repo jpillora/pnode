@@ -82,7 +82,6 @@ exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
   write = types[type].request opts, (read) ->
     
     emitter.once 'unbind', ->
-      console.log 'CALL HTTP UNBIND'
       read.socket.end()
     
     read.once 'end', ->

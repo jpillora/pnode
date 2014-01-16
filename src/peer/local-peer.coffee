@@ -31,6 +31,9 @@ module.exports = class LocalPeer extends Base
         _pnode:
           serialize: @exposeDynamic => @serialize()
 
+  bind: ->
+    @error "bind() is ambiguous, please use bindOn() and bindTo()"
+
   bindOn: ->
     @count.server++
     server = new Server @

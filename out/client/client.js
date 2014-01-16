@@ -91,7 +91,7 @@ module.exports = Client = (function(_super) {
   Client.prototype.bind = function() {
     this.count.attempt = 0;
     this.bindArgs = arguments;
-    return this.reconnect();
+    return process.nextTick(this.reconnect);
   };
 
   Client.prototype.unbind = function() {
@@ -128,6 +128,9 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.connect = function() {
     var _this = this;
+    if (!this.bindArgs) {
+      return;
+    }
     this.log("connecting....");
     this.count.attempt++;
     this.ctx = new RemoteContext;
@@ -155,6 +158,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onStreamError = function(err) {
+    this.warn("stream error: " + err.message);
     if (this.unbound || this.unbinding) {
       return;
     }
@@ -164,6 +168,7 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.onError = function(err) {
     var msg;
+    this.warn("===== " + (err.stack || err));
     if (this.unbound || this.unbinding) {
       return;
     }
@@ -223,9 +228,8 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.subscribe = function(event, fn) {
     var _this = this;
-    this.pubsub.on(event, fn);
-    if (!this.getConnectionFn) {
-      return;
+    if (fn) {
+      this.pubsub.on(event, fn);
     }
     if (this.pubsub.listeners(event).length === 1) {
       this.server(function(remote) {

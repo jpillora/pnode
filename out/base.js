@@ -154,7 +154,10 @@ Base = (function(_super) {
           return cb(true);
         },
         events: this.exposeDynamic(function() {
-          return Object.keys(self.pubsub._events);
+          var evts;
+          evts = Object.keys(self.pubsub._events);
+          self.log("exposing events: %j", evts);
+          return evts;
         })
       }
     };

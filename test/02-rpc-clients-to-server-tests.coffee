@@ -28,13 +28,17 @@ describe "clients to server > ", ->
     helper.unbindAfter server,client1,client2,done
 
   it "should connect to server from client-1", (done) ->
+
+
     client1.server (remote) ->
+      client1.log "has remote", remote
       remote.foo 42, (result) ->
         expect(result).to.equal 49
         done()
     
   it "should connect to server from client-2", (done) ->
     client2.server (remote) ->
+      client2.log "has remote", remote
       remote.foo 43, (result) ->
         expect(result).to.equal 50
         done()

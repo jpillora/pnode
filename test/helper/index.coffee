@@ -13,7 +13,6 @@ exports.callbacker = (expecting, callback = expecting) ->
         callback()
       return
 
-
 exports.onUp = (pnodes..., n, callback) ->
   i = 0
   onRemote = ->
@@ -25,10 +24,21 @@ exports.onUp = (pnodes..., n, callback) ->
 
 exports.unbindAfter = (pnodes..., done) ->
   pnodes = pnodes.filter (p) -> p
+
+
+  #TIMEOUT HACK :O
+  callback = ->
+    return if callback.fired
+    callback.fired = true
+    done()
+  callback.fired = false
+  setTimeout callback, 100
+
   i = 0
   onUnbound = ->
     # console.log("UNBOUND   #{i}")
-    done() if ++i is pnodes.length
+    callback() if ++i is pnodes.length
+
   for p, n in pnodes
     # console.log("UNBINDING #{n}")
     p.unbind onUnbound

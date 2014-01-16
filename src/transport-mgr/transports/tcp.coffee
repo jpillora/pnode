@@ -1,8 +1,15 @@
 net = require 'net'
 
+exports.buildUri = (args) ->
+  return if typeof args[0] is "string" and typeof args[1] isnt "number"
+    "ipc://#{args[0]}"
+  else
+    "tcp://#{if typeof args[1] is 'string' then args[1] else '0.0.0.0'}:#{args[0]}"
+
 exports.bindServer = (emitter, args...) ->
 
-  emitter.emit 'uri', "tcp://#{if typeof args[1] is 'string' then args[1] else '0.0.0.0'}:#{args[0]}"
+  uri = exports.buildUri args
+  emitter.emit 'uri', uri
   
   s = net.createServer()
 
@@ -19,23 +26,34 @@ exports.bindServer = (emitter, args...) ->
   s.once 'close', ->
     emitter.emit 'unbound'
 
+  s.on 'error', (err) ->
+    err.message = "TCP Server Error: '#{uri}': #{err.message}"
+    emitter.emit 'error', err
+  
   return
 
 exports.bindClient = (emitter, args...) ->
 
-  emitter.emit 'uri', "tcp://#{typeof args[1] is 'string' and args[1] or 'localhost'}:#{args[0]}"
+  uri = exports.buildUri args
+  emitter.emit 'uri', uri
   
-  stream = net.connect.apply null, args
+  c = net.connect.apply null, args
   
-  emitter.emit 'stream', stream
+  emitter.emit 'stream', c
 
-  stream.once 'connect', ->
+  c.once 'connect', ->
     emitter.emit 'bound'
 
   emitter.once 'unbind', ->
-    stream.end()
+    c.end()
+    
 
-  stream.once 'end', ->
+  c.once 'end', ->
     emitter.emit 'unbound'
+
+  # let pnode handle errors
+  # c.on 'error', (err) ->
+  #   err.message = "TCP Client Error: '#{uri}': #{err.message}"
+  #   emitter.emit 'error', err
 
   return

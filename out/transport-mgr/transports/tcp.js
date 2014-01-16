@@ -4,10 +4,19 @@ var net,
 
 net = require('net');
 
+exports.buildUri = function(args) {
+  if (typeof args[0] === "string" && typeof args[1] !== "number") {
+    return "ipc://" + args[0];
+  } else {
+    return "tcp://" + (typeof args[1] === 'string' ? args[1] : '0.0.0.0') + ":" + args[0];
+  }
+};
+
 exports.bindServer = function() {
-  var args, emitter, s;
+  var args, emitter, s, uri;
   emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  emitter.emit('uri', "tcp://" + (typeof args[1] === 'string' ? args[1] : '0.0.0.0') + ":" + args[0]);
+  uri = exports.buildUri(args);
+  emitter.emit('uri', uri);
   s = net.createServer();
   s.on('connection', function(stream) {
     return emitter.emit('stream', stream);
@@ -22,21 +31,26 @@ exports.bindServer = function() {
   s.once('close', function() {
     return emitter.emit('unbound');
   });
+  s.on('error', function(err) {
+    err.message = "TCP Server Error: '" + uri + "': " + err.message;
+    return emitter.emit('error', err);
+  });
 };
 
 exports.bindClient = function() {
-  var args, emitter, stream;
+  var args, c, emitter, uri;
   emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-  emitter.emit('uri', "tcp://" + (typeof args[1] === 'string' && args[1] || 'localhost') + ":" + args[0]);
-  stream = net.connect.apply(null, args);
-  emitter.emit('stream', stream);
-  stream.once('connect', function() {
+  uri = exports.buildUri(args);
+  emitter.emit('uri', uri);
+  c = net.connect.apply(null, args);
+  emitter.emit('stream', c);
+  c.once('connect', function() {
     return emitter.emit('bound');
   });
   emitter.once('unbind', function() {
-    return stream.end();
+    return c.end();
   });
-  stream.once('end', function() {
+  c.once('end', function() {
     return emitter.emit('unbound');
   });
 };

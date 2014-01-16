@@ -48,7 +48,6 @@ class Base extends Logger
   name: 'Base'
 
   constructor: (incoming) ->
-
     super()
 
     #all instances have unique ids
@@ -104,7 +103,9 @@ class Base extends Logger
         ping: (cb) ->
           cb true
         events: @exposeDynamic ->
-          Object.keys self.pubsub._events
+          evts = Object.keys self.pubsub._events
+          self.log "exposing events: %j", evts
+          return evts
     }
 
   exposeDynamic: (fn) ->

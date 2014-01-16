@@ -102,6 +102,12 @@ module.exports = class Server extends Base
     @on 'remote', check
     return
 
+  all: (callback) ->
+    rems = []
+    for conn in @connections
+      rems.push conn.remote
+    callback rems
+
   #pubsub to ALL conn remotes
   publish: ->
     args = arguments
@@ -112,6 +118,7 @@ module.exports = class Server extends Base
   subscribe: (event, fn) ->
     @pubsub.on event, fn
     if @pubsub.listeners(event).length is 1
+      #loop through UP connections
       for conn in @connections
         conn.subscribe event
     return

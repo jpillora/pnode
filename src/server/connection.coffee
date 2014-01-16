@@ -62,7 +62,7 @@ module.exports = class Connection extends Base.Logger
 
     {@id, @guid} = meta
     @ctx.getMeta meta
-    
+
     @remote = remote
     @emit 'remote', remote
     @emit 'up'

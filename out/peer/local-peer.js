@@ -52,6 +52,10 @@ module.exports = LocalPeer = (function(_super) {
     }
   }
 
+  LocalPeer.prototype.bind = function() {
+    return this.error("bind() is ambiguous, please use bindOn() and bindTo()");
+  };
+
   LocalPeer.prototype.bindOn = function() {
     var self, server,
       _this = this;

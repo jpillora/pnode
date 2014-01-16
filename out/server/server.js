@@ -119,6 +119,17 @@ module.exports = Server = (function(_super) {
     this.on('remote', check);
   };
 
+  Server.prototype.all = function(callback) {
+    var conn, rems, _i, _len, _ref;
+    rems = [];
+    _ref = this.connections;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      conn = _ref[_i];
+      rems.push(conn.remote);
+    }
+    return callback(rems);
+  };
+
   Server.prototype.publish = function() {
     var args, conn, _i, _len, _ref;
     args = arguments;

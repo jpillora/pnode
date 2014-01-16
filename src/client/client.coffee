@@ -79,7 +79,8 @@ module.exports = class Client extends Base
   bind: ->
     @count.attempt = 0 
     @bindArgs = arguments
-    @reconnect()
+    #breath first
+    process.nextTick @reconnect
 
   unbind: ->
     @log "CLIENT UNBIND"
@@ -89,7 +90,6 @@ module.exports = class Client extends Base
   server: (callback) ->
     if @bound and @remote
       return callback @remote
-
     else if @unbound
       @count.attempt = 0
       @reconnect()      
@@ -111,6 +111,7 @@ module.exports = class Client extends Base
     @connect()
 
   connect: ->
+    return unless @bindArgs
 
     @log "connecting...."
 
@@ -142,6 +143,10 @@ module.exports = class Client extends Base
 
   #reconnection failed
   onStreamError: (err) ->
+
+
+    @warn "stream error: #{err.message}"
+
     return if @unbound or @unbinding
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"
@@ -153,6 +158,10 @@ module.exports = class Client extends Base
 
   #on rpc method exception
   onError: (err) ->
+
+    @warn "===== #{err.stack or err}"
+
+
     return if @unbound or @unbinding
     msg = if err.stack then err.stack + "\n====" else err
     @err new Error msg
@@ -203,8 +212,10 @@ module.exports = class Client extends Base
     return
 
   subscribe: (event, fn) ->
-    @pubsub.on event, fn
-    return unless @getConnectionFn
+    #for local-peer subscribe
+    if fn
+      @pubsub.on event, fn
+    #if we just subscribed, notify server
     if @pubsub.listeners(event).length is 1
       @server (remote) =>
         remote._pnode.subscribe event
