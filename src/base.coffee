@@ -103,9 +103,7 @@ class Base extends Logger
         ping: (cb) ->
           cb true
         events: @exposeDynamic ->
-          evts = Object.keys self.pubsub._events
-          self.log "exposing events: %j", evts
-          return evts
+          Object.keys self.pubsub._events
     }
 
   exposeDynamic: (fn) ->

@@ -108,7 +108,6 @@ describe "transports > ", ->
     #kick off server
     server.bindOn.apply server, test.server
 
-
   # =======================
   # basic rpc test using each transport
   rpcTest = (type, name, test, done) ->
@@ -119,7 +118,6 @@ describe "transports > ", ->
 
     client = pnode[type.client.name]({id:"rpc-#{type.client.name}##{i++}", debug:false})
 
-    #insert callback at 2nd position
     server.once type.server.prefix+'bound', ->
       #server up
       client.bindTo.apply client, test.client

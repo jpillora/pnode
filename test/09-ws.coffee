@@ -6,8 +6,11 @@ fs = require 'fs'
 #init phantomjs
 phantom = null
 before (done) ->
-  require('phantom').create (ph) ->
-    phantom = ph
+  try
+    require('phantom').create (ph) ->
+      phantom = ph
+      done()
+  catch
     done()
 
 after ->
@@ -16,6 +19,9 @@ after ->
 #tests
 describe 'websockets', ->
   it 'simple call', (done) ->
+    if phantom is null
+      console.log "phantomjs not supported. skipping test."
+      return done()
 
     #simple file server
     httpServer = http.createServer (req, res) ->

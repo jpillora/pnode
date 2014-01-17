@@ -79,8 +79,8 @@ module.exports = class Client extends Base
   bind: ->
     @count.attempt = 0 
     @bindArgs = arguments
-    #breath first
-    process.nextTick @reconnect
+    @reconnect()
+    return
 
   unbind: ->
     @log "CLIENT UNBIND"
@@ -145,7 +145,7 @@ module.exports = class Client extends Base
   onStreamError: (err) ->
 
 
-    @warn "stream error: #{err.message}"
+    @warn "===== stream error: #{err.stack or err}"
 
     return if @unbound or @unbinding
     # if err.code is 'ECONNREFUSED'

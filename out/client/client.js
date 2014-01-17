@@ -91,7 +91,7 @@ module.exports = Client = (function(_super) {
   Client.prototype.bind = function() {
     this.count.attempt = 0;
     this.bindArgs = arguments;
-    return process.nextTick(this.reconnect);
+    this.reconnect();
   };
 
   Client.prototype.unbind = function() {
@@ -158,7 +158,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onStreamError = function(err) {
-    this.warn("stream error: " + err.message);
+    this.warn("===== stream error: " + (err.stack || err));
     if (this.unbound || this.unbinding) {
       return;
     }
