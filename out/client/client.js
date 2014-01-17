@@ -158,7 +158,6 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onStreamError = function(err) {
-    this.warn("===== stream error: " + (err.stack || err));
     if (this.unbound || this.unbinding) {
       return;
     }

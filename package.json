@@ -18,7 +18,7 @@
     "browser"
   ],
   "scripts": {
-    "build": "node node_modules/coffee-script/bin/coffee -m    -b -c -o out/ src/",
+    "build": "node node_modules/coffee-script/bin/coffee -m -b -c -o out/ src/",
     "mocha": "node node_modules/mocha/bin/mocha",
     "test": "npm run-script build && npm run-script mocha",
     "start": "node node_modules/coffee-script/bin/coffee -m -w -b -c -o out/ src/",

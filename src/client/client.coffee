@@ -144,9 +144,6 @@ module.exports = class Client extends Base
   #reconnection failed
   onStreamError: (err) ->
 
-
-    @warn "===== stream error: #{err.stack or err}"
-
     return if @unbound or @unbinding
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"

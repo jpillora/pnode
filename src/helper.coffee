@@ -19,10 +19,10 @@ exports.serialize = (obj) ->
 exports.callbacker = (callback) ->
   received = 0
   expecting = 0
-  #callback maker
+  #create callback expectation
   ->
     expecting++
-    #return a sub-callback
+    #recieved call
     ->
       received++
       if expecting is received
