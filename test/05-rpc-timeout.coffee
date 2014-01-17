@@ -27,7 +27,7 @@ describe "rpc timeout > ", ->
   describe "server timeout > ", ->
 
     beforeEach ->
-      server.options {timeout: 10}
+      server.options {timeout: 50}
 
     it "should NOT timeout", (done) ->
 
@@ -50,7 +50,7 @@ describe "rpc timeout > ", ->
   describe "client timeout > ", ->
 
     beforeEach ->
-      client.options {timeout: 10}
+      client.options {timeout: 50}
 
     it "should NOT timeout", (done) ->
 
