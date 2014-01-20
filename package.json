@@ -1,6 +1,6 @@
 {
   "name": "pnode",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "peer-to-peer dnode over anything!",
   "main": "out/index.js",
   "keywords": [
