@@ -21,6 +21,7 @@
   </p>
   <div class="badges">
     <a href="https://nodei.co/npm/pnode/"><img src="https://nodei.co/npm/pnode.png?compact=true"></a><br>
+    <a href="https://bitdeli.com/free"><img src="https://d2weczhvl823v0.cloudfront.net/jpillora/pnode/trend.png"></a><br>
     <a href="https://travis-ci.org/jpillora/pnode"><img src="https://travis-ci.org/jpillora/pnode.png"></a>
   </div>
 <div data-nav>
@@ -35,6 +36,7 @@
       </li>
       <li>Publish-Subcribe API</li>
       <li>Autoreconnects and buffering similar to <a href="https://github.com/substack/upnode">upnode</a></li>
+      <li>Implements RPC timeouts ontop of dnode</li>
       <li>Easily utilise different transports</li>
       <li>Usable in the browser with the Websockets transport</li>
       <li>Create your own transport types with any duplex stream</li>
@@ -142,35 +144,35 @@ server.bind(<span class="string">'https://0.0.0.0:8000'</span>, <span class="key
 <thead>
 <tr>
 <th>Transport</th>
-<th align="center">Notes</th>
-<th align="right">Arguments</th>
+<th style="text-align:center">Notes</th>
+<th style="text-align:right">Arguments</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>tcp</code></td>
-<td align="center"></td>
-<td align="right"><code>port</code>, <code>host</code></td>
+<td style="text-align:center"></td>
+<td style="text-align:right"><code>port</code>, <code>host</code></td>
 </tr>
 <tr>
 <td><code>tls</code></td>
-<td align="center"></td>
+<td style="text-align:center"></td>
 </tr>
 <tr>
 <td><code>http</code></td>
-<td align="center"></td>
+<td style="text-align:center"></td>
 </tr>
 <tr>
 <td><code>https</code></td>
-<td align="center"></td>
+<td style="text-align:center"></td>
 </tr>
 <tr>
 <td><code>ipc</code></td>
-<td align="center">Unix Sockets</td>
+<td style="text-align:center">Unix Sockets</td>
 </tr>
 <tr>
 <td><code>ws</code></td>
-<td align="center">Web Sockets</td>
+<td style="text-align:center">Web Sockets</td>
 </tr>
 </tbody>
 </table>

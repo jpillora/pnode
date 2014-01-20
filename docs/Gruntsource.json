@@ -1,7 +1,7 @@
 {
   "name": "pnode",
-  "source": "~/.grunt-sources/docs",
-  "repo": "https://github.com/jpillora/grunt-source-docs.git",
+  "source": "~/.grunt-sources/web",
+  "repo": "https://github.com/jpillora/grunt-source-web.git",
   "output": {
     "html": "../index.html"
   }
