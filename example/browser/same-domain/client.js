@@ -1,4 +1,4 @@
-var client = pnode.client('browser-1');
+var client = pnode.client({name:'browser-1', debug:true, maxRetries:100});
 
 //same domain
 client.bind('ws:///pnode-ws');

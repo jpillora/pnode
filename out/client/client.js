@@ -45,8 +45,14 @@ module.exports = Client = (function(_super) {
       return _this.log("ping TIMEOUT!");
     });
     this.bindTo = this.bind;
+    this.on('binding,unbound', function() {
+      if (_this.d) {
+        _this.d.removeAllListeners().end();
+        _this.d = null;
+      }
+    });
     this.on('unbound', function() {
-      _this.reconnect();
+      _this.connect();
     });
     this.on('uri', function(uri) {
       _this.uri = uri;
@@ -91,7 +97,7 @@ module.exports = Client = (function(_super) {
   Client.prototype.bind = function() {
     this.count.attempt = 0;
     this.bindArgs = arguments;
-    this.reconnect();
+    this.connect();
   };
 
   Client.prototype.unbind = function() {
@@ -105,7 +111,7 @@ module.exports = Client = (function(_super) {
       return callback(this.remote);
     } else if (this.unbound) {
       this.count.attempt = 0;
-      this.reconnect();
+      this.connect();
     }
     this.once('remote', callback);
   };
@@ -114,21 +120,9 @@ module.exports = Client = (function(_super) {
     return this.removeListener('remote', callback);
   };
 
-  Client.prototype.reconnect = function() {
-    if (!(this.unbound && this.count.attempt < this.opts.maxRetries)) {
-      if (this.d) {
-        this.d.removeAllListeners().end();
-        this.d = null;
-      }
-      this.emit('down');
-      return;
-    }
-    return this.connect();
-  };
-
   Client.prototype.connect = function() {
-    var _this = this;
-    if (!this.bindArgs) {
+    if (!(this.bindArgs && this.unbound && this.count.attempt < this.opts.maxRetries)) {
+      this.emit('down');
       return;
     }
     this.log("connecting....");
@@ -141,20 +135,8 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
-    this.connect.t = setTimeout(this.onConnectTimeout, this.opts.timeout);
-    this.d.once('remote', function() {
-      return clearTimeout(_this.connect.t);
-    });
     this.log("connection attempt " + this.count.attempt + "...");
     Base.prototype.bind.apply(this, this.bindArgs);
-  };
-
-  Client.prototype.onConnectTimeout = function() {
-    var _this = this;
-    this.emit('timeout.connect');
-    return this.unbind(function() {
-      return _this.reconnect();
-    });
   };
 
   Client.prototype.onStreamError = function(err) {
@@ -162,7 +144,7 @@ module.exports = Client = (function(_super) {
       return;
     }
     this.log("stream error: " + err.message);
-    this.reconnect();
+    this.connect();
   };
 
   Client.prototype.onError = function(err) {
@@ -205,8 +187,8 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onEnd = function() {
-    this.log("server closed reconnection");
-    return this.reconnect();
+    this.log("server closed connection");
+    return this.connect();
   };
 
   Client.prototype.publish = function() {

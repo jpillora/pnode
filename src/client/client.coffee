@@ -21,13 +21,13 @@ module.exports = class Client extends Base
 
     @count = { ping: 0, pong: 0, attempt: 0 }
     
-    #timeoutify and throttle reconnects
+    #timeoutify and throttle connects
     @connect = _.throttle @connect, @opts.retryInterval, {leading:true}
 
-    # @on ['timeout','reconnect'], =>
-    #   @log "reconnect TIMEOUT!"
+    # @on ['timeout','connect'], =>
+    #   @log "connect TIMEOUT!"
     #   @reset()
-    #   @reconnect()
+    #   @connect()
 
     #throttle ping (already timeoutified from remote)
     @ping = _.throttle @ping, @opts.pingInterval
@@ -38,8 +38,14 @@ module.exports = class Client extends Base
     #alias
     @bindTo = @bind
 
+    @on 'binding,unbound', =>
+      if @d
+        @d.removeAllListeners().end()
+        @d = null
+      return
+
     @on 'unbound', =>
-      @reconnect()
+      @connect()
       return
 
     #store URI
@@ -79,7 +85,7 @@ module.exports = class Client extends Base
   bind: ->
     @count.attempt = 0 
     @bindArgs = arguments
-    @reconnect()
+    @connect()
     return
 
   unbind: ->
@@ -92,7 +98,7 @@ module.exports = class Client extends Base
       return callback @remote
     else if @unbound
       @count.attempt = 0
-      @reconnect()      
+      @connect()      
 
     #call back when remote arrives
     @once 'remote', callback
@@ -101,17 +107,11 @@ module.exports = class Client extends Base
   unget: (callback) ->
     @removeListener 'remote', callback
 
-  reconnect: ->
-    unless @unbound and @count.attempt < @opts.maxRetries
-      if @d
-        @d.removeAllListeners().end()
-        @d = null
+  connect: ->
+
+    unless @bindArgs and @unbound and @count.attempt < @opts.maxRetries
       @emit 'down'
       return
-    @connect()
-
-  connect: ->
-    return unless @bindArgs
 
     @log "connecting...."
 
@@ -127,9 +127,10 @@ module.exports = class Client extends Base
     @d.once 'error', @onError
     @d.once 'fail', @onStreamError
 
-    #timeout reconnects
-    @connect.t = setTimeout @onConnectTimeout, @opts.timeout
-    @d.once 'remote', => clearTimeout @connect.t
+    #timeout connects
+    # clearTimeout @connect.t
+    # @connect.t = setTimeout @onConnectTimeout, @opts.timeout
+    # @d.once 'remote', => clearTimeout @connect.t
 
     @log "connection attempt #{@count.attempt}..."
 
@@ -137,11 +138,12 @@ module.exports = class Client extends Base
     Base::bind.apply @, @bindArgs
     return
 
-  onConnectTimeout: ->
-    @emit 'timeout.connect'
-    @unbind => @reconnect()
+  # onConnectTimeout: ->
+  #   @emit 'timeout.connect'
+  #   #TODO Base::unbind.call @
+  #   @unbind => @connect() 
 
-  #reconnection failed
+  #connection failed
   onStreamError: (err) ->
 
     return if @unbound or @unbinding
@@ -150,7 +152,7 @@ module.exports = class Client extends Base
     # else
     @log "stream error: #{err.message}"
     # @emit "error", err
-    @reconnect()
+    @connect()
     return
 
   #on rpc method exception
@@ -193,8 +195,8 @@ module.exports = class Client extends Base
 
   #down events
   onEnd: ->
-    @log "server closed reconnection"
-    @reconnect()
+    @log "server closed connection"
+    @connect()
 
   #pubsub to server remote
   publish: (args...) ->
