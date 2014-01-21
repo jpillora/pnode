@@ -210,14 +210,12 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.subscribe = function(event, fn) {
     var _this = this;
-    if (fn) {
-      this.pubsub.on(event, fn);
-    }
-    if (this.pubsub.listeners(event).length === 1) {
+    if (this.pubsub.listeners(event).length === 0) {
       this.server(function(remote) {
         return remote._pnode.subscribe(event);
       });
     }
+    Client.__super__.subscribe.apply(this, arguments);
   };
 
   Client.prototype.serialize = function() {

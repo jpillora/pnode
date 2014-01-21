@@ -140,12 +140,16 @@ Base = (function(_super) {
           return delete this.events[event];
         },
         publish: function() {
-          var args, cb;
+          var args, cb, event;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
           if (typeof args[0] === 'function') {
             cb = args.shift();
           }
-          self.pubsub.emit.apply(self.pubsub, args);
+          if (typeof args[0] !== 'string') {
+            return self.warn("Invalid 'publish': missing event");
+          }
+          event = args.shift();
+          self.pubsub.emit.apply(self.pubsub, [event, this].concat(args));
           if (cb) {
             return cb(true);
           }
@@ -166,6 +170,17 @@ Base = (function(_super) {
 
   Base.prototype.expose = function(obj) {
     return _.merge(this.exposed, obj);
+  };
+
+  Base.prototype.subscribe = function(event, fn) {
+    if (!fn) {
+      return;
+    }
+    this.pubsub.on(event, function() {
+      var args, ctx;
+      ctx = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      return fn.apply(ctx, args);
+    });
   };
 
   Base.prototype.bind = function() {

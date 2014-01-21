@@ -1,4 +1,12 @@
 
+exports.ncallbacks = (expecting, callback) ->
+  received = 0
+  ->
+    received++
+    if expecting is received
+      callback()
+    return
+
 exports.callbacker = (expecting, callback = expecting) ->
   received = 0
   inc = typeof expecting isnt 'number'

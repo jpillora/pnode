@@ -142,14 +142,14 @@ module.exports = Server = (function(_super) {
 
   Server.prototype.subscribe = function(event, fn) {
     var conn, _i, _len, _ref;
-    this.pubsub.on(event, fn);
-    if (this.pubsub.listeners(event).length === 1) {
+    if (this.pubsub.listeners(event).length === 0) {
       _ref = this.connections;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         conn = _ref[_i];
         conn.subscribe(event);
       }
     }
+    Server.__super__.subscribe.apply(this, arguments);
   };
 
   Server.prototype.serialize = function() {

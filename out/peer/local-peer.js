@@ -224,7 +224,6 @@ module.exports = LocalPeer = (function(_super) {
 
   LocalPeer.prototype.subscribe = function(event, fn) {
     var peer, _i, _len, _ref;
-    this.pubsub.on(event, fn);
     if (this.pubsub.listeners(event).length === 1) {
       _ref = this.peers;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -234,6 +233,7 @@ module.exports = LocalPeer = (function(_super) {
         }
       }
     }
+    LocalPeer.__super__.subscribe.apply(this, arguments);
   };
 
   LocalPeer.prototype.unsubscribe = function(event, fn) {

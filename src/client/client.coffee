@@ -209,13 +209,11 @@ module.exports = class Client extends Base
     return
 
   subscribe: (event, fn) ->
-    #for local-peer subscribe
-    if fn
-      @pubsub.on event, fn
-    #if we just subscribed, notify server
-    if @pubsub.listeners(event).length is 1
+    #if we are not yet subscribed, notify server
+    if @pubsub.listeners(event).length is 0
       @server (remote) =>
         remote._pnode.subscribe event
+    super
     return
 
   serialize: -> @uri

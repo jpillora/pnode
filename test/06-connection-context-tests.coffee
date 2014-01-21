@@ -43,9 +43,7 @@ describe "shared peer contexts > ", ->
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'
       peer2.peer 'peer1', (remote) ->
-
         peer1remote1 = remote
-
         remote.set 7, (res) ->
           try
             expect(res).to.equal(true)
@@ -55,14 +53,11 @@ describe "shared peer contexts > ", ->
 
     getContext = ->
       peer2.bindTo 'http://localhost:8001'
-
       peer2.peer 'peer1', (remote) ->
-
         #remote1 will NOT work, ensure that we have actually recieved a new one
         try expect(peer1remote1, '2nd connection should have new remote').not.to.equal(remote)
         catch e
           return done e
-
         remote.get (res) ->
           try expect(res).to.equal(7)
           catch e
@@ -73,15 +68,51 @@ describe "shared peer contexts > ", ->
     setContext()
 
 
-  it "should report correct sender", (done) ->
+  describe "should report correct sender >", ->
 
-    peer1 = pnode.peer({id:'peer1',debug:false})
-    peer2 = pnode.peer({id:'peer2',debug:false})
-    peer3 = pnode.peer({id:'peer3',debug:false})
+    it "over rpc", (done) ->
 
-    #peer1 maintains the same context for all clients
-    peer1.expose
-      test: (id, guid, cb) ->
+      peer1 = pnode.peer({id:'peer1',debug:false})
+      peer2 = pnode.peer({id:'peer2',debug:false})
+      peer3 = pnode.peer({id:'peer3',debug:false})
+
+      #peer1 maintains the same context for all clients
+      peer1.expose
+        test: (id, guid, cb) ->
+          #requester id should be correct
+          try
+            expect(@id).to.equal(id)
+            expect(@guid).to.equal(guid)
+          catch e
+            return done e
+          cb()
+
+      peer1.bindOn 'tcp://0.0.0.0:8000'
+      peer2.bindTo 'tcp://localhost:8000'
+      peer3.bindTo 'tcp://localhost:8000'
+
+      mkCb = helper.callbacker 2, done
+
+      peer2.peer 'peer1', (remote) ->
+        remote.test peer2.id, peer2.guid, mkCb()
+
+      peer3.peer 'peer1', (remote) ->
+        remote.test peer3.id, peer3.guid, mkCb()
+
+    it "over pubsub", (done) ->
+
+      peer1 = pnode.peer({id:'peer1',debug:false})
+      peer2 = pnode.peer({id:'peer2',debug:false})
+      peer3 = pnode.peer({id:'peer3',debug:false})
+
+      peer1.bindOn 'tcp://0.0.0.0:8000'
+      peer2.bindTo 'tcp://localhost:8000'
+      peer3.bindTo 'tcp://localhost:8000'
+
+      cb = helper.ncallbacks 2, done
+
+      #peer1 maintains the same context for all clients
+      peer1.subscribe 'peer-info', (id, guid) ->
         #requester id should be correct
         try
           expect(@id).to.equal(id)
@@ -90,15 +121,16 @@ describe "shared peer contexts > ", ->
           return done e
         cb()
 
-    peer1.bindOn 'tcp://0.0.0.0:8000'
-    peer2.bindTo 'tcp://localhost:8000'
-    peer3.bindTo 'tcp://localhost:8000'
+      peer2.once 'remote', ->
+        peer2.publish 'peer-info', peer2.id, peer2.guid
 
-    mkCb = helper.callbacker 2, done
+      peer3.once 'remote', ->
+        peer3.publish 'peer-info', peer3.id, peer3.guid
 
-    peer2.peer 'peer1', (remote) ->
-      remote.test peer2.id, peer2.guid, mkCb()
 
-    peer3.peer 'peer1', (remote) ->
-      remote.test peer3.id, peer3.guid, mkCb()
-        
+
+
+
+
+
+

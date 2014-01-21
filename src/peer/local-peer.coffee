@@ -77,9 +77,11 @@ module.exports = class LocalPeer extends Base
     return
 
   unbind: (callback) ->
+    #run this after all generated callbacks and been fired
     mkCb = helper.callbacker =>
       callback() if callback
       @emit 'unbound-all'
+
     for guid, client of @clients
       client.unbind mkCb()
     for guid, server of @servers
@@ -164,11 +166,11 @@ module.exports = class LocalPeer extends Base
     return
 
   subscribe: (event, fn) ->
-    @pubsub.on event, fn
     #first subscription - notify peers
     if @pubsub.listeners(event).length is 1
       for peer in @peers
         peer.subscribe? event
+    super
     return
 
   unsubscribe: (event, fn) ->

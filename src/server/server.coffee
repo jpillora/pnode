@@ -116,11 +116,12 @@ module.exports = class Server extends Base
     return
 
   subscribe: (event, fn) ->
-    @pubsub.on event, fn
-    if @pubsub.listeners(event).length is 1
+    #if we are not yet subscribed, notify clients
+    if @pubsub.listeners(event).length is 0
       #loop through UP connections
       for conn in @connections
         conn.subscribe event
+    super
     return
 
   serialize: -> @uri

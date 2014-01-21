@@ -98,7 +98,10 @@ class Base extends Logger
         publish: (args...) ->
           if typeof args[0] is 'function'
             cb = args.shift()
-          self.pubsub.emit.apply self.pubsub, args
+          if typeof args[0] isnt 'string'
+            return self.warn "Invalid 'publish': missing event"
+          event = args.shift()
+          self.pubsub.emit.apply self.pubsub, [event, @].concat args
           cb true if cb
         ping: (cb) ->
           cb true
@@ -111,6 +114,15 @@ class Base extends Logger
 
   expose: (obj) ->
     _.merge @exposed, obj
+
+  # setups up custom function to catch events
+  # calls handler in the correct remote context
+  subscribe: (event, fn) ->
+    return unless fn
+    #proxy thought to handler
+    @pubsub.on event, (ctx, args...)->
+      fn.apply ctx, args
+    return
 
   bind: (args...) ->
 
