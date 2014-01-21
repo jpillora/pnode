@@ -13,7 +13,7 @@ types = {
 };
 
 filterRequest = function(req) {
-  return /^pnode\/0\.1\.\d+$/.test(req.headers['user-agent']);
+  return /^pnode\/0\.\d+.\d+$/.test(req.headers['user-agent']);
 };
 
 exports.createServer = function(emitter, type, args, serverArgs) {

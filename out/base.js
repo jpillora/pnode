@@ -186,7 +186,7 @@ Base = (function(_super) {
     this.tEmitter.onAny(function() {
       var args, e, _j, _len1, _ref1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      self.log('T-EVENT', this.event);
+      self.log('T-EVENT', this.event, typeof args[0] === 'string' ? args[0] : '');
       if (_ref1 = this.event, __indexOf.call(events, _ref1) >= 0) {
         for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
           e = events[_j];

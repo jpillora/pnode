@@ -127,7 +127,7 @@ class Base extends Logger
     self = @
     #bubble up all events
     @tEmitter.onAny (args...) ->
-      self.log 'T-EVENT', @event
+      self.log 'T-EVENT', @event, if typeof args[0] is 'string' then args[0] else ''
       #set appropriate state
       if @event in events
         for e in events

@@ -6,7 +6,7 @@ types =
   https: require 'https'
 
 filterRequest = (req) ->
-  (/^pnode\/0\.1\.\d+$/).test req.headers['user-agent']
+  (/^pnode\/0\.\d+.\d+$/).test req.headers['user-agent']
 
 #common code for http/https
 exports.createServer = (emitter, type, args, serverArgs) ->
@@ -26,6 +26,7 @@ exports.createServer = (emitter, type, args, serverArgs) ->
   handlers = s.listeners('request').slice(0)
   s.removeAllListeners 'request'
   s.on 'request', (req, res) ->
+
     #grab all pnode requests
     if filter req
       emitter.emit 'stream', req, res
@@ -80,7 +81,7 @@ exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
   emitter.emit 'uri', "#{type}://#{opts.hostname or 'localhost'}:#{opts.port}"
 
   write = types[type].request opts, (read) ->
-    
+
     emitter.once 'unbind', ->
       read.socket.end()
     

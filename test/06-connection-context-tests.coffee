@@ -15,6 +15,9 @@ describe "shared peer contexts > ", ->
 
   it "should maintain context across channels", (done) ->
 
+    #server (peer1) to on two endpoints
+    #client (peer2) swaps endpoints midconversation
+
     peer1 = pnode.peer({id:'peer1',debug:false})
 
     #peer1 maintains the same context for all clients
@@ -35,9 +38,14 @@ describe "shared peer contexts > ", ->
 
     peer2 = pnode.peer({id:'peer2',debug:false})
 
+    peer1remote1 = null
+
     setContext = ->
       peer2.bindTo 'tcp://localhost:8000'
       peer2.peer 'peer1', (remote) ->
+
+        peer1remote1 = remote
+
         remote.set 7, (res) ->
           try
             expect(res).to.equal(true)
@@ -49,9 +57,14 @@ describe "shared peer contexts > ", ->
       peer2.bindTo 'http://localhost:8001'
 
       peer2.peer 'peer1', (remote) ->
+
+        #remote1 will NOT work, ensure that we have actually recieved a new one
+        try expect(peer1remote1, '2nd connection should have new remote').not.to.equal(remote)
+        catch e
+          return done e
+
         remote.get (res) ->
-          try
-            expect(res).to.equal(7)
+          try expect(res).to.equal(7)
           catch e
             return done e
           done()

@@ -52,6 +52,7 @@ module.exports = Client = (function(_super) {
       }
     });
     this.on('unbound', function() {
+      _this.emit('down');
       _this.connect();
     });
     this.on('uri', function(uri) {
@@ -122,7 +123,6 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.connect = function() {
     if (!(this.bindArgs && this.unbound && this.count.attempt < this.opts.maxRetries)) {
-      this.emit('down');
       return;
     }
     this.log("connecting....");
@@ -131,6 +131,7 @@ module.exports = Client = (function(_super) {
     this.d = dnode(this.wrapObject(this.exposed, this.ctx));
     this.d.splicedRead = false;
     this.d.splicedWrite = false;
+    this.remote = null;
     this.d.once('remote', this.onRemote);
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);

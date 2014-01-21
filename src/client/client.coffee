@@ -45,6 +45,7 @@ module.exports = class Client extends Base
       return
 
     @on 'unbound', =>
+      @emit 'down'
       @connect()
       return
 
@@ -108,9 +109,7 @@ module.exports = class Client extends Base
     @removeListener 'remote', callback
 
   connect: ->
-
     unless @bindArgs and @unbound and @count.attempt < @opts.maxRetries
-      @emit 'down'
       return
 
     @log "connecting...."
@@ -122,6 +121,8 @@ module.exports = class Client extends Base
     @d = dnode @wrapObject(@exposed, @ctx)
     @d.splicedRead = false
     @d.splicedWrite = false
+
+    @remote = null
     @d.once 'remote', @onRemote
     @d.once 'end', @onEnd
     @d.once 'error', @onError
@@ -157,10 +158,7 @@ module.exports = class Client extends Base
 
   #on rpc method exception
   onError: (err) ->
-
     @warn "===== #{err.stack or err}"
-
-
     return if @unbound or @unbinding
     msg = if err.stack then err.stack + "\n====" else err
     @err new Error msg
