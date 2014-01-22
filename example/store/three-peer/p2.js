@@ -7,7 +7,12 @@ var peer2 = pnode.peer({
 
 peer2.bindTo('tcp://localhost:8000');
 
-var peer2Store = peer2.store({id:'foo', read:true, write:true });
+var peer2Store = peer2.store({
+  id:'foo',
+  read:true,
+  write:true,
+  debug: false
+});
 
 setTimeout(function() {
   console.log('peer2 has:',peer2Store.object());

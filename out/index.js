@@ -7,6 +7,10 @@ Client = require('./client/client');
 
 LocalPeer = require('./peer/local-peer');
 
+try {
+  require('source-map-support').install();
+} catch (_error) {}
+
 exports.addTransport = require('./transport-mgr').add;
 
 exports.client = function(opts) {

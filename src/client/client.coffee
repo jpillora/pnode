@@ -109,7 +109,9 @@ module.exports = class Client extends Base
     @removeListener 'remote', callback
 
   connect: ->
-    unless @bindArgs and @unbound and @count.attempt < @opts.maxRetries
+    unless @bindArgs and
+           not @bound and
+           @count.attempt < @opts.maxRetries
       return
 
     @log "connecting...."
@@ -148,9 +150,14 @@ module.exports = class Client extends Base
   onStreamError: (err) ->
 
     return if @unbound or @unbinding
+    
     # if err.code is 'ECONNREFUSED'
     #   @log "blocked by server"
     # else
+
+    #errored must be unbound
+    @tEmitter?.emit 'unbound'
+
     @log "stream error: #{err.message}"
     # @emit "error", err
     @connect()

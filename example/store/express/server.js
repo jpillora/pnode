@@ -1,4 +1,4 @@
-
+throw "OLD VERSION !"
 
 //start with node server <http-port> <peer-store> <other-peer-stores...>
 

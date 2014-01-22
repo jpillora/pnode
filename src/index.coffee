@@ -3,8 +3,7 @@ Client = require './client/client'
 LocalPeer = require './peer/local-peer'
 
 #source map support
-# try
-#   require('source-map-support').install()
+try require('source-map-support').install()
 
 exports.addTransport = require('./transport-mgr').add
 

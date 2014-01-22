@@ -122,7 +122,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.connect = function() {
-    if (!(this.bindArgs && this.unbound && this.count.attempt < this.opts.maxRetries)) {
+    if (!(this.bindArgs && !this.bound && this.count.attempt < this.opts.maxRetries)) {
       return;
     }
     this.log("connecting....");
@@ -141,8 +141,12 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onStreamError = function(err) {
+    var _ref;
     if (this.unbound || this.unbinding) {
       return;
+    }
+    if ((_ref = this.tEmitter) != null) {
+      _ref.emit('unbound');
     }
     this.log("stream error: " + err.message);
     this.connect();

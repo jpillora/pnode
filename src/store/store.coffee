@@ -24,34 +24,40 @@ module.exports = class Store extends Logger
 
     unless @opts.id and typeof @opts.id is "string"
       @error "must have a store 'id'"
+    @id = @opts.id
 
     unless @opts.read or @opts.write
       @error "must 'read' or 'write'"
 
-    #create a new change event
-    @on 'set', @emit.bind @, 'change', 'set'
-    @on 'del', @emit.bind @, 'change', 'del'
-
     @on 'change', (action, path, val) =>
-      @log "pnode-store: %s: '%s': %s", action, path, val
+      @log ">>> %s: '%s': %s", action, path, val
 
-    @channel = "_store-#{@opts.id}"
+    @channel = "_store-#{@id}"
     @obj = {}
 
-    @$setupRead() if @opts.read
     @$setupWrite() if @opts.write
+    @$setupRead() if @opts.read
     return
+
+  #update store from peers
+  $setupWrite: ->
+    @log "setup write..."
+    exposed = {}
+    exposed[@opts.id] = [=> @obj]
+    @peer.expose _store: exposed
 
   #dynamic expose the entire store to new peers
   $setupRead: ->
+    @log "setup read..."
     #only preload each remote once
     preloads = []
     preload = (remote) =>
-      obj = remote._store?[opts.name]
+      obj = remote._store?[@opts.id]
       return unless typeof obj is 'object'
       #only preload a remote store once
       return if preloads.indexOf(obj) >= 0
       preloads.push obj
+      @log "preloading %j", obj
       #silently merge existing data
       @set [], obj, true
       return
@@ -60,6 +66,7 @@ module.exports = class Store extends Logger
     self = @
     @peer.subscribe @channel, (path, doDelete, value) ->
       value = undefined if doDelete
+      self.log "subscription-in %j = %j", path, value
       if not self.opts.filter or self.opts.filter.call @, path, value
         self.set path, value, true
       return
@@ -72,12 +79,6 @@ module.exports = class Store extends Logger
 
     #grab new prefilled remotes
     @peer.on 'remote', preload
-
-  #update store from peers
-  $setupWrite: ->
-    exposed = {}
-    exposed[opts.id] = [=> @obj]
-    @peer.expose _store: exposed
 
   object: ->
     @obj
@@ -96,7 +97,7 @@ module.exports = class Store extends Logger
     if path.length is 0
       if typeof value is 'object'
         for k,v of value
-          @set [k], v
+          @set [k], v, silent
         return
       else
         throw new Error("set(path, ...) path empty");
@@ -105,29 +106,42 @@ module.exports = class Store extends Logger
   setAcc: (obj, used, path, value, silent) ->
 
     prop = path.shift()
-    if typeof prop 
-      throw new Error "property missing '#{prop}' (typeof)"
+    t = typeof prop
+    unless t is "string" or t is "number"
+      throw new Error "property missing '#{prop}' (#{t})"
+    
     used.push prop
 
-    if path.length > 0 and typeof obj[prop] is 'object'
+    if path.length > 0
+      if typeof obj[prop] isnt 'object'
+        if typeof path[0] is 'number'
+          obj[prop] = []
+        else
+          obj[prop] = {}
       return @setAcc obj[prop], used, path, value, silent
 
-    doDelete = value is undefined
+    del = value is undefined
 
     prev = obj[prop]
     #skip if is already the value
     if _.isEqual prev, value
       return
-
-    if doDelete
+    
+    if del
       delete obj[prop]
     else
       obj[prop] = value
 
     if not silent and @opts.write
-      @peer.publish @channel, used, doDelete, value
+      @log "publish %j = %j", used, value
+      @peer.publish @channel, used, del, value
 
-    @emit (if doDelete then 'del' else 'set'), used, value, prev
+    if del
+      @emit 'del', used, prev
+    else
+      @emit 'set', used, value, prev
+
+    @emit 'change', (if del then 'del' else 'set'), used, value, prev
 
   del: (path) ->
     return @set path#, undefined

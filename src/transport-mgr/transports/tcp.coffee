@@ -47,7 +47,6 @@ exports.bindClient = (emitter, args...) ->
   emitter.once 'unbind', ->
     c.end()
     
-
   c.once 'end', ->
     emitter.emit 'unbound'
 

@@ -1,28 +1,32 @@
-var eg = require('../eg');
+var pnode = require('../../../');
 
-var store = eg.create();
-var foo = store.bucket('foo');
-
-var i = 0;
-
-var t = setInterval(function() {
-  i++;
-  if(i>1e4) clearInterval(t);
-  foo.set("s1-"+i, eg.val(50)+7);
+var peer1 = pnode.peer({
+  id: 'peer1',
+  debug: false
 });
 
-// eg.after(100, function() {
-//   foo.set('A', eg.val(50)+7);
-// });
-// eg.after(200, function() {
-//   foo.set('B', eg.val(50)+7);
-// });
-// eg.after(400, function() {
-//   foo.set('C', eg.val(50)+7);
-// });
-// eg.after(600, function() {
-//   foo.del('B');
-// });
-// eg.after(700, function() {
-//   foo.set('A', 3);
-// });
+peer1.bindOn('tcp://0.0.0.0:8000', function(){
+  console.log('bound to all interfaces on port 8000');
+});
+
+peer1.on("peer", function(peer) {
+  peer1.log("peer connected: %s", peer.id);
+});
+
+var peer1Store = peer1.store({
+  id:'foo',
+  read:true,
+  write:true,
+  debug: false
+});
+
+peer1Store.set('foo', 24);
+peer1Store.set(['ping','pong'], 0);
+peer1Store.set('bazz', { zip: { zap: "!" } });
+peer1Store.set(["x",0,"y"], { a:"b" });
+peer1Store.set(["x",1], { c:"d" });
+
+setTimeout(function() {
+  console.log('peer1 has:',peer1Store.object());
+  process.exit(1);
+}, 1000);

@@ -37,32 +37,47 @@ module.exports = Store = (function(_super) {
     if (!(this.opts.id && typeof this.opts.id === "string")) {
       this.error("must have a store 'id'");
     }
+    this.id = this.opts.id;
     if (!(this.opts.read || this.opts.write)) {
       this.error("must 'read' or 'write'");
     }
-    this.on('set', this.emit.bind(this, 'change', 'set'));
-    this.on('del', this.emit.bind(this, 'change', 'del'));
     this.on('change', function(action, path, val) {
-      return _this.log("pnode-store: %s: '%s': %s", action, path, val);
+      return _this.log(">>> %s: '%s': %s", action, path, val);
     });
-    this.channel = "_store-" + this.opts.id;
+    this.channel = "_store-" + this.id;
     this.obj = {};
-    if (this.opts.read) {
-      this.$setupRead();
-    }
     if (this.opts.write) {
       this.$setupWrite();
+    }
+    if (this.opts.read) {
+      this.$setupRead();
     }
     return;
   }
 
+  Store.prototype.$setupWrite = function() {
+    var exposed,
+      _this = this;
+    this.log("setup write...");
+    exposed = {};
+    exposed[this.opts.id] = [
+      function() {
+        return _this.obj;
+      }
+    ];
+    return this.peer.expose({
+      _store: exposed
+    });
+  };
+
   Store.prototype.$setupRead = function() {
     var preload, preloads, self,
       _this = this;
+    this.log("setup read...");
     preloads = [];
     preload = function(remote) {
       var obj, _ref;
-      obj = (_ref = remote._store) != null ? _ref[opts.name] : void 0;
+      obj = (_ref = remote._store) != null ? _ref[_this.opts.id] : void 0;
       if (typeof obj !== 'object') {
         return;
       }
@@ -70,6 +85,7 @@ module.exports = Store = (function(_super) {
         return;
       }
       preloads.push(obj);
+      _this.log("preloading %j", obj);
       _this.set([], obj, true);
     };
     self = this;
@@ -77,6 +93,7 @@ module.exports = Store = (function(_super) {
       if (doDelete) {
         value = void 0;
       }
+      self.log("subscription-in %j = %j", path, value);
       if (!self.opts.filter || self.opts.filter.call(this, path, value)) {
         self.set(path, value, true);
       }
@@ -89,20 +106,6 @@ module.exports = Store = (function(_super) {
       });
     }
     return this.peer.on('remote', preload);
-  };
-
-  Store.prototype.$setupWrite = function() {
-    var exposed,
-      _this = this;
-    exposed = {};
-    exposed[opts.id] = [
-      function() {
-        return _this.obj;
-      }
-    ];
-    return this.peer.expose({
-      _store: exposed
-    });
   };
 
   Store.prototype.object = function() {
@@ -130,7 +133,7 @@ module.exports = Store = (function(_super) {
       if (typeof value === 'object') {
         for (k in value) {
           v = value[k];
-          this.set([k], v);
+          this.set([k], v, silent);
         }
         return;
       } else {
@@ -141,29 +144,43 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.setAcc = function(obj, used, path, value, silent) {
-    var doDelete, prev, prop;
+    var del, prev, prop, t;
     prop = path.shift();
-    if (typeof prop) {
-      throw new Error("property missing '" + prop + "' (typeof)");
+    t = typeof prop;
+    if (!(t === "string" || t === "number")) {
+      throw new Error("property missing '" + prop + "' (" + t + ")");
     }
     used.push(prop);
-    if (path.length > 0 && typeof obj[prop] === 'object') {
+    if (path.length > 0) {
+      if (typeof obj[prop] !== 'object') {
+        if (typeof path[0] === 'number') {
+          obj[prop] = [];
+        } else {
+          obj[prop] = {};
+        }
+      }
       return this.setAcc(obj[prop], used, path, value, silent);
     }
-    doDelete = value === void 0;
+    del = value === void 0;
     prev = obj[prop];
     if (_.isEqual(prev, value)) {
       return;
     }
-    if (doDelete) {
+    if (del) {
       delete obj[prop];
     } else {
       obj[prop] = value;
     }
     if (!silent && this.opts.write) {
-      this.peer.publish(this.channel, used, doDelete, value);
+      this.log("publish %j = %j", used, value);
+      this.peer.publish(this.channel, used, del, value);
     }
-    return this.emit((doDelete ? 'del' : 'set'), used, value, prev);
+    if (del) {
+      this.emit('del', used, prev);
+    } else {
+      this.emit('set', used, value, prev);
+    }
+    return this.emit('change', (del ? 'del' : 'set'), used, value, prev);
   };
 
   Store.prototype.del = function(path) {

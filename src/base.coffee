@@ -2,8 +2,9 @@
 _ = require '../vendor/lodash'
 transportMgr = require './transport-mgr'
 RemoteContext = require './context'
-Store = require './store/store'
 Logger = require './logger'
+{EventEmitter2:Emitter} = require 'eventemitter2'
+Store = null
 
 #base class of client,server and peer
 crypto = require "crypto"
@@ -203,12 +204,13 @@ module.exports = class Base extends Logger
 
   #create a synchronized object
   store: (opts) ->
+    unless Store
+      Store = require './store/store'
     unless @stores
       @stores = {}
     if @stores[@id]
-      return stores[@id]
-    return stores[@id] = new Store @, opts
+      return @stores[@id]
+    return @stores[@id] = new Store @, opts
 
   #get all ip on the nic
   ips: ips
-
