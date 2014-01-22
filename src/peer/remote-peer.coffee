@@ -1,4 +1,4 @@
-Base = require '../base'
+Logger = require '../logger'
 RemoteContext = require '../context'
 helper = require '../helper'
 
@@ -6,7 +6,7 @@ helper = require '../helper'
 # identified by its 'guid', all remotes with this guid
 # will be added to this peer which may be used as an
 # rpc transport
-module.exports = class RemotePeer extends Base.Logger
+module.exports = class RemotePeer extends Logger
 
   name: 'RemotePeer'
 

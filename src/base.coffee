@@ -1,31 +1,9 @@
-{EventEmitter2:Emitter} = require 'eventemitter2'
-util = require 'util'
+
 _ = require '../vendor/lodash'
 transportMgr = require './transport-mgr'
 RemoteContext = require './context'
-
-#base class of the base class
-class Logger extends Emitter
-  name: 'Logger'
-  constructor: ->
-    super {wildcard:true}
-  
-  #debugging
-  log: ->
-    if @opts?.debug
-      # arguments[0] = util.inspect arguments[0]
-      console.log @.toString() + ' ' + util.format.apply null, arguments
-  warn: ->
-    console.warn 'WARNING: ' + @.toString() + ' ' + util.format.apply null, arguments
-  err: (e) ->
-    if e instanceof Error
-      e.message = "#{@} #{e.message}"
-    else
-      e = new Error e
-    @emit 'error', e
-
-  toString: ->
-    "#{@name}: #{@id}#{if @subid then ' ('+@subid+')' else ''}:"
+Store = require './store/store'
+Logger = require './logger'
 
 #base class of client,server and peer
 crypto = require "crypto"
@@ -39,11 +17,7 @@ for name, addrs of os.networkInterfaces?()
     if addr.family is 'IPv4'
       ips.push addr.address
 
-#used to eval properties at connection-time
-class DynamicExposed
-  constructor: (@fn) ->
-
-class Base extends Logger
+module.exports = class Base extends Logger
 
   name: 'Base'
 
@@ -84,33 +58,27 @@ class Base extends Logger
 
   defaultExposed: ->
     self = @
-    return {
-      _pnode:
-        id: @id
-        guid: @guid
-        ips: ips.filter (ip) -> ip isnt '127.0.0.1'
-        #remotes can push their list of events
-        subscribe: (event) ->
-          this.events[event] = 1
-        unsubscribe: (event) ->
-          delete this.events[event]
-        #remotes can push events
-        publish: (args...) ->
-          if typeof args[0] is 'function'
-            cb = args.shift()
-          if typeof args[0] isnt 'string'
-            return self.warn "Invalid 'publish': missing event"
-          event = args.shift()
-          self.pubsub.emit.apply self.pubsub, [event, @].concat args
-          cb true if cb
-        ping: (cb) ->
-          cb true
-        events: @exposeDynamic ->
-          Object.keys self.pubsub._events
-    }
-
-  exposeDynamic: (fn) ->
-    return new DynamicExposed fn
+    _pnode:
+      id: @id
+      guid: @guid
+      ips: ips.filter (ip) -> ip isnt '127.0.0.1'
+      #remotes can push their list of events
+      subscribe: (event) ->
+        this.events[event] = 1
+      unsubscribe: (event) ->
+        delete this.events[event]
+      #remotes can push events
+      publish: (args...) ->
+        if typeof args[0] is 'function'
+          cb = args.shift()
+        if typeof args[0] isnt 'string'
+          return self.warn "Invalid 'publish': missing event"
+        event = args.shift()
+        self.pubsub.emit.apply self.pubsub, [event, @].concat args
+        cb true if cb
+      ping: (cb) ->
+        cb true
+      events: [-> Object.keys self.pubsub._events]
 
   expose: (obj) ->
     _.merge @exposed, obj
@@ -119,7 +87,7 @@ class Base extends Logger
   # calls handler in the correct remote context
   subscribe: (event, fn) ->
     return unless fn
-    #proxy thought to handler
+    #proxy through to handler
     @pubsub.on event, (ctx, args...)->
       fn.apply ctx, args
     return
@@ -176,8 +144,9 @@ class Base extends Logger
 
   wrapObjectAcc: (name, input, ctx) ->
 
-    if input instanceof DynamicExposed
-      return input.fn()
+    #array [function] is a dynamic value
+    if input instanceof Array and input.length is 1 and typeof input[0] is "function"
+      return input[0]()
 
     type = typeof input
 
@@ -232,11 +201,14 @@ class Base extends Logger
       # call original fn
       fn.apply ctx, args
 
+  #create a synchronized object
+  store: (opts) ->
+    unless @stores
+      @stores = {}
+    if @stores[@id]
+      return stores[@id]
+    return stores[@id] = new Store @, opts
+
   #get all ip on the nic
   ips: ips
 
-#publicise
-Base.Logger = Logger
-
-
-module.exports = Base

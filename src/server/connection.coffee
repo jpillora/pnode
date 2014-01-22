@@ -1,12 +1,12 @@
 dnode = require 'dnode'
-Base = require '../base'
+Logger = require '../logger'
 helper = require '../helper'
 RemoteContext = require '../context'
 ObjectIndex = require 'object-index'
 servers = []
 
 #represents a client conn
-module.exports = class Connection extends Base.Logger
+module.exports = class Connection extends Logger
 
   name: 'Connection'
 

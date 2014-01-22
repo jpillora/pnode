@@ -1,14 +1,15 @@
 _ = require '../../vendor/lodash'
+BaseClass = require '../base'
+
 Server = require '../server/server'
 Connection = require '../server/connection'
 Client = require '../client/client'
-Base = require '../base'
 helper = require '../helper'
 RemotePeer = require './remote-peer'
 ObjectIndex = require 'object-index'
 
 # a peer is many clients AND servers
-module.exports = class LocalPeer extends Base
+module.exports = class LocalPeer extends BaseClass
 
   name: 'LocalPeer'
 
