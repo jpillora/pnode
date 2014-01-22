@@ -259,13 +259,7 @@ module.exports = Base = (function(_super) {
     if (!Store) {
       Store = require('./store/store');
     }
-    if (!this.stores) {
-      this.stores = {};
-    }
-    if (this.stores[this.id]) {
-      return this.stores[this.id];
-    }
-    return this.stores[this.id] = new Store(this, opts);
+    return new Store(this, opts);
   };
 
   Base.prototype.ips = ips;

@@ -206,11 +206,7 @@ module.exports = class Base extends Logger
   store: (opts) ->
     unless Store
       Store = require './store/store'
-    unless @stores
-      @stores = {}
-    if @stores[@id]
-      return @stores[@id]
-    return @stores[@id] = new Store @, opts
+    return new Store @, opts
 
   #get all ip on the nic
   ips: ips
