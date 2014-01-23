@@ -136,10 +136,12 @@ module.exports = class LocalPeer extends BaseClass
         rems.push peer.remote
     callback rems
 
+  getPeer: (id) ->
+    @peers.findBy('id', id) or @peers.findBy('guid', id)
+
   peer: (id, callback) ->
     get = =>
-      peer = @peers.findBy('id', id) or
-             @peers.findBy('guid', id)
+      peer = @getPeer id
       return false unless peer?.up
       @log "FOUND PEER: #{id}"
       callback peer.remote

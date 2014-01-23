@@ -153,24 +153,26 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.get = function(path) {
-    var o;
+    var i, o;
     o = this.obj;
     if (typeof path === 'string') {
       return o[path];
     }
-    while (o && path.length) {
-      o = o[path.shift()];
+    i = 0;
+    while (i < path.length) {
+      o = o[path[i++]];
     }
     return o;
   };
 
   Store.prototype.set = function(path, value, silent) {
     var k, v;
+    value = _.cloneDeep(value);
     if (typeof path === 'string') {
       path = [path];
     }
     if (!(path instanceof Array)) {
-      throw new Error("set(path, ...) path must be a string or an array");
+      this.err("set(path, ...) path must be a string or an array");
     }
     if (path.length === 0) {
       if (typeof value === 'object') {
@@ -180,49 +182,43 @@ module.exports = Store = (function(_super) {
         }
         return;
       } else {
-        throw new Error("set(path, ...) path empty");
+        this.err("set(path, ...) path empty");
       }
     }
-    return this.setAcc(this.obj, [], path, value, silent);
+    return this.setAcc(this.obj, 0, path, value, silent);
   };
 
-  Store.prototype.setAcc = function(obj, used, path, value, silent) {
+  Store.prototype.setAcc = function(obj, i, path, value, silent) {
     var del, prev, prop, t;
-    prop = path.shift();
+    prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
-      throw new Error("property missing '" + prop + "' (" + t + ")");
+      this.err("property missing '" + prop + "' (" + t + ")");
     }
-    used.push(prop);
-    if (path.length > 0) {
+    i++;
+    if (i < path.length) {
       if (typeof obj[prop] !== 'object') {
-        if (/\D/.test(path[0])) {
-          obj[prop] = {};
-        } else {
-          obj[prop] = [];
-        }
+        obj[prop] = /\D/.test(path[i]) ? {} : [];
       }
-      return this.setAcc(obj[prop], used, path, value, silent);
+      return this.setAcc(obj[prop], i, path, value, silent);
     }
     del = value === void 0;
     prev = obj[prop];
     if (_.isEqual(prev, value)) {
+      this.log("skip. path equates: %j (%j)", path, value);
       return;
     }
     if (del) {
       delete obj[prop];
-      this.emit('del', used, prev);
+      this.emit('del', path, prev);
     } else {
       obj[prop] = value;
-      this.emit('set', used, value, prev);
+      this.emit('set', path, value, prev);
     }
-    if (used.length === 1 && used[0] === "controlId" && value < prev) {
-      this.err("CONTROL ID DECREASED!");
-    }
-    this.emit('change', (del ? 'del' : 'set'), used, value, prev);
-    if (!silent && this.opts.write === true || this.opts.write[used[0]]) {
-      this.log("publish %j = %j", used, value);
-      this.peer.publish(this.channel, used, del, value);
+    this.emit('change', (del ? 'del' : 'set'), path, value, prev);
+    if (!silent && this.opts.write === true || this.opts.write[path[0]]) {
+      this.log("publish %j = %j", path, value);
+      this.peer.publish(this.channel, path, del, value);
     }
   };
 

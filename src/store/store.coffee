@@ -41,7 +41,6 @@ module.exports = class Store extends Logger
     enumify 'read'
     enumify 'write'
 
-
     @on 'change', (action, path, val) =>
       @log ">>> %s: %j = %j", action, path, val
 
@@ -118,64 +117,70 @@ module.exports = class Store extends Logger
   get: (path) ->
     o = @obj
     if typeof path is 'string'
-      return o[path]  
-    while o and path.length
-      o = o[path.shift()]
+      return o[path]
+
+    i = 0
+    while i < path.length
+      o = o[path[i++]]
     return o
 
   set: (path, value, silent) ->
+
+    value = _.cloneDeep value
+
     if typeof path is 'string'
       path = [path]
+    
     unless path instanceof Array
-      throw new Error("set(path, ...) path must be a string or an array")
+      @err "set(path, ...) path must be a string or an array"
+
     if path.length is 0
       if typeof value is 'object'
         for k,v of value
           @set [k], v, silent
         return
       else
-        throw new Error("set(path, ...) path empty");
-    @setAcc @obj, [], path, value, silent
+        @err "set(path, ...) path empty"
 
-  setAcc: (obj, used, path, value, silent) ->
+    @setAcc @obj, 0, path, value, silent
 
-    prop = path.shift()
+  setAcc: (obj, i, path, value, silent) ->
+
+    prop = path[i]
     t = typeof prop
     unless t is "string" or t is "number"
-      throw new Error "property missing '#{prop}' (#{t})"
+      @err "property missing '#{prop}' (#{t})"
     
-    used.push prop
+    #move index along the path
+    i++
 
-    if path.length > 0
+    if i < path.length
       if typeof obj[prop] isnt 'object'
-        if /\D/.test path[0]
-          obj[prop] = {}
-        else
-          obj[prop] = []
-      return @setAcc obj[prop], used, path, value, silent
+        #if next item is a number, create an array
+        obj[prop] = if /\D/.test path[i] then {} else []
+      return @setAcc obj[prop], i, path, value, silent
 
     del = value is undefined
 
     prev = obj[prop]
     #skip if is already the value
     if _.isEqual prev, value
+      @log "skip. path equates: %j (%j)", path, value
       return
     
+    #do change
     if del
       delete obj[prop]
-      @emit 'del', used, prev
+      @emit 'del', path, prev
     else
       obj[prop] = value
-      @emit 'set', used, value, prev
+      @emit 'set', path, value, prev
 
-    if used.length is 1 and used[0] is "controlId" and value < prev
-      @err "CONTROL ID DECREASED!"
+    @emit 'change', (if del then 'del' else 'set'), path, value, prev
 
-    @emit 'change', (if del then 'del' else 'set'), used, value, prev
-
-    if not silent and @opts.write is true or @opts.write[used[0]]
-      @log "publish %j = %j", used, value
-      @peer.publish @channel, used, del, value
+    if not silent and @opts.write is true or @opts.write[path[0]]
+      @log "publish %j = %j", path, value
+      @peer.publish @channel, path, del, value
 
     return
 

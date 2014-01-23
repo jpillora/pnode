@@ -180,12 +180,16 @@ module.exports = LocalPeer = (function(_super) {
     return callback(rems);
   };
 
+  LocalPeer.prototype.getPeer = function(id) {
+    return this.peers.findBy('id', id) || this.peers.findBy('guid', id);
+  };
+
   LocalPeer.prototype.peer = function(id, callback) {
     var check, get, t,
       _this = this;
     get = function() {
       var peer;
-      peer = _this.peers.findBy('id', id) || _this.peers.findBy('guid', id);
+      peer = _this.getPeer(id);
       if (!(peer != null ? peer.up : void 0)) {
         return false;
       }
