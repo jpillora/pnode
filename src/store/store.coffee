@@ -14,8 +14,8 @@ module.exports = class Store extends Logger
   defaults:
     id: null
     debug: false
-    read: false
-    write: false
+    subscribe: false
+    publish: false
     filter: null
 
   constructor: (@peer, opts = {}) ->
@@ -26,8 +26,8 @@ module.exports = class Store extends Logger
       @err "must have a store 'id'"
     @id = @opts.id
 
-    unless @opts.read or @opts.write
-      @err "must 'read' or 'write'"
+    unless @opts.subscribe or @opts.publish
+      @err "must 'subscribe' or 'publish'"
 
     #convert to enum (object)
     enumify = (prop) =>
@@ -38,8 +38,8 @@ module.exports = class Store extends Logger
           @opts[prop] = obj
         else if @opts[prop] isnt true
           @err "'#{prop}' must be boolean or an array"
-    enumify 'read'
-    enumify 'write'
+    enumify 'subscribe'
+    enumify 'publish'
 
     @on 'change', (action, path, val) =>
       @log ">>> %s: %j = %j", action, path, val
@@ -47,21 +47,21 @@ module.exports = class Store extends Logger
     @channel = "_store-#{@id}"
     @obj = {}
 
-    @$setupWrite() if @opts.write
-    @$setupRead() if @opts.read
+    @$setupWrite() if @opts.publish
+    @$setupRead() if @opts.subscribe
     return
 
   #update store from peers
   $setupWrite: ->
-    @log "setup write..."
+    @log "setup publish..."
     exposed = {}
     exposed[@opts.id] = [=>
-      if @opts.write is true
+      if @opts.publish is true
         return @obj
       #grab subset
       o = {}
       for k,v of @obj
-        if @opts.write[k]
+        if @opts.publish[k]
           o[k] = v
       return o
     ]
@@ -69,11 +69,11 @@ module.exports = class Store extends Logger
 
   #dynamic expose the entire store to new peers
   $setupRead: ->
-    @log "setup read..."
+    @log "setup subscribe..."
 
     #checks whitelist and filter
     check = (path, val, ctx) =>
-      (@opts.read is true or @opts.read[path[0]]) and
+      (@opts.subscribe is true or @opts.subscribe[path[0]]) and
       (not @opts.filter or @opts.filter.call ctx, path, value)
 
     #only preload each remote once
@@ -120,7 +120,7 @@ module.exports = class Store extends Logger
       return o[path]
 
     i = 0
-    while i < path.length
+    while o and i < path.length
       o = o[path[i++]]
     return o
 
@@ -178,7 +178,7 @@ module.exports = class Store extends Logger
 
     @emit 'change', (if del then 'del' else 'set'), path, value, prev
 
-    if not silent and @opts.write is true or @opts.write[path[0]]
+    if not silent and @opts.publish is true or @opts.publish[path[0]]
       @log "publish %j = %j", path, value
       @peer.publish @channel, path, del, value
 

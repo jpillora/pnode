@@ -21,8 +21,8 @@ module.exports = Store = (function(_super) {
   Store.prototype.defaults = {
     id: null,
     debug: false,
-    read: false,
-    write: false,
+    subscribe: false,
+    publish: false,
     filter: null
   };
 
@@ -39,8 +39,8 @@ module.exports = Store = (function(_super) {
       this.err("must have a store 'id'");
     }
     this.id = this.opts.id;
-    if (!(this.opts.read || this.opts.write)) {
-      this.err("must 'read' or 'write'");
+    if (!(this.opts.subscribe || this.opts.publish)) {
+      this.err("must 'subscribe' or 'publish'");
     }
     enumify = function(prop) {
       var obj;
@@ -56,17 +56,17 @@ module.exports = Store = (function(_super) {
         }
       }
     };
-    enumify('read');
-    enumify('write');
+    enumify('subscribe');
+    enumify('publish');
     this.on('change', function(action, path, val) {
       return _this.log(">>> %s: %j = %j", action, path, val);
     });
     this.channel = "_store-" + this.id;
     this.obj = {};
-    if (this.opts.write) {
+    if (this.opts.publish) {
       this.$setupWrite();
     }
-    if (this.opts.read) {
+    if (this.opts.subscribe) {
       this.$setupRead();
     }
     return;
@@ -75,19 +75,19 @@ module.exports = Store = (function(_super) {
   Store.prototype.$setupWrite = function() {
     var exposed,
       _this = this;
-    this.log("setup write...");
+    this.log("setup publish...");
     exposed = {};
     exposed[this.opts.id] = [
       function() {
         var k, o, v, _ref;
-        if (_this.opts.write === true) {
+        if (_this.opts.publish === true) {
           return _this.obj;
         }
         o = {};
         _ref = _this.obj;
         for (k in _ref) {
           v = _ref[k];
-          if (_this.opts.write[k]) {
+          if (_this.opts.publish[k]) {
             o[k] = v;
           }
         }
@@ -102,9 +102,9 @@ module.exports = Store = (function(_super) {
   Store.prototype.$setupRead = function() {
     var check, preload, preloads, self,
       _this = this;
-    this.log("setup read...");
+    this.log("setup subscribe...");
     check = function(path, val, ctx) {
-      return (_this.opts.read === true || _this.opts.read[path[0]]) && (!_this.opts.filter || _this.opts.filter.call(ctx, path, value));
+      return (_this.opts.subscribe === true || _this.opts.subscribe[path[0]]) && (!_this.opts.filter || _this.opts.filter.call(ctx, path, value));
     };
     preloads = [];
     preload = function(remote) {
@@ -159,7 +159,7 @@ module.exports = Store = (function(_super) {
       return o[path];
     }
     i = 0;
-    while (i < path.length) {
+    while (o && i < path.length) {
       o = o[path[i++]];
     }
     return o;
@@ -216,7 +216,7 @@ module.exports = Store = (function(_super) {
       this.emit('set', path, value, prev);
     }
     this.emit('change', (del ? 'del' : 'set'), path, value, prev);
-    if (!silent && this.opts.write === true || this.opts.write[path[0]]) {
+    if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
       this.log("publish %j = %j", path, value);
       this.peer.publish(this.channel, path, del, value);
     }
