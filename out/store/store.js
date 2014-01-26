@@ -189,18 +189,26 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.setAcc = function(obj, i, path, value, silent) {
-    var del, prev, prop, t;
+    var del, isObj, k, prev, prop, t, v;
     prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
       this.err("property missing '" + prop + "' (" + t + ")");
     }
     i++;
+    isObj = typeof obj[prop] === 'object';
     if (i < path.length) {
-      if (typeof obj[prop] !== 'object') {
+      if (!isObj) {
         obj[prop] = /\D/.test(path[i]) ? {} : [];
       }
       return this.setAcc(obj[prop], i, path, value, silent);
+    }
+    if (isObj && typeof value === 'object') {
+      for (k in value) {
+        v = value[k];
+        this.setAcc(obj[prop], i, path.concat(k), v, silent);
+      }
+      return;
     }
     del = value === void 0;
     prev = obj[prop];

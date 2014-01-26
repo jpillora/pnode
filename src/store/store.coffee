@@ -154,11 +154,19 @@ module.exports = class Store extends Logger
     #move index along the path
     i++
 
+    isObj = typeof obj[prop] is 'object'
+
     if i < path.length
-      if typeof obj[prop] isnt 'object'
+      unless isObj
         #if next item is a number, create an array
         obj[prop] = if /\D/.test path[i] then {} else []
       return @setAcc obj[prop], i, path, value, silent
+
+    #if both src and dest are objects, merge
+    if isObj and typeof value is 'object'
+      for k,v of value
+        @setAcc obj[prop], i, path.concat(k), v, silent
+      return
 
     del = value is undefined
 
@@ -167,7 +175,7 @@ module.exports = class Store extends Logger
     if _.isEqual prev, value
       @log "skip. path equates: %j (%j)", path, value
       return
-    
+
     #do change
     if del
       delete obj[prop]
