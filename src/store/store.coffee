@@ -54,6 +54,9 @@ module.exports = class Store extends Logger
   #update store from peers
   $setupWrite: ->
     @log "setup publish..."
+
+    @publishQue = []
+
     exposed = {}
     exposed[@opts.id] = [=>
       if @opts.publish is true
@@ -94,12 +97,14 @@ module.exports = class Store extends Logger
 
     #subscribe to updates
     self = @
-    @peer.subscribe @channel, (path, doDelete, value) ->
+    @peer.subscribe @channel, (updates) ->
       ctx = @
-      value = undefined if doDelete
-      if check path, value
-        self.log "subscription-in %j = %j", path, value
-        self.set path, value, true
+      self.log "subscriptions-in #%s", updates.length
+      for update in updates
+        [path, value] = update
+        if check path, value
+          self.log "subscription-in %j = %j", path, value
+          self.set path, value, true
       return
 
     #grab existing remotes
@@ -124,6 +129,9 @@ module.exports = class Store extends Logger
       o = o[path[i++]]
     return o
 
+  del: (path) ->
+    return @set path#, undefined
+
   set: (path, value, silent) ->
 
     value = _.cloneDeep value
@@ -142,9 +150,9 @@ module.exports = class Store extends Logger
       else
         @err "set(path, ...) path empty"
 
-    @setAcc @obj, 0, path, value, silent
+    @$set @obj, 0, path, value, silent
 
-  setAcc: (obj, i, path, value, silent) ->
+  $set: (obj, i, path, value, silent) ->
 
     prop = path[i]
     t = typeof prop
@@ -160,12 +168,12 @@ module.exports = class Store extends Logger
       unless isObj
         #if next item is a number, create an array
         obj[prop] = if /\D/.test path[i] then {} else []
-      return @setAcc obj[prop], i, path, value, silent
+      return @$set obj[prop], i, path, value, silent
 
     #if both src and dest are objects, merge
     if isObj and typeof value is 'object'
       for k,v of value
-        @setAcc obj[prop], i, path.concat(k), v, silent
+        @$set obj[prop], i, path.concat(k), v, silent
       return
 
     del = value is undefined
@@ -188,12 +196,12 @@ module.exports = class Store extends Logger
 
     if not silent and @opts.publish is true or @opts.publish[path[0]]
       @log "publish %j = %j", path, value
-      @peer.publish @channel, path, del, value
-
+      if @publishQue.length is 0
+        process.nextTick =>
+          @peer.publish @channel, @publishQue
+          @publishQue = []
+      @publishQue.push if del then [path] else [path, value]
     return
-
-  del: (path) ->
-    return @set path#, undefined
 
 
 # STRING PATH HELPERS

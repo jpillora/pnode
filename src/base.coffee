@@ -100,7 +100,10 @@ module.exports = class Base extends Logger
       return
 
     #reset emitter
-    @tEmitter.removeAllListeners() if @tEmitter
+    if @tEmitter
+      @tEmitter.emit('unbind')
+      @tEmitter.removeAllListeners()
+
     @tEmitter = new Emitter
     #finite states
     events = ['binding','bound','unbinding','unbound']
@@ -146,13 +149,12 @@ module.exports = class Base extends Logger
   wrapObjectAcc: (name, input, ctx) ->
 
     #array [function] is a dynamic value
-    if input instanceof Array and input.length is 1 and typeof input[0] is "function"
-      return input[0]()
+    if input instanceof Array
+      if input.length is 1 and typeof input[0] is "function"
+        return input[0]()
+      return input
 
     type = typeof input
-
-    if input instanceof Array
-      return input
 
     if input and type is 'object'
       #copy
@@ -162,22 +164,25 @@ module.exports = class Base extends Logger
       return output
 
     if type is 'function'
+
+
+
       return @timeoutify name, input, ctx
 
     return input
 
   timeoutify: (name, fn, ctx = @) ->
     self = @
-    self.timeoutify.id or= 0
+    # self.timeoutify.id or= 0
     # splice in an interceptor function to the first
     # function argument (presumes a callback)
 
-    type = if ctx instanceof RemoteContext then 'local' else 'remote'
+    # type = if ctx instanceof RemoteContext then 'local' else 'remote'
 
     return (args...) =>
       t = null
       timedout = false
-      id = self.timeoutify.id++
+      # id = self.timeoutify.id++
 
       # place timeout on first function parameter
       for a, i in args

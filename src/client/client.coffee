@@ -21,7 +21,7 @@ module.exports = class Client extends Base
 
     @count = { ping: 0, pong: 0, attempt: 0 }
     
-    #timeoutify and throttle connects
+    #throttle connects
     @connect = _.throttle @connect, @opts.retryInterval, {leading:true}
 
     # @on ['timeout','connect'], =>
@@ -191,7 +191,7 @@ module.exports = class Client extends Base
 
   #throttled ping while 'up'
   ping: ->
-    return if @unbound
+    return if @unbound or not @remote
     @count.ping++
     # @log "ping #{@count.ping}!"
     @remote._pnode.ping (ok) =>

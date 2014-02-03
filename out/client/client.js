@@ -179,7 +179,7 @@ module.exports = Client = (function(_super) {
 
   Client.prototype.ping = function() {
     var _this = this;
-    if (this.unbound) {
+    if (this.unbound || !this.remote) {
       return;
     }
     this.count.ping++;

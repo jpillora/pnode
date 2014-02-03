@@ -76,6 +76,7 @@ module.exports = Store = (function(_super) {
     var exposed,
       _this = this;
     this.log("setup publish...");
+    this.publishQue = [];
     exposed = {};
     exposed[this.opts.id] = [
       function() {
@@ -127,15 +128,17 @@ module.exports = Store = (function(_super) {
       }
     };
     self = this;
-    this.peer.subscribe(this.channel, function(path, doDelete, value) {
-      var ctx;
+    this.peer.subscribe(this.channel, function(updates) {
+      var ctx, path, update, value, _i, _len;
       ctx = this;
-      if (doDelete) {
-        value = void 0;
-      }
-      if (check(path, value)) {
-        self.log("subscription-in %j = %j", path, value);
-        self.set(path, value, true);
+      self.log("subscriptions-in #%s", updates.length);
+      for (_i = 0, _len = updates.length; _i < _len; _i++) {
+        update = updates[_i];
+        path = update[0], value = update[1];
+        if (check(path, value)) {
+          self.log("subscription-in %j = %j", path, value);
+          self.set(path, value, true);
+        }
       }
     });
     if (this.peer instanceof Client) {
@@ -165,6 +168,10 @@ module.exports = Store = (function(_super) {
     return o;
   };
 
+  Store.prototype.del = function(path) {
+    return this.set(path);
+  };
+
   Store.prototype.set = function(path, value, silent) {
     var k, v;
     value = _.cloneDeep(value);
@@ -185,11 +192,12 @@ module.exports = Store = (function(_super) {
         this.err("set(path, ...) path empty");
       }
     }
-    return this.setAcc(this.obj, 0, path, value, silent);
+    return this.$set(this.obj, 0, path, value, silent);
   };
 
-  Store.prototype.setAcc = function(obj, i, path, value, silent) {
-    var del, isObj, k, prev, prop, t, v;
+  Store.prototype.$set = function(obj, i, path, value, silent) {
+    var del, isObj, k, prev, prop, t, v,
+      _this = this;
     prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
@@ -201,12 +209,12 @@ module.exports = Store = (function(_super) {
       if (!isObj) {
         obj[prop] = /\D/.test(path[i]) ? {} : [];
       }
-      return this.setAcc(obj[prop], i, path, value, silent);
+      return this.$set(obj[prop], i, path, value, silent);
     }
     if (isObj && typeof value === 'object') {
       for (k in value) {
         v = value[k];
-        this.setAcc(obj[prop], i, path.concat(k), v, silent);
+        this.$set(obj[prop], i, path.concat(k), v, silent);
       }
       return;
     }
@@ -226,12 +234,14 @@ module.exports = Store = (function(_super) {
     this.emit('change', (del ? 'del' : 'set'), path, value, prev);
     if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
       this.log("publish %j = %j", path, value);
-      this.peer.publish(this.channel, path, del, value);
+      if (this.publishQue.length === 0) {
+        process.nextTick(function() {
+          _this.peer.publish(_this.channel, _this.publishQue);
+          return _this.publishQue = [];
+        });
+      }
+      this.publishQue.push(del ? [path] : [path, value]);
     }
-  };
-
-  Store.prototype.del = function(path) {
-    return this.set(path);
   };
 
   return Store;

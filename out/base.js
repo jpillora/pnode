@@ -145,6 +145,7 @@ module.exports = Base = (function(_super) {
       return;
     }
     if (this.tEmitter) {
+      this.tEmitter.emit('unbind');
       this.tEmitter.removeAllListeners();
     }
     this.tEmitter = new Emitter;
@@ -194,13 +195,13 @@ module.exports = Base = (function(_super) {
 
   Base.prototype.wrapObjectAcc = function(name, input, ctx) {
     var k, output, type, v;
-    if (input instanceof Array && input.length === 1 && typeof input[0] === "function") {
-      return input[0]();
-    }
-    type = typeof input;
     if (input instanceof Array) {
+      if (input.length === 1 && typeof input[0] === "function") {
+        return input[0]();
+      }
       return input;
     }
+    type = typeof input;
     if (input && type === 'object') {
       output = {};
       for (k in input) {
@@ -216,20 +217,17 @@ module.exports = Base = (function(_super) {
   };
 
   Base.prototype.timeoutify = function(name, fn, ctx) {
-    var self, type, _base,
+    var self,
       _this = this;
     if (ctx == null) {
       ctx = this;
     }
     self = this;
-    (_base = self.timeoutify).id || (_base.id = 0);
-    type = ctx instanceof RemoteContext ? 'local' : 'remote';
     return function() {
-      var a, args, i, id, t, timedout, _j, _len1;
+      var a, args, i, t, timedout, _j, _len1;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
       t = null;
       timedout = false;
-      id = self.timeoutify.id++;
       for (i = _j = 0, _len1 = args.length; _j < _len1; i = ++_j) {
         a = args[i];
         if (typeof a === 'function') {
