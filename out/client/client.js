@@ -125,8 +125,6 @@ module.exports = Client = (function(_super) {
     if (!(this.bindArgs && !this.bound && this.count.attempt < this.opts.maxRetries)) {
       return;
     }
-    this.log("connecting....");
-    this.count.attempt++;
     this.ctx = new RemoteContext;
     this.d = dnode(this.wrapObject(this.exposed, this.ctx));
     this.d.splicedRead = false;
@@ -136,6 +134,7 @@ module.exports = Client = (function(_super) {
     this.d.once('end', this.onEnd);
     this.d.once('error', this.onError);
     this.d.once('fail', this.onStreamError);
+    this.count.attempt++;
     this.log("connection attempt " + this.count.attempt + "...");
     Base.prototype.bind.apply(this, this.bindArgs);
   };
@@ -220,6 +219,16 @@ module.exports = Client = (function(_super) {
       });
     }
     Client.__super__.subscribe.apply(this, arguments);
+  };
+
+  Client.prototype.unsubscribe = function(event, fn) {
+    var _this = this;
+    if (this.pubsub.listeners(event).length > 0) {
+      this.server(function(remote) {
+        return remote._pnode.unsubscribe(event);
+      });
+    }
+    Client.__super__.unsubscribe.apply(this, arguments);
   };
 
   Client.prototype.serialize = function() {

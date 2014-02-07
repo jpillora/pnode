@@ -42,20 +42,26 @@ module.exports = class Store extends Logger
     enumify 'subscribe'
     enumify 'publish'
 
-    @on 'change', (action, path, val) =>
-      @log ">>> %s: %j = %j", action, path, val
-
     @channel = "_store-#{@id}"
     @obj = {}
     @events = {}
 
     #store original 'on()'
-    @$setupWrite() if @opts.publish
-    @$setupRead() if @opts.subscribe
+    @$setupPublish() if @opts.publish
+    @$setupSubscribe() if @opts.subscribe
+    return
+
+  destroy: ->
+    if @opts.publish
+      e = {}
+      e[@opts.id] = `undefined`
+      @peer.expose e
+    if @opts.subscribe
+      @peer.unsubscribe @channel
     return
 
   #update store from peers
-  $setupWrite: ->
+  $setupPublish: ->
     @log "setup publish..."
 
     @publishId = 1
@@ -75,7 +81,7 @@ module.exports = class Store extends Logger
     @peer.expose _store: exposed
 
   #dynamic expose the entire store to new peers
-  $setupRead: ->
+  $setupSubscribe: ->
     @log "setup subscribe..."
 
     #checks whitelist and filter
@@ -156,6 +162,7 @@ module.exports = class Store extends Logger
 
     @$set @obj, 0, path, value, silent
 
+  #recurrsive accumulator
   $set: (obj, i, path, value, silent) ->
 
     prop = path[i]
@@ -227,22 +234,7 @@ module.exports = class Store extends Logger
     @$emit @events, [], path, 0, value
     return
 
-  # LISTEN {
-  #   "f1": {
-  #     "post": {
-  #       "*": {
-  #         $event: "f1 post *"
-  #       },
-  #       "p001": {
-  #         $event: "f1 post p001"
-  #       },
-  #     }
-  #   }
-  # }
-  # RECIVE ["f1"],{ post: { "p002": { comment:{ "c001":  { body:  "oi!"} } } } }
-
-
-  #recurrsive path emit
+  #recurrsive accumulator
   $emit: (e, wilds, path, pi, value) ->
     #no events in this portion of the tree
     return unless e
@@ -276,42 +268,4 @@ module.exports = class Store extends Logger
           @$emit e[k], wilds, path, pi, value[k]
 
     return
-
-# STRING PATH HELPERS
-
-# pathify = (prop) ->
-#   return if /^\d+$/.test prop
-#     "[#{prop}]"
-#   else if /^\d/.test(prop) or /[^\w]/.test(prop)
-#     "['#{prop}']"
-#   else
-#     prop
-
-# parse = (str) ->
-#   eq = str.indexOf("=")
-#   return  if eq is -1 #invalid
-#   json = str.substr(eq + 1)
-#   pathStr = str.substr(0, eq)
-#   val
-#   if json
-#     try val = JSON.parse(json)
-#     catch e
-#       e.message = "JSON Error: " + e.message
-#       throw e
-
-#   path: parsePath pathStr
-#   val: val
-
-# parsePath = (str) ->
-#   return [] if str is ''
-#   str = '.' + str unless /^(\.|\[)/.test str
-#   path = []
-#   while /^(\[(\d+)\]|\[\'([^']+)\'\]|\.([a-zA-Z]\w+))/.test(str)
-#     p = RegExp.$2 or RegExp.$3 or RegExp.$4
-#     str = str.replace(RegExp.$1, "")
-#     path.push p
-#   return path
-
-
-
 

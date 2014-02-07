@@ -95,8 +95,12 @@ module.exports = Connection = (function(_super) {
     return this.remote._pnode.publish.apply(null, args);
   };
 
-  Connection.prototype.subscribe = function(event, fn) {
-    return this.remote._pnode.subscribe(event);
+  Connection.prototype.subscribe = function(event) {
+    this.remote._pnode.subscribe(event);
+  };
+
+  Connection.prototype.unsubscribe = function(event) {
+    this.remote._pnode.unsubscribe(event);
   };
 
   Connection.prototype.toString = function() {

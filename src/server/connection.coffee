@@ -85,8 +85,11 @@ module.exports = class Connection extends Logger
       return
     @remote._pnode.publish.apply null, args
 
-  subscribe: (event, fn) ->
+  subscribe: (event) ->
     @remote._pnode.subscribe event
-
+    return
+  unsubscribe: (event) ->
+    @remote._pnode.unsubscribe event
+    return
   toString: ->
     "#{@name}: #{@server.id}<-#{@id}:"

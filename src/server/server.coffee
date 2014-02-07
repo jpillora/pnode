@@ -124,12 +124,20 @@ module.exports = class Server extends Base
     super
     return
 
+  unsubscribe: (event, fn) ->
+    #if we are subscribed, notify server
+    if @pubsub.listeners(event).length > 0
+      #loop through UP connections
+      for conn in @connections
+        conn.unsubscribe event
+    super
+    return
   serialize: -> @uri
 
 #unbind all servers on exit
 process.on? 'exit', ->
   for server in servers
-    server.unbind()
+    server.destroy()
 
 process.on? 'SIGINT', ->
   process.exit()

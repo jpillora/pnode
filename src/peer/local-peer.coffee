@@ -182,5 +182,11 @@ module.exports = class LocalPeer extends BaseClass
     return
 
   unsubscribe: (event, fn) ->
-    @pubsub.off event, fn
+    #has subscriptions - notify peers
+    if @pubsub.listeners(event).length > 0
+      #subscribe to all peers
+      for peer in @peers
+        peer.unsubscribe? event
+    super
+    return
 

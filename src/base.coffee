@@ -51,6 +51,9 @@ module.exports = class Base extends Logger
       @on 'error', (err) =>
         console.error "ERROR EMITTED: #{err.stack or err}"
 
+    #store objects linked to this peer
+    @stores = []
+
     _.bindAll @
     @unbound = true
     
@@ -67,7 +70,7 @@ module.exports = class Base extends Logger
       subscribe: (event) ->
         this.events[event] = 1
       unsubscribe: (event) ->
-        delete this.events[event]
+        this.events[event] = 0
       #remotes can push events
       publish: (args...) ->
         if typeof args[0] is 'function'
@@ -95,6 +98,10 @@ module.exports = class Base extends Logger
     #proxy through to handler
     @pubsub.on event, (ctx, args...)->
       fn.apply ctx, args
+    return
+
+  unsubscribe: (event, fn) ->
+    @pubsub[if fn then 'off' else 'removeAllListeners'](event, fn)
     return
 
   bind: (args...) ->
@@ -141,7 +148,6 @@ module.exports = class Base extends Logger
       @warn 'bind in progress' if @binding
       return
     @once 'unbound', callback if callback
-
     @tEmitter.emit 'unbinding'
     @tEmitter.emit 'unbind' #trigger user code
     return
@@ -168,9 +174,6 @@ module.exports = class Base extends Logger
       return output
 
     if type is 'function'
-
-
-
       return @timeoutify name, input, ctx
 
     return input
@@ -214,8 +217,16 @@ module.exports = class Base extends Logger
   #create a synchronized object
   store: (opts) ->
     unless Store
-      Store = require './store/store'
-    return new Store @, opts
+      Store = require './store/store'  
+    s = new Store @, opts
+    @stores.push s
+    return s
+
+  destroy: (callback) ->
+    s.destroy() for s in @stores
+    @emit 'destroy'
+    @unbind(callback)
+    @removeAllListeners()
 
   #get all ip on the nic
   ips: ips

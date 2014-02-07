@@ -152,6 +152,18 @@ module.exports = Server = (function(_super) {
     Server.__super__.subscribe.apply(this, arguments);
   };
 
+  Server.prototype.unsubscribe = function(event, fn) {
+    var conn, _i, _len, _ref;
+    if (this.pubsub.listeners(event).length > 0) {
+      _ref = this.connections;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        conn = _ref[_i];
+        conn.unsubscribe(event);
+      }
+    }
+    Server.__super__.unsubscribe.apply(this, arguments);
+  };
+
   Server.prototype.serialize = function() {
     return this.uri;
   };
@@ -166,7 +178,7 @@ if (typeof process.on === "function") {
     _results = [];
     for (_i = 0, _len = servers.length; _i < _len; _i++) {
       server = servers[_i];
-      _results.push(server.unbind());
+      _results.push(server.destroy());
     }
     return _results;
   });

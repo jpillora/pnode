@@ -114,9 +114,6 @@ module.exports = class Client extends Base
            @count.attempt < @opts.maxRetries
       return
 
-    @log "connecting...."
-
-    @count.attempt++
 
     #server context, exposed to remote api
     @ctx = new RemoteContext
@@ -135,6 +132,7 @@ module.exports = class Client extends Base
     # @connect.t = setTimeout @onConnectTimeout, @opts.timeout
     # @d.once 'remote', => clearTimeout @connect.t
 
+    @count.attempt++
     @log "connection attempt #{@count.attempt}..."
 
     #call transport bind using local bind call args
@@ -220,6 +218,14 @@ module.exports = class Client extends Base
     if @pubsub.listeners(event).length is 0
       @server (remote) =>
         remote._pnode.subscribe event
+    super
+    return
+
+  unsubscribe: (event, fn) ->
+    #if we are subscribed, notify server
+    if @pubsub.listeners(event).length > 0
+      @server (remote) =>
+        remote._pnode.unsubscribe event
     super
     return
 

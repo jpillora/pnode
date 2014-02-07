@@ -59,22 +59,31 @@ module.exports = Store = (function(_super) {
     };
     enumify('subscribe');
     enumify('publish');
-    this.on('change', function(action, path, val) {
-      return _this.log(">>> %s: %j = %j", action, path, val);
-    });
     this.channel = "_store-" + this.id;
     this.obj = {};
     this.events = {};
     if (this.opts.publish) {
-      this.$setupWrite();
+      this.$setupPublish();
     }
     if (this.opts.subscribe) {
-      this.$setupRead();
+      this.$setupSubscribe();
     }
     return;
   }
 
-  Store.prototype.$setupWrite = function() {
+  Store.prototype.destroy = function() {
+    var e;
+    if (this.opts.publish) {
+      e = {};
+      e[this.opts.id] = undefined;
+      this.peer.expose(e);
+    }
+    if (this.opts.subscribe) {
+      this.peer.unsubscribe(this.channel);
+    }
+  };
+
+  Store.prototype.$setupPublish = function() {
     var exposed,
       _this = this;
     this.log("setup publish...");
@@ -103,7 +112,7 @@ module.exports = Store = (function(_super) {
     });
   };
 
-  Store.prototype.$setupRead = function() {
+  Store.prototype.$setupSubscribe = function() {
     var check, preload, preloads, self,
       _this = this;
     this.log("setup subscribe...");

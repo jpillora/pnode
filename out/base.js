@@ -69,6 +69,7 @@ module.exports = Base = (function(_super) {
         return console.error("ERROR EMITTED: " + (err.stack || err));
       });
     }
+    this.stores = [];
     _.bindAll(this);
     this.unbound = true;
   }
@@ -91,7 +92,7 @@ module.exports = Base = (function(_super) {
           return this.events[event] = 1;
         },
         unsubscribe: function(event) {
-          return delete this.events[event];
+          return this.events[event] = 0;
         },
         publish: function() {
           var args, cb, event;
@@ -136,6 +137,10 @@ module.exports = Base = (function(_super) {
       ctx = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       return fn.apply(ctx, args);
     });
+  };
+
+  Base.prototype.unsubscribe = function(event, fn) {
+    this.pubsub[fn ? 'off' : 'removeAllListeners'](event, fn);
   };
 
   Base.prototype.bind = function() {
@@ -257,10 +262,25 @@ module.exports = Base = (function(_super) {
   };
 
   Base.prototype.store = function(opts) {
+    var s;
     if (!Store) {
       Store = require('./store/store');
     }
-    return new Store(this, opts);
+    s = new Store(this, opts);
+    this.stores.push(s);
+    return s;
+  };
+
+  Base.prototype.destroy = function(callback) {
+    var s, _j, _len1, _ref1;
+    _ref1 = this.stores;
+    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+      s = _ref1[_j];
+      s.destroy();
+    }
+    this.emit('destroy');
+    this.unbind(callback);
+    return this.removeAllListeners();
   };
 
   Base.prototype.ips = ips;

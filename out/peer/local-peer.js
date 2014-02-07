@@ -248,7 +248,17 @@ module.exports = LocalPeer = (function(_super) {
   };
 
   LocalPeer.prototype.unsubscribe = function(event, fn) {
-    return this.pubsub.off(event, fn);
+    var peer, _i, _len, _ref;
+    if (this.pubsub.listeners(event).length > 0) {
+      _ref = this.peers;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        peer = _ref[_i];
+        if (typeof peer.unsubscribe === "function") {
+          peer.unsubscribe(event);
+        }
+      }
+    }
+    LocalPeer.__super__.unsubscribe.apply(this, arguments);
   };
 
   return LocalPeer;
