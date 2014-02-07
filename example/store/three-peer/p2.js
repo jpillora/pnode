@@ -9,8 +9,8 @@ peer2.bindTo('tcp://localhost:8000');
 
 var peer2Store = peer2.store({
   id:'foo',
-  read:true,
-  write:true,
+  subscribe:true,
+  publish:true,
   debug: false
 });
 

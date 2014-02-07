@@ -9,8 +9,8 @@ peer3.bindTo('tcp://localhost:8000');
 
 var peer3Store = peer3.store({
   id:'foo',
-  read:true,
-  write:true,
+  subscribe:true,
+  publish:true,
   debug: false
 });
 

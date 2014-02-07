@@ -15,8 +15,8 @@ peer1.on("peer", function(peer) {
 
 var peer1Store = peer1.store({
   id:'foo',
-  read:true,
-  write:true,
+  subscribe:true,
+  publish:true,
   debug: false
 });
 

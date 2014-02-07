@@ -79,7 +79,11 @@ module.exports = class Base extends Logger
         cb true if cb
       ping: (cb) ->
         cb true
-      events: [-> Object.keys self.pubsub._events]
+      events: [->
+        e = Object.keys self.pubsub._events
+        self.log "share events: %j", e
+        e
+      ]
 
   expose: (obj) ->
     _.merge @exposed, obj

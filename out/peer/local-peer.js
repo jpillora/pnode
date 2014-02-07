@@ -227,11 +227,18 @@ module.exports = LocalPeer = (function(_super) {
   };
 
   LocalPeer.prototype.subscribe = function(event, fn) {
-    var peer, _i, _len, _ref;
-    if (this.pubsub.listeners(event).length === 1) {
-      _ref = this.peers;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        peer = _ref[_i];
+    var client, guid, peer, _i, _len, _ref, _ref1;
+    if (this.pubsub.listeners(event).length === 0) {
+      _ref = this.clients;
+      for (guid in _ref) {
+        client = _ref[guid];
+        if (client.binding) {
+          client.subscribe(event);
+        }
+      }
+      _ref1 = this.peers;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        peer = _ref1[_i];
         if (typeof peer.subscribe === "function") {
           peer.subscribe(event);
         }

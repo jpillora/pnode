@@ -170,7 +170,12 @@ module.exports = class LocalPeer extends BaseClass
 
   subscribe: (event, fn) ->
     #first subscription - notify peers
-    if @pubsub.listeners(event).length is 1
+    if @pubsub.listeners(event).length is 0
+      #clients currently binding will not be peers yet
+      for guid, client of @clients
+        if client.binding
+          client.subscribe event
+      #subscribe to all peers
       for peer in @peers
         peer.subscribe? event
     super

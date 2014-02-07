@@ -113,7 +113,10 @@ module.exports = Base = (function(_super) {
         },
         events: [
           function() {
-            return Object.keys(self.pubsub._events);
+            var e;
+            e = Object.keys(self.pubsub._events);
+            self.log("share events: %j", e);
+            return e;
           }
         ]
       }

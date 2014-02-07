@@ -63,6 +63,8 @@ module.exports = class Connection extends Logger
     {@id, @guid} = meta
     @ctx.getMeta meta
 
+    @log "client events: %j", Object.keys(@ctx.events)
+
     @remote = remote
     @emit 'remote', remote
     @emit 'up'
@@ -87,4 +89,4 @@ module.exports = class Connection extends Logger
     @remote._pnode.subscribe event
 
   toString: ->
-    "#{@name}: #{@server.id} -> #{@id}:"
+    "#{@name}: #{@server.id}<-#{@id}:"

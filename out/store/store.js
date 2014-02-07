@@ -23,7 +23,8 @@ module.exports = Store = (function(_super) {
     debug: false,
     subscribe: false,
     publish: false,
-    filter: null
+    filter: null,
+    eventWildcard: "*"
   };
 
   function Store(peer, opts) {
@@ -63,6 +64,7 @@ module.exports = Store = (function(_super) {
     });
     this.channel = "_store-" + this.id;
     this.obj = {};
+    this.events = {};
     if (this.opts.publish) {
       this.$setupWrite();
     }
@@ -76,6 +78,7 @@ module.exports = Store = (function(_super) {
     var exposed,
       _this = this;
     this.log("setup publish...");
+    this.publishId = 1;
     this.publishQue = [];
     exposed = {};
     exposed[this.opts.id] = [
@@ -226,12 +229,9 @@ module.exports = Store = (function(_super) {
     }
     if (del) {
       delete obj[prop];
-      this.emit('del', path, prev);
     } else {
       obj[prop] = value;
-      this.emit('set', path, value, prev);
     }
-    this.emit('change', (del ? 'del' : 'set'), path, value, prev);
     if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
       this.log("publish %j = %j", path, value);
       if (this.publishQue.length === 0) {
@@ -240,7 +240,70 @@ module.exports = Store = (function(_super) {
           return _this.publishQue = [];
         });
       }
-      this.publishQue.push(del ? [path] : [path, value]);
+      this.publishQue.push(value === undefined ? [path] : [path, value]);
+    }
+    this.emit(path, value);
+  };
+
+  Store.prototype.on = function(path, fn) {
+    var e, i, p, _i, _len;
+    if (!(path instanceof Array)) {
+      return Store.__super__.on.apply(this, arguments);
+    }
+    if (path.length === 0) {
+      this.err("path empty");
+    }
+    e = this.events;
+    for (i = _i = 0, _len = path.length; _i < _len; i = ++_i) {
+      p = path[i];
+      e = e[p] || (e[p] = {});
+    }
+    return Store.__super__.on.call(this, e.$event = JSON.stringify(path), fn);
+  };
+
+  Store.prototype.emit = function(path, value) {
+    if (!(path instanceof Array)) {
+      return Store.__super__.emit.apply(this, arguments);
+    }
+    if (path.length === 0) {
+      this.err("path empty");
+    }
+    this.$emit(this.events, [], path, 0, value);
+  };
+
+  Store.prototype.$emit = function(e, wilds, path, pi, value) {
+    var k, p, v, vk, w;
+    if (!e) {
+      return;
+    }
+    if (e.$event) {
+      this.emit.apply(this, [e.$event].concat(wilds).concat(value));
+    }
+    w = this.opts.eventWildcard;
+    if (pi < path.length) {
+      p = path[pi];
+      if (e[w]) {
+        this.$emit(e[w], wilds.concat(p), path, pi + 1, value);
+      }
+      if (e[p]) {
+        this.$emit(e[p], wilds, path, pi + 1, value);
+      }
+      return;
+    }
+    if (typeof value === 'object') {
+      for (k in e) {
+        if (k === "$event") {
+          continue;
+        }
+        if (k === w) {
+          for (vk in value) {
+            v = value[vk];
+            this.$emit(e[w], wilds.concat(vk), path, pi, v);
+          }
+        } else if (k in value) {
+          this.$emit(e[k], wilds, path, pi, value[k]);
+        }
+      }
     }
   };
 

@@ -17,6 +17,7 @@ module.exports = class Store extends Logger
     subscribe: false
     publish: false
     filter: null
+    eventWildcard: "*"
 
   constructor: (@peer, opts = {}) ->
     @opts = _.defaults opts, @defaults
@@ -46,7 +47,9 @@ module.exports = class Store extends Logger
 
     @channel = "_store-#{@id}"
     @obj = {}
+    @events = {}
 
+    #store original 'on()'
     @$setupWrite() if @opts.publish
     @$setupRead() if @opts.subscribe
     return
@@ -55,6 +58,7 @@ module.exports = class Store extends Logger
   $setupWrite: ->
     @log "setup publish..."
 
+    @publishId = 1
     @publishQue = []
 
     exposed = {}
@@ -161,7 +165,6 @@ module.exports = class Store extends Logger
     
     #move index along the path
     i++
-
     isObj = typeof obj[prop] is 'object'
 
     if i < path.length
@@ -184,25 +187,95 @@ module.exports = class Store extends Logger
       @log "skip. path equates: %j (%j)", path, value
       return
 
-    #do change
+    #entry should be as deep as possible
     if del
       delete obj[prop]
-      @emit 'del', path, prev
     else
       obj[prop] = value
-      @emit 'set', path, value, prev
 
-    @emit 'change', (if del then 'del' else 'set'), path, value, prev
-
+    #publish raw changes
     if not silent and @opts.publish is true or @opts.publish[path[0]]
       @log "publish %j = %j", path, value
       if @publishQue.length is 0
         process.nextTick =>
           @peer.publish @channel, @publishQue
           @publishQue = []
-      @publishQue.push if del then [path] else [path, value]
+      #missing value allows undefined in JSON (instead of null)
+      @publishQue.push if value is `undefined` then [path] else [path, value]
+
+    #emit path array
+    @emit path, value
     return
 
+  #override 'on' to accept a path array as event type
+  on: (path, fn) ->
+    return super unless path instanceof Array
+    if path.length is 0
+      @err "path empty"
+    #insert fn inside the events tree
+    e = @events
+    for p, i in path
+      e = e[p] or e[p] = {}
+    super e.$event = JSON.stringify(path), fn
+
+  #override 'emit' to accept a path array as event type
+  emit: (path, value) ->
+    return super unless path instanceof Array
+    if path.length is 0
+      @err "path empty"
+    #recursive emit events from the events tree
+    @$emit @events, [], path, 0, value
+    return
+
+  # LISTEN {
+  #   "f1": {
+  #     "post": {
+  #       "*": {
+  #         $event: "f1 post *"
+  #       },
+  #       "p001": {
+  #         $event: "f1 post p001"
+  #       },
+  #     }
+  #   }
+  # }
+  # RECIVE ["f1"],{ post: { "p002": { comment:{ "c001":  { body:  "oi!"} } } } }
+
+
+  #recurrsive path emit
+  $emit: (e, wilds, path, pi, value) ->
+    #no events in this portion of the tree
+    return unless e
+
+    #emit string for standard emit!
+    if e.$event
+      @emit.apply @, [e.$event].concat(wilds).concat(value)
+
+    w = @opts.eventWildcard
+    #enter into the tree using path
+    if pi < path.length
+      p = path[pi]
+      #recurse into wildcard tree
+      @$emit e[w], wilds.concat(p), path, pi+1, value if e[w]
+      #recurse into 'key' tree 
+      @$emit e[p], wilds, path, pi+1, value if e[p]
+      return 
+
+    #path run out, use value
+    if typeof value is 'object'
+      for k of e
+        #meta data
+        if k is "$event"
+          continue
+        #recurse into wildcard tree *for every key in value*
+        if k is w
+          for vk, v of value
+            @$emit e[w], wilds.concat(vk), path, pi, v
+        #recurse into value tree when it contains 'key'
+        else if k of value
+          @$emit e[k], wilds, path, pi, value[k]
+
+    return
 
 # STRING PATH HELPERS
 

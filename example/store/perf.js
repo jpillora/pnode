@@ -12,8 +12,8 @@ peer1.bindOn('tcp://0.0.0.0:8000', function(){
 //store
 var peer1Store = peer1.store({
   id:'foo',
-  read:true,
-  write:true,
+  subscribe:true,
+  publish:true,
   debug: false
 });
 
@@ -41,8 +41,8 @@ var peer2 = pnode.peer({
 //store
 var peer2Store = peer2.store({
   id:'foo',
-  read:true,
-  write:true,
+  subscribe:true,
+  publish:true,
   debug: false
 });
 
