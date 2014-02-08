@@ -16,6 +16,7 @@ module.exports = class Store extends Logger
     debug: false
     subscribe: false
     publish: false
+    publishInterval: "nextTick"
     filter: null
     eventWildcard: "*"
 
@@ -28,7 +29,7 @@ module.exports = class Store extends Logger
     @id = @opts.id
 
     unless @opts.subscribe or @opts.publish
-      @err "must 'subscribe' or 'publish'"
+      @err "must 'subscribe' and/or 'publish'"
 
     #convert to enum (object)
     enumify = (prop) =>
@@ -58,11 +59,16 @@ module.exports = class Store extends Logger
       @peer.expose e
     if @opts.subscribe
       @peer.unsubscribe @channel
+      @peer.off 'remote', @preload
     return
 
   #update store from peers
   $setupPublish: ->
     @log "setup publish..."
+
+    unless @opts.publishInterval is "nextTick" or
+           @opts.publishInterval >= 0
+      @err "invalid 'publishInterval' option"
 
     @publishId = 1
     @publishQue = []
@@ -91,7 +97,7 @@ module.exports = class Store extends Logger
 
     #only preload each remote once
     preloads = []
-    preload = (remote) =>
+    @preload = (remote) =>
       obj = remote._store?[@opts.id]
       return unless typeof obj is 'object'
       #only preload a remote store once
@@ -119,12 +125,12 @@ module.exports = class Store extends Logger
 
     #grab existing remotes
     if @peer instanceof Client
-      @peer.server preload
+      @peer.server @preload
     else if @peer instanceof Server or @peer instanceof LocalPeer
-      @peer.all (remotes) -> remotes.forEach preload
+      @peer.all (remotes) => remotes.forEach @preload
 
     #grab new prefilled remotes
-    @peer.on 'remote', preload
+    @peer.on 'remote', @preload
 
   object: ->
     @obj
@@ -186,13 +192,14 @@ module.exports = class Store extends Logger
         @$set obj[prop], i, path.concat(k), v, silent
       return
 
-    del = value is undefined
-
     prev = obj[prop]
     #skip if is already the value
     if _.isEqual prev, value
       @log "skip. path equates: %j (%j)", path, value
       return
+
+
+    del = value is `undefined`
 
     #entry should be as deep as possible
     if del
@@ -202,70 +209,105 @@ module.exports = class Store extends Logger
 
     #publish raw changes
     if not silent and @opts.publish is true or @opts.publish[path[0]]
-      @log "publish %j = %j", path, value
-      if @publishQue.length is 0
-        process.nextTick =>
-          @peer.publish @channel, @publishQue
-          @publishQue = []
       #missing value allows undefined in JSON (instead of null)
-      @publishQue.push if value is `undefined` then [path] else [path, value]
+      @$publish(if del then [path] else [path, _.cloneDeep value])
 
-    #emit path array
-    @emit path, value
+    #recursively emit events from the events tree
+    @$emit @events, [], del, @obj,
+      #wrap value in path keys
+      @$wrap(path, if del then prev else value)
     return
+
+  $publish: (arr) ->
+    @publishQue.push arr
+    return unless @publishQue.length is 1
+    
+    fire = =>
+      @log "publish #%s", @publishQue.length
+      @peer.publish @channel, @publishQue
+      @publishQue = []
+
+    if @opts.publishInterval is "nextTick"
+      process.nextTick fire
+    else
+      setTimeout fire, @opts.publishInterval
+
+  check: (path) ->
+    if typeof path is "string"
+      path = [path]
+    unless path instanceof Array
+      @err "invalid path"
+    path
 
   #override 'on' to accept a path array as event type
   on: (path, fn) ->
-    return super unless path instanceof Array
-    if path.length is 0
-      @err "path empty"
+    path = @check path
     #insert fn inside the events tree
     e = @events
     for p, i in path
       e = e[p] or e[p] = {}
     super e.$event = JSON.stringify(path), fn
 
-  #override 'emit' to accept a path array as event type
-  emit: (path, value) ->
-    return super unless path instanceof Array
-    if path.length is 0
-      @err "path empty"
-    #recursive emit events from the events tree
-    @$emit @events, [], path, 0, value
-    return
+  # wrap(["c","b"], {a:42})
+  #   => {"c":{"b":{"a":42}}}
+  $wrap: (path, value) ->
+    root = v = {}
+    l = path.length-1
+    for i in [0..l-1] by 1
+      v = v[path[i]] = {}
+    v[path[l]] = value
+    root
+
+  # events = {
+  #   "a": {
+  #     "*": {
+  #       $event: "a *"
+  #     }
+  #     "b": {
+  #       "c": {
+  #         "*": {
+  #           $event: "a b c *" 
+  #         }
+  #       }
+  #     }
+  #   }
+  # }
+
+  # value = {
+  #   "a": {
+  #     "d": undefined
+  #   }
+  # }
 
   #recurrsive accumulator
-  $emit: (e, wilds, path, pi, value) ->
+  $emit: (e, wilds, del, curr, prev) ->
     #no events in this portion of the tree
     return unless e
 
     #emit string for standard emit!
     if e.$event
-      @emit.apply @, [e.$event].concat(wilds).concat(value)
+      args = [e.$event, (if del then "remove" else "add")].concat(wilds).concat(curr)
+      # console.log "emit!",args
+      @emit.apply @, args
 
+    return unless typeof prev is 'object'
+    
     w = @opts.eventWildcard
-    #enter into the tree using path
-    if pi < path.length
-      p = path[pi]
-      #recurse into wildcard tree
-      @$emit e[w], wilds.concat(p), path, pi+1, value if e[w]
-      #recurse into 'key' tree 
-      @$emit e[p], wilds, path, pi+1, value if e[p]
-      return 
 
-    #path run out, use value
-    if typeof value is 'object'
-      for k of e
-        #meta data
-        if k is "$event"
-          continue
-        #recurse into wildcard tree *for every key in value*
-        if k is w
-          for vk, v of value
-            @$emit e[w], wilds.concat(vk), path, pi, v
-        #recurse into value tree when it contains 'key'
-        else if k of value
-          @$emit e[k], wilds, path, pi, value[k]
+    #the existing data was deleted, use previous!
+    curr = prev if del and not curr
+
+    for k of e
+      #meta data
+      if k is "$event"
+        continue
+      #recurse into wildcard tree *for every key in value*
+      if k is w
+        for vk of prev
+          @$emit e[w], wilds.concat(vk), del, curr[vk], prev[vk]
+      #recurse into value tree when it contains 'key'
+      else if k of prev
+        @$emit e[k], wilds, del, curr[k], prev[k]
 
     return
 

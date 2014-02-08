@@ -1,3 +1,5 @@
+exports._ = require '../vendor/lodash'
+
 exports.isReadable = (stream) ->
   stream.readable is true or typeof stream.read is 'function'
 

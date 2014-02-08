@@ -23,6 +23,7 @@ module.exports = Store = (function(_super) {
     debug: false,
     subscribe: false,
     publish: false,
+    publishInterval: "nextTick",
     filter: null,
     eventWildcard: "*"
   };
@@ -41,7 +42,7 @@ module.exports = Store = (function(_super) {
     }
     this.id = this.opts.id;
     if (!(this.opts.subscribe || this.opts.publish)) {
-      this.err("must 'subscribe' or 'publish'");
+      this.err("must 'subscribe' and/or 'publish'");
     }
     enumify = function(prop) {
       var obj;
@@ -80,6 +81,7 @@ module.exports = Store = (function(_super) {
     }
     if (this.opts.subscribe) {
       this.peer.unsubscribe(this.channel);
+      this.peer.off('remote', this.preload);
     }
   };
 
@@ -87,6 +89,9 @@ module.exports = Store = (function(_super) {
     var exposed,
       _this = this;
     this.log("setup publish...");
+    if (!(this.opts.publishInterval === "nextTick" || this.opts.publishInterval >= 0)) {
+      this.err("invalid 'publishInterval' option");
+    }
     this.publishId = 1;
     this.publishQue = [];
     exposed = {};
@@ -113,14 +118,14 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.$setupSubscribe = function() {
-    var check, preload, preloads, self,
+    var check, preloads, self,
       _this = this;
     this.log("setup subscribe...");
     check = function(path, val, ctx) {
       return (_this.opts.subscribe === true || _this.opts.subscribe[path[0]]) && (!_this.opts.filter || _this.opts.filter.call(ctx, path, value));
     };
     preloads = [];
-    preload = function(remote) {
+    this.preload = function(remote) {
       var k, obj, v, _ref;
       obj = (_ref = remote._store) != null ? _ref[_this.opts.id] : void 0;
       if (typeof obj !== 'object') {
@@ -154,13 +159,13 @@ module.exports = Store = (function(_super) {
       }
     });
     if (this.peer instanceof Client) {
-      this.peer.server(preload);
+      this.peer.server(this.preload);
     } else if (this.peer instanceof Server || this.peer instanceof LocalPeer) {
       this.peer.all(function(remotes) {
-        return remotes.forEach(preload);
+        return remotes.forEach(_this.preload);
       });
     }
-    return this.peer.on('remote', preload);
+    return this.peer.on('remote', this.preload);
   };
 
   Store.prototype.object = function() {
@@ -208,8 +213,7 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.$set = function(obj, i, path, value, silent) {
-    var del, isObj, k, prev, prop, t, v,
-      _this = this;
+    var del, isObj, k, prev, prop, t, v;
     prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
@@ -230,38 +234,55 @@ module.exports = Store = (function(_super) {
       }
       return;
     }
-    del = value === void 0;
     prev = obj[prop];
     if (_.isEqual(prev, value)) {
       this.log("skip. path equates: %j (%j)", path, value);
       return;
     }
+    del = value === undefined;
     if (del) {
       delete obj[prop];
     } else {
       obj[prop] = value;
     }
     if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
-      this.log("publish %j = %j", path, value);
-      if (this.publishQue.length === 0) {
-        process.nextTick(function() {
-          _this.peer.publish(_this.channel, _this.publishQue);
-          return _this.publishQue = [];
-        });
-      }
-      this.publishQue.push(value === undefined ? [path] : [path, value]);
+      this.$publish(del ? [path] : [path, _.cloneDeep(value)]);
     }
-    this.emit(path, value);
+    this.$emit(this.events, [], del, this.obj, this.$wrap(path, del ? prev : value));
+  };
+
+  Store.prototype.$publish = function(arr) {
+    var fire,
+      _this = this;
+    this.publishQue.push(arr);
+    if (this.publishQue.length !== 1) {
+      return;
+    }
+    fire = function() {
+      _this.log("publish #%s", _this.publishQue.length);
+      _this.peer.publish(_this.channel, _this.publishQue);
+      return _this.publishQue = [];
+    };
+    if (this.opts.publishInterval === "nextTick") {
+      return process.nextTick(fire);
+    } else {
+      return setTimeout(fire, this.opts.publishInterval);
+    }
+  };
+
+  Store.prototype.check = function(path) {
+    if (typeof path === "string") {
+      path = [path];
+    }
+    if (!(path instanceof Array)) {
+      this.err("invalid path");
+    }
+    return path;
   };
 
   Store.prototype.on = function(path, fn) {
     var e, i, p, _i, _len;
-    if (!(path instanceof Array)) {
-      return Store.__super__.on.apply(this, arguments);
-    }
-    if (path.length === 0) {
-      this.err("path empty");
-    }
+    path = this.check(path);
     e = this.events;
     for (i = _i = 0, _len = path.length; _i < _len; i = ++_i) {
       p = path[i];
@@ -270,48 +291,43 @@ module.exports = Store = (function(_super) {
     return Store.__super__.on.call(this, e.$event = JSON.stringify(path), fn);
   };
 
-  Store.prototype.emit = function(path, value) {
-    if (!(path instanceof Array)) {
-      return Store.__super__.emit.apply(this, arguments);
+  Store.prototype.$wrap = function(path, value) {
+    var i, l, root, v, _i, _ref;
+    root = v = {};
+    l = path.length - 1;
+    for (i = _i = 0, _ref = l - 1; _i <= _ref; i = _i += 1) {
+      v = v[path[i]] = {};
     }
-    if (path.length === 0) {
-      this.err("path empty");
-    }
-    this.$emit(this.events, [], path, 0, value);
+    v[path[l]] = value;
+    return root;
   };
 
-  Store.prototype.$emit = function(e, wilds, path, pi, value) {
-    var k, p, v, vk, w;
+  Store.prototype.$emit = function(e, wilds, del, curr, prev) {
+    var args, k, vk, w;
     if (!e) {
       return;
     }
     if (e.$event) {
-      this.emit.apply(this, [e.$event].concat(wilds).concat(value));
+      args = [e.$event, (del ? "remove" : "add")].concat(wilds).concat(curr);
+      this.emit.apply(this, args);
     }
-    w = this.opts.eventWildcard;
-    if (pi < path.length) {
-      p = path[pi];
-      if (e[w]) {
-        this.$emit(e[w], wilds.concat(p), path, pi + 1, value);
-      }
-      if (e[p]) {
-        this.$emit(e[p], wilds, path, pi + 1, value);
-      }
+    if (typeof prev !== 'object') {
       return;
     }
-    if (typeof value === 'object') {
-      for (k in e) {
-        if (k === "$event") {
-          continue;
+    w = this.opts.eventWildcard;
+    if (del && !curr) {
+      curr = prev;
+    }
+    for (k in e) {
+      if (k === "$event") {
+        continue;
+      }
+      if (k === w) {
+        for (vk in prev) {
+          this.$emit(e[w], wilds.concat(vk), del, curr[vk], prev[vk]);
         }
-        if (k === w) {
-          for (vk in value) {
-            v = value[vk];
-            this.$emit(e[w], wilds.concat(vk), path, pi, v);
-          }
-        } else if (k in value) {
-          this.$emit(e[k], wilds, path, pi, value[k]);
-        }
+      } else if (k in prev) {
+        this.$emit(e[k], wilds, del, curr[k], prev[k]);
       }
     }
   };
