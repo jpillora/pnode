@@ -42,8 +42,18 @@ setTimeout(function() {
   store.set(["f001",  "post",  "p003",  "comment", "c001"], { body:  "?????"});
 }, 200);
 
+
 setTimeout(function() {
-  store.set(["f001",  "post",  "p002"], undefined);
+  //update comments
+  store.set(["f001",  "post",  "p002",  "comment", "c001"], { body:  ":O" });
+  store.set(["f001",  "post",  "p002",  "comment", "c001", "body"], ":O!"  );
+  store.set(["f001",  "post",  "p002",  "comment", "c001"], { meta:  42 });
+  store.set(["f001",  "post",  "p002",  "comment", "c001"], { body:  undefined });
+}, 200);
+
+setTimeout(function() {
+  //delete entire post p002
+  store.del(["f001",  "post",  "p002"]);
 }, 700);
 
 setTimeout(function() {

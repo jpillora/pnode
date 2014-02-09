@@ -195,9 +195,8 @@ module.exports = class Store extends Logger
     prev = obj[prop]
     #skip if is already the value
     if _.isEqual prev, value
-      @log "skip. path equates: %j (%j)", path, value
+      # @log "skip. path equates: %j (%j)", path, value
       return
-
 
     del = value is `undefined`
 
@@ -212,10 +211,60 @@ module.exports = class Store extends Logger
       #missing value allows undefined in JSON (instead of null)
       @$publish(if del then [path] else [path, _.cloneDeep value])
 
+    #wrap 'current' value in path keys (if deleted use prev, if replaced use new)
+    update = @$wrap(path, if del then prev else value)
+
     #recursively emit events from the events tree
-    @$emit @events, [], del, @obj,
-      #wrap value in path keys
-      @$wrap(path, if del then prev else value)
+    @$emit @events, [], del, @obj, update, prev
+    return
+
+  #recurrsive accumulator
+  $emit: (e, wilds, del, curr, update, prev) ->
+    #no events in this portion of the tree
+    return unless e
+
+    #this portion of the tree contains an event object!
+    eObj = e.$event
+    if eObj
+      action = if typeof curr is 'object'
+        #resolve action using object
+        if curr isnt update
+          "update"
+        else if del
+          "remove"
+        else
+          "add"
+      else
+        #resolve action using value
+        if prev is `undefined`
+          "add"
+        else if del or curr is `undefined`
+          "remove"
+        else
+          "update"
+      # console.log "%s: %s: %j %j %j", e.$event, action, curr, update, prev
+      @emit.apply @,[eObj[action]].concat(wilds).concat(curr) if eObj[action]
+      @emit.apply @,[eObj["*"], action].concat(wilds).concat(curr) if eObj["*"]
+
+    return unless typeof update is 'object'
+    
+    w = @opts.eventWildcard
+
+    #the existing data was deleted, use update!
+    curr = update if del and not curr
+
+    for k of e
+      #meta data
+      if k is "$event"
+        continue
+      #recurse into wildcard tree *for every key in value*
+      if k is w
+        for vk of update
+          @$emit e[w], wilds.concat(vk), del, curr[vk], update[vk], prev
+      #recurse into value tree when it contains 'key'
+      else if k of update
+        @$emit e[k], wilds, del, curr[k], update[k], prev
+
     return
 
   $publish: (arr) ->
@@ -240,13 +289,24 @@ module.exports = class Store extends Logger
     path
 
   #override 'on' to accept a path array as event type
-  on: (path, fn) ->
+  on: (action, path, fn) ->
+    #wildcard action
+    if arguments.length is 2
+      fn = path
+      path = action
+      action = "*"
+    else if action not in ["add", "remove","update"]
+      @err "invalid action"
+    #check path
     path = @check path
     #insert fn inside the events tree
     e = @events
     for p, i in path
       e = e[p] or e[p] = {}
-    super e.$event = JSON.stringify(path), fn
+    $e = e.$event ?= {}
+    #generate unqiue id for this event
+    $e[action] = "#{action}|#{JSON.stringify(path)}"
+    super $e[action], fn
 
   # wrap(["c","b"], {a:42})
   #   => {"c":{"b":{"a":42}}}
@@ -257,6 +317,8 @@ module.exports = class Store extends Logger
       v = v[path[i]] = {}
     v[path[l]] = value
     root
+
+
 
   # events = {
   #   "a": {
@@ -278,36 +340,3 @@ module.exports = class Store extends Logger
   #     "d": undefined
   #   }
   # }
-
-  #recurrsive accumulator
-  $emit: (e, wilds, del, curr, prev) ->
-    #no events in this portion of the tree
-    return unless e
-
-    #emit string for standard emit!
-    if e.$event
-      args = [e.$event, (if del then "remove" else "add")].concat(wilds).concat(curr)
-      # console.log "emit!",args
-      @emit.apply @, args
-
-    return unless typeof prev is 'object'
-    
-    w = @opts.eventWildcard
-
-    #the existing data was deleted, use previous!
-    curr = prev if del and not curr
-
-    for k of e
-      #meta data
-      if k is "$event"
-        continue
-      #recurse into wildcard tree *for every key in value*
-      if k is w
-        for vk of prev
-          @$emit e[w], wilds.concat(vk), del, curr[vk], prev[vk]
-      #recurse into value tree when it contains 'key'
-      else if k of prev
-        @$emit e[k], wilds, del, curr[k], prev[k]
-
-    return
-

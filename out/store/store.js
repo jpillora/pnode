@@ -213,7 +213,7 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.$set = function(obj, i, path, value, silent) {
-    var del, isObj, k, prev, prop, t, v;
+    var del, isObj, k, prev, prop, t, update, v;
     prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
@@ -236,7 +236,6 @@ module.exports = Store = (function(_super) {
     }
     prev = obj[prop];
     if (_.isEqual(prev, value)) {
-      this.log("skip. path equates: %j (%j)", path, value);
       return;
     }
     del = value === undefined;
@@ -248,7 +247,44 @@ module.exports = Store = (function(_super) {
     if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
       this.$publish(del ? [path] : [path, _.cloneDeep(value)]);
     }
-    this.$emit(this.events, [], del, this.obj, this.$wrap(path, del ? prev : value));
+    update = this.$wrap(path, del ? prev : value);
+    this.$emit(this.events, [], del, this.obj, update, prev);
+  };
+
+  Store.prototype.$emit = function(e, wilds, del, curr, update, prev) {
+    var action, eObj, k, vk, w;
+    if (!e) {
+      return;
+    }
+    eObj = e.$event;
+    if (eObj) {
+      action = typeof curr === 'object' ? curr !== update ? "update" : del ? "remove" : "add" : prev === undefined ? "add" : del || curr === undefined ? "remove" : "update";
+      if (eObj[action]) {
+        this.emit.apply(this, [eObj[action]].concat(wilds).concat(curr));
+      }
+      if (eObj["*"]) {
+        this.emit.apply(this, [eObj["*"], action].concat(wilds).concat(curr));
+      }
+    }
+    if (typeof update !== 'object') {
+      return;
+    }
+    w = this.opts.eventWildcard;
+    if (del && !curr) {
+      curr = update;
+    }
+    for (k in e) {
+      if (k === "$event") {
+        continue;
+      }
+      if (k === w) {
+        for (vk in update) {
+          this.$emit(e[w], wilds.concat(vk), del, curr[vk], update[vk], prev);
+        }
+      } else if (k in update) {
+        this.$emit(e[k], wilds, del, curr[k], update[k], prev);
+      }
+    }
   };
 
   Store.prototype.$publish = function(arr) {
@@ -280,15 +316,24 @@ module.exports = Store = (function(_super) {
     return path;
   };
 
-  Store.prototype.on = function(path, fn) {
-    var e, i, p, _i, _len;
+  Store.prototype.on = function(action, path, fn) {
+    var $e, e, i, p, _i, _len;
+    if (arguments.length === 2) {
+      fn = path;
+      path = action;
+      action = "*";
+    } else if (action !== "add" && action !== "remove" && action !== "update") {
+      this.err("invalid action");
+    }
     path = this.check(path);
     e = this.events;
     for (i = _i = 0, _len = path.length; _i < _len; i = ++_i) {
       p = path[i];
       e = e[p] || (e[p] = {});
     }
-    return Store.__super__.on.call(this, e.$event = JSON.stringify(path), fn);
+    $e = e.$event != null ? e.$event : e.$event = {};
+    $e[action] = "" + action + "|" + (JSON.stringify(path));
+    return Store.__super__.on.call(this, $e[action], fn);
   };
 
   Store.prototype.$wrap = function(path, value) {
@@ -300,36 +345,6 @@ module.exports = Store = (function(_super) {
     }
     v[path[l]] = value;
     return root;
-  };
-
-  Store.prototype.$emit = function(e, wilds, del, curr, prev) {
-    var args, k, vk, w;
-    if (!e) {
-      return;
-    }
-    if (e.$event) {
-      args = [e.$event, (del ? "remove" : "add")].concat(wilds).concat(curr);
-      this.emit.apply(this, args);
-    }
-    if (typeof prev !== 'object') {
-      return;
-    }
-    w = this.opts.eventWildcard;
-    if (del && !curr) {
-      curr = prev;
-    }
-    for (k in e) {
-      if (k === "$event") {
-        continue;
-      }
-      if (k === w) {
-        for (vk in prev) {
-          this.$emit(e[w], wilds.concat(vk), del, curr[vk], prev[vk]);
-        }
-      } else if (k in prev) {
-        this.$emit(e[k], wilds, del, curr[k], prev[k]);
-      }
-    }
   };
 
   return Store;
