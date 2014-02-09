@@ -21,6 +21,18 @@ var store = peer1.store({
 });
 
 setTimeout(function() {
+  store.set(["f001",  "post",  "users"], [1,2,3,4,5]);
+}, 200);
+
+setTimeout(function() {
+  store.set(["f001",  "post",  "users", 2], 3333);
+}, 300);
+
+setTimeout(function() {
+  store.set(["f001",  "post",  "users"], [6,7,8]);
+}, 400);
+
+setTimeout(function() {
   //insert 3 comments in batch
   store.set(["f001"], {
     post:{

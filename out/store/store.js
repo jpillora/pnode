@@ -213,21 +213,20 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.$set = function(obj, i, path, value, silent) {
-    var del, isObj, k, prev, prop, t, update, v;
+    var del, k, prev, prop, t, update, v;
     prop = path[i];
     t = typeof prop;
     if (!(t === "string" || t === "number")) {
       this.err("property missing '" + prop + "' (" + t + ")");
     }
     i++;
-    isObj = typeof obj[prop] === 'object';
     if (i < path.length) {
-      if (!isObj) {
+      if (typeof obj[prop] !== 'object') {
         obj[prop] = /\D/.test(path[i]) ? {} : [];
       }
       return this.$set(obj[prop], i, path, value, silent);
     }
-    if (isObj && typeof value === 'object') {
+    if (_.isPlainObject(value) && _.isPlainObject(obj[prop])) {
       for (k in value) {
         v = value[k];
         this.$set(obj[prop], i, path.concat(k), v, silent);
@@ -252,18 +251,20 @@ module.exports = Store = (function(_super) {
   };
 
   Store.prototype.$emit = function(e, wilds, del, curr, update, prev) {
-    var action, eObj, k, vk, w;
+    var action, args, eObj, k, vk, w;
     if (!e) {
       return;
     }
     eObj = e.$event;
     if (eObj) {
       action = typeof curr === 'object' ? curr !== update ? "update" : del ? "remove" : "add" : prev === undefined ? "add" : del || curr === undefined ? "remove" : "update";
+      args = wilds.slice(0);
+      args.push(curr);
       if (eObj[action]) {
-        this.emit.apply(this, [eObj[action]].concat(wilds).concat(curr));
+        this.emit.apply(this, [eObj[action]].concat(args));
       }
       if (eObj["*"]) {
-        this.emit.apply(this, [eObj["*"], action].concat(wilds).concat(curr));
+        this.emit.apply(this, [eObj["*"], action].concat(args));
       }
     }
     if (typeof update !== 'object') {

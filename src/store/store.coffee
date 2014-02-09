@@ -178,16 +178,14 @@ module.exports = class Store extends Logger
     
     #move index along the path
     i++
-    isObj = typeof obj[prop] is 'object'
-
     if i < path.length
-      unless isObj
+      unless typeof obj[prop] is 'object'
         #if next item is a number, create an array
         obj[prop] = if /\D/.test path[i] then {} else []
       return @$set obj[prop], i, path, value, silent
 
     #if both src and dest are objects, merge
-    if isObj and typeof value is 'object'
+    if _.isPlainObject(value) and _.isPlainObject(obj[prop])
       for k,v of value
         @$set obj[prop], i, path.concat(k), v, silent
       return
@@ -242,9 +240,12 @@ module.exports = class Store extends Logger
           "remove"
         else
           "update"
+
+      args = wilds.slice(0)
+      args.push(curr)
       # console.log "%s: %s: %j %j %j", e.$event, action, curr, update, prev
-      @emit.apply @,[eObj[action]].concat(wilds).concat(curr) if eObj[action]
-      @emit.apply @,[eObj["*"], action].concat(wilds).concat(curr) if eObj["*"]
+      @emit.apply @,[eObj[action]].concat(args) if eObj[action]
+      @emit.apply @,[eObj["*"], action].concat(args) if eObj["*"]
 
     return unless typeof update is 'object'
     
