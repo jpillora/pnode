@@ -246,6 +246,7 @@ module.exports = Store = (function(_super) {
     if (!silent && this.opts.publish === true || this.opts.publish[path[0]]) {
       this.$publish(del ? [path] : [path, _.cloneDeep(value)]);
     }
+    this.emit("change", path, value);
     update = this.$wrap(path, del ? prev : value);
     this.$emit(this.events, [], del, this.obj, update, prev);
   };
@@ -257,7 +258,7 @@ module.exports = Store = (function(_super) {
     }
     eObj = e.$event;
     if (eObj) {
-      action = typeof curr === 'object' ? curr !== update ? "update" : del ? "remove" : "add" : prev === undefined ? "add" : del || curr === undefined ? "remove" : "update";
+      action = _.isPlainObject(curr) ? curr !== update ? "update" : del ? "remove" : "add" : prev === undefined ? "add" : del || curr === undefined ? "remove" : "update";
       args = wilds.slice(0);
       args.push(curr);
       if (eObj[action]) {
@@ -271,7 +272,7 @@ module.exports = Store = (function(_super) {
       return;
     }
     w = this.opts.eventWildcard;
-    if (del && !curr) {
+    if (!curr) {
       curr = update;
     }
     for (k in e) {
@@ -323,6 +324,9 @@ module.exports = Store = (function(_super) {
       fn = path;
       path = action;
       action = "*";
+      if (path === "change") {
+        return Store.__super__.on.call(this, "change", fn);
+      }
     } else if (action !== "add" && action !== "remove" && action !== "update") {
       this.err("invalid action");
     }

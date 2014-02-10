@@ -209,6 +209,9 @@ module.exports = class Store extends Logger
       #missing value allows undefined in JSON (instead of null)
       @$publish(if del then [path] else [path, _.cloneDeep value])
 
+    #publish raw events
+    @emit "change", path, value
+
     #wrap 'current' value in path keys (if deleted use prev, if replaced use new)
     update = @$wrap(path, if del then prev else value)
 
@@ -224,7 +227,7 @@ module.exports = class Store extends Logger
     #this portion of the tree contains an event object!
     eObj = e.$event
     if eObj
-      action = if typeof curr is 'object'
+      action = if _.isPlainObject curr
         #resolve action using object
         if curr isnt update
           "update"
@@ -233,7 +236,7 @@ module.exports = class Store extends Logger
         else
           "add"
       else
-        #resolve action using value
+        #resolve action using value (store arrays are values!)
         if prev is `undefined`
           "add"
         else if del or curr is `undefined`
@@ -252,7 +255,7 @@ module.exports = class Store extends Logger
     w = @opts.eventWildcard
 
     #the existing data was deleted, use update!
-    curr = update if del and not curr
+    curr = update if not curr
 
     for k of e
       #meta data
@@ -296,6 +299,9 @@ module.exports = class Store extends Logger
       fn = path
       path = action
       action = "*"
+      #change special case
+      if path is "change"
+        return super "change", fn
     else if action not in ["add", "remove","update"]
       @err "invalid action"
     #check path
