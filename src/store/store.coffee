@@ -23,7 +23,7 @@ module.exports = class Store extends Logger
   constructor: (@peer, opts = {}) ->
     @opts = _.defaults opts, @defaults
     @name = "#{@name}(#{@peer.id})"
-
+    
     unless @opts.id and typeof @opts.id is "string"
       @err "must have a store 'id'"
     @id = @opts.id
@@ -245,7 +245,8 @@ module.exports = class Store extends Logger
           "update"
 
       args = wilds.slice(0)
-      args.push(curr)
+
+      args.push(if not curr and action is "remove" then prev else curr)
       # console.log "%s: %s: %j %j %j", e.$event, action, curr, update, prev
       @emit.apply @,[eObj[action]].concat(args) if eObj[action]
       @emit.apply @,[eObj["*"], action].concat(args) if eObj["*"]

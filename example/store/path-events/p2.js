@@ -14,9 +14,9 @@ var store = peer2.store({
 });
 
 
-store.on([], function(action, val) {
-  console.log(">>> all:", val);
-});
+// store.on([], function(action, val) {
+//   console.log(">>> all:", val);
+// });
 
 //on forums 'f1', post 'p002': listen for changes to all comments 
 // store.on("update", ["f001","post","p002","comment","*","body"], function(cid, str) {
@@ -35,9 +35,9 @@ store.on([], function(action, val) {
 // });
 
 // // on forums 'f1', post 'p002': listen for changes to all comments 
-// store.on(["f001","post","p002","comment","*"], function(action, commentId, comment) {
-//   console.log(">>> p002 %s comment: %s:", action, commentId, comment||'-');
-// });
+store.on(["f001","post","p002","comment","*"], function(action, commentId, comment) {
+  console.log(">>> p002 %s comment: %s:", action, commentId, comment||'-');
+});
 
 // store.on(["f001"], function(action, obj) {
 //   console.log(">>> f001 %s",action);

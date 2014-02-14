@@ -260,7 +260,7 @@ module.exports = Store = (function(_super) {
     if (eObj) {
       action = _.isPlainObject(curr) ? curr !== update ? "update" : del ? "remove" : "add" : prev === undefined ? "add" : del || curr === undefined ? "remove" : "update";
       args = wilds.slice(0);
-      args.push(curr);
+      args.push(!curr && action === "remove" ? prev : curr);
       if (eObj[action]) {
         this.emit.apply(this, [eObj[action]].concat(args));
       }
