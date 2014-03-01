@@ -4,12 +4,10 @@ util = require 'util'
 types = 
   http: require 'http'
   https: require 'https'
-
-serverToken = process.env.PNODE_SERVER_TOKEN
-clientToken = process.env.PNODE_CLIENT_TOKEN
+token = process.env.PNODE_HTTP_TOKEN
 
 filterRequest = (req) ->
-  (!serverToken or serverToken is req.headers['pnode-token']) and
+  (!token or token is req.headers['pnode-token']) and
   (/^pnode\/0\.\d+.\d+$/).test req.headers['user-agent']
 
 #extract options object from the end of the args
@@ -73,8 +71,8 @@ exports.createClient = (emitter, type, args, reqOpts = {}) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  if clientToken
-    opts.headers['pnode-token'] = clientToken
+  if token
+    opts.headers['pnode-token'] = token
 
   #extra options
   _.merge opts, reqOpts
