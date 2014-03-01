@@ -69,7 +69,6 @@ module.exports = Base = (function(_super) {
         return console.error("ERROR EMITTED: " + (err.stack || err));
       });
     }
-    this.stores = [];
     _.bindAll(this);
     this.unbound = true;
   }
@@ -205,7 +204,7 @@ module.exports = Base = (function(_super) {
     var k, output, type, v;
     if (input instanceof Array) {
       if (input.length === 1 && typeof input[0] === "function") {
-        return input[0]();
+        return input[0].call(ctx);
       }
       return input;
     }
@@ -267,20 +266,19 @@ module.exports = Base = (function(_super) {
       Store = require('./store/store');
     }
     s = new Store(this, opts);
-    this.stores.push(s);
     return s;
   };
 
   Base.prototype.destroy = function(callback) {
-    var s, _j, _len1, _ref1;
-    _ref1 = this.stores;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      s = _ref1[_j];
-      s.destroy();
-    }
+    var _this = this;
+    this.log("destroy");
     this.emit('destroy');
-    this.unbind(callback);
-    return this.removeAllListeners();
+    return this.unbind(function() {
+      _this.removeAllListeners();
+      if (callback) {
+        return callback();
+      }
+    });
   };
 
   Base.prototype.ips = ips;

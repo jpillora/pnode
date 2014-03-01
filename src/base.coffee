@@ -51,9 +51,6 @@ module.exports = class Base extends Logger
       @on 'error', (err) =>
         console.error "ERROR EMITTED: #{err.stack or err}"
 
-    #store objects linked to this peer
-    @stores = []
-
     _.bindAll @
     @unbound = true
     
@@ -161,7 +158,7 @@ module.exports = class Base extends Logger
     #array [function] is a dynamic value
     if input instanceof Array
       if input.length is 1 and typeof input[0] is "function"
-        return input[0]()
+        return input[0].call(ctx)
       return input
 
     type = typeof input
@@ -219,14 +216,14 @@ module.exports = class Base extends Logger
     unless Store
       Store = require './store/store'  
     s = new Store @, opts
-    @stores.push s
     return s
 
   destroy: (callback) ->
-    s.destroy() for s in @stores
+    @log "destroy"
     @emit 'destroy'
-    @unbind(callback)
-    @removeAllListeners()
+    @unbind =>
+      @removeAllListeners()
+      callback() if callback
 
   #get all ip on the nic
   ips: ips

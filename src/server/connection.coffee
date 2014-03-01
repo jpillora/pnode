@@ -43,7 +43,6 @@ module.exports = class Connection extends Logger
     read.pipe(@d).pipe(write)
 
   unbind: (cb) ->
-    # @log "EXPLICIT UNBIND (from #{@server.id})"
     @d.once 'end', cb if cb
     @d.end()
     #remove all eventlisteners
@@ -62,8 +61,6 @@ module.exports = class Connection extends Logger
 
     {@id, @guid} = meta
     @ctx.getMeta meta
-
-    @log "client events: %j", Object.keys(@ctx.events)
 
     @remote = remote
     @emit 'remote', remote

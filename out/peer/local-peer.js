@@ -56,9 +56,20 @@ module.exports = LocalPeer = (function(_super) {
     return this.error("bind() is ambiguous, please use bindOn() and bindTo()");
   };
 
+  LocalPeer.prototype.bindId = function(args) {
+    return Array.prototype.slice.call(args).filter(function(a) {
+      var _ref;
+      return (_ref = typeof a) === "number" || _ref === "string";
+    }).join("-");
+  };
+
   LocalPeer.prototype.bindOn = function() {
-    var self, server,
+    var id, self, server,
       _this = this;
+    id = this.bindId(arguments);
+    if (this.servers[id]) {
+      return;
+    }
     this.count.server++;
     server = new Server(this);
     self = this;
@@ -78,15 +89,19 @@ module.exports = LocalPeer = (function(_super) {
       });
     });
     server.bindOn.apply(server, arguments);
-    this.servers[server.guid] = server;
+    this.servers[id] = server;
     server.once('unbound', function() {
-      return delete _this.servers[server.guid];
+      return delete _this.servers[id];
     });
   };
 
   LocalPeer.prototype.bindTo = function() {
-    var client, self,
+    var client, id, self,
       _this = this;
+    id = this.bindId(arguments);
+    if (this.clients[id]) {
+      return;
+    }
     this.count.client++;
     client = new Client(this);
     self = this;
@@ -104,14 +119,28 @@ module.exports = LocalPeer = (function(_super) {
       return _this.onPeer(client);
     });
     client.bindTo.apply(client, arguments);
-    this.clients[client.guid] = client;
+    this.clients[id] = client;
     client.once('unbound', function() {
-      return delete _this.clients[client.guid];
+      return delete _this.clients[id];
     });
   };
 
+  LocalPeer.prototype.unbindFrom = function() {
+    var args, c, id, s;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    id = this.bindId(args);
+    s = this.servers[id];
+    if (s) {
+      s.unbind();
+    }
+    c = this.clients[id];
+    if (c) {
+      c.unbind();
+    }
+  };
+
   LocalPeer.prototype.unbind = function(callback) {
-    var client, guid, mkCb, server, _ref, _ref1,
+    var client, id, mkCb, server, _ref, _ref1,
       _this = this;
     mkCb = helper.callbacker(function() {
       if (callback) {
@@ -120,13 +149,13 @@ module.exports = LocalPeer = (function(_super) {
       return _this.emit('unbound-all');
     });
     _ref = this.clients;
-    for (guid in _ref) {
-      client = _ref[guid];
+    for (id in _ref) {
+      client = _ref[id];
       client.unbind(mkCb());
     }
     _ref1 = this.servers;
-    for (guid in _ref1) {
-      server = _ref1[guid];
+    for (id in _ref1) {
+      server = _ref1[id];
       server.unbind(mkCb());
     }
   };
@@ -227,11 +256,11 @@ module.exports = LocalPeer = (function(_super) {
   };
 
   LocalPeer.prototype.subscribe = function(event, fn) {
-    var client, guid, peer, _i, _len, _ref, _ref1;
+    var client, id, peer, _i, _len, _ref, _ref1;
     if (this.pubsub.listeners(event).length === 0) {
       _ref = this.clients;
-      for (guid in _ref) {
-        client = _ref[guid];
+      for (id in _ref) {
+        client = _ref[id];
         if (client.binding) {
           client.subscribe(event);
         }

@@ -3,10 +3,12 @@ http = require "../http-common"
 secure = require "../secure-common"
 
 exports.bindServer = (emitter, args...) ->
-  opts = args.pop() if typeof args[args.length-1] is 'object'
+  opts = http.opts args
   secure.checkCerts opts, (opts) ->
-    http.createServer emitter, 'https', args, [opts]
+    http.createServer emitter, 'https', args, opts
 
 exports.bindClient = (emitter, args...) ->
-  http.createClient emitter, 'https', args, {rejectUnauthorized: false}
+  opts = http.opts args
+  opts.rejectUnauthorized = false unless 'rejectUnauthorized' of opts
+  http.createClient emitter, 'https', args, opts
   return

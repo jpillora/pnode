@@ -35,7 +35,15 @@ module.exports = class LocalPeer extends BaseClass
   bind: ->
     @error "bind() is ambiguous, please use bindOn() and bindTo()"
 
+  #best attempt at determining uri
+  bindId: (args) ->
+    Array::slice.call(args).filter((a) -> typeof a in ["number","string"]).join("-")
+
   bindOn: ->
+    id = @bindId arguments
+    if @servers[id]# and @servers[id].unbound
+      return
+
     @count.server++
     server = new Server @
 
@@ -52,12 +60,17 @@ module.exports = class LocalPeer extends BaseClass
 
     server.bindOn.apply server, arguments
 
-    @servers[server.guid] = server
+    @servers[id] = server
     server.once 'unbound', =>
-      delete @servers[server.guid]
+      delete @servers[id]
     return
 
   bindTo: ->
+    id = @bindId arguments
+
+    if @clients[id]# and @clients[id].unbound
+      return
+
     @count.client++
     client = new Client @
 
@@ -72,20 +85,31 @@ module.exports = class LocalPeer extends BaseClass
     client.on 'remote', => @onPeer client
     client.bindTo.apply client, arguments
 
-    @clients[client.guid] = client
+    @clients[id] = client
     client.once 'unbound', =>
-      delete @clients[client.guid]
+      delete @clients[id]
     return
 
+
+  #unbind one
+  unbindFrom: (args...) ->
+    id = @bindId args
+    s = @servers[id]
+    s.unbind() if s
+    c = @clients[id]
+    c.unbind() if c
+    return
+
+  #unbind all
   unbind: (callback) ->
     #run this after all generated callbacks and been fired
     mkCb = helper.callbacker =>
       callback() if callback
       @emit 'unbound-all'
 
-    for guid, client of @clients
+    for id, client of @clients
       client.unbind mkCb()
-    for guid, server of @servers
+    for id, server of @servers
       server.unbind mkCb()
     return
 
@@ -172,7 +196,7 @@ module.exports = class LocalPeer extends BaseClass
     #first subscription - notify peers
     if @pubsub.listeners(event).length is 0
       #clients currently binding will not be peers yet
-      for guid, client of @clients
+      for id, client of @clients
         if client.binding
           client.subscribe event
       #subscribe to all peers

@@ -35,7 +35,10 @@ exports.bindServer = function() {
   }
   conns = [];
   s.on('connection', function(conn) {
-    return conns.push(conn);
+    conns.push(conn);
+    return conn.once('close', function() {
+      return conns.splice(conns.indexOf(conn), 1);
+    });
   });
   listening = function() {
     emitter.emit('bound');

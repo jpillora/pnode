@@ -29,7 +29,10 @@ exports.bindServer = (emitter, args..., opts) ->
 
   #store connections for destroying later
   conns = []
-  s.on 'connection', (conn) -> conns.push conn
+  s.on 'connection', (conn) ->
+    conns.push conn
+    conn.once 'close', ->
+      conns.splice conns.indexOf(conn), 1
 
   listening = ->
     emitter.emit 'bound'

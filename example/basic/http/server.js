@@ -20,18 +20,21 @@ s.listen(8000, function(){
 //bind to existing server
 server.bind('http', s, function filter(req) {
 
-  //intercept random requests - very silly...
+  //1. intercept random requests - very silly...
   // return Math.random() > 0.5;
 
-  //could check cookies/auth headers etc...
+  //2. or check cookies/auth headers etc...
+  // return req.headers['cookies'] === 'my-secret-token'
 
-  //intercept for 'pnode/0.1.x' clients
-  return (/^pnode\/0\.1\.\d+$/).test(req.headers['user-agent']);
+  //3. or intercept for 'pnode/0.2.x' clients
+  return (/^pnode\/0\.2\.\d+$/).test(req.headers['user-agent']);
 });
 
 
-//equivalent to (minus the hello world handler)
+//the above is equivalent to:
 // server.bind('http://0.0.0.0:8000', function(){
 //   console.log('bound to all interfaces on port 8000');
 // });
+
+//(save the hello world handler)
 

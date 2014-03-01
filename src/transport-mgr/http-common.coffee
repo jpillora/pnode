@@ -5,11 +5,19 @@ types =
   http: require 'http'
   https: require 'https'
 
+serverToken = process.env.PNODE_SERVER_TOKEN
+clientToken = process.env.PNODE_CLIENT_TOKEN
+
 filterRequest = (req) ->
+  (!serverToken or serverToken is req.headers['pnode-token']) and
   (/^pnode\/0\.\d+.\d+$/).test req.headers['user-agent']
 
+#extract options object from the end of the args
+exports.opts = (args) ->
+  if typeof args[args.length-1] is 'object' then args.pop() else {}
+
 #common code for http/https
-exports.createServer = (emitter, type, args, serverArgs) ->
+exports.createServer = (emitter, type, args, serverOpts) ->
   
   http = types[type]
 
@@ -18,7 +26,7 @@ exports.createServer = (emitter, type, args, serverArgs) ->
     s = args[0]
     filter = if typeof args[1] is 'function' then args[1] else filterRequest
   else
-    s = http.createServer.apply null, serverArgs
+    s = http.createServer.call null, serverOpts
     filter = filterRequest
     s.listen.apply s, args
 
@@ -26,7 +34,6 @@ exports.createServer = (emitter, type, args, serverArgs) ->
   handlers = s.listeners('request').slice(0)
   s.removeAllListeners 'request'
   s.on 'request', (req, res) ->
-
     #grab all pnode requests
     if filter req
       emitter.emit 'stream', req, res
@@ -57,7 +64,7 @@ exports.createServer = (emitter, type, args, serverArgs) ->
   return
 
 #common code for http/https
-exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
+exports.createClient = (emitter, type, args, reqOpts = {}) ->
 
   opts =
     path: '/'+pkg.name
@@ -66,17 +73,21 @@ exports.createClient = (emitter, type, reqArgs, extraOpts = {}) ->
       'transfer-encoding': 'chunked'
       'expect': '100-continue'
 
-  #extra options
-  _.merge opts, extraOpts
+  if clientToken
+    opts.headers['pnode-token'] = clientToken
 
-  #extract port
-  if typeof reqArgs[0] is 'number'
-    opts.port = reqArgs.shift()
-  else
+  #extra options
+  _.merge opts, reqOpts
+
+  #extract port if provided
+  if typeof args[0] is 'number'
+    opts.port = args.shift()
+  #extract host if provided
+  if typeof args[0] is 'string'
+    opts.hostname = args.shift()
+
+  unless opts.port
     throw new Error "bind #{type} error: missing port"
-  #extract host
-  if typeof reqArgs[0] is 'string'
-    opts.hostname = reqArgs.shift()
 
   emitter.emit 'uri', "#{type}://#{opts.hostname or 'localhost'}:#{opts.port}"
 

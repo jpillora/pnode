@@ -27,7 +27,6 @@ module.exports = class RemotePeer extends Logger
   
     @cliconns.push cliconn
     cliconn.once 'down', =>
-      @log "LOST CONNECTION (#{@uri})"
       @cliconns.splice @cliconns.indexOf(cliconn), 1
       @setActive()
 

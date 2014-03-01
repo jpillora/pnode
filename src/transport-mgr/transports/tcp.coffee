@@ -13,14 +13,20 @@ exports.bindServer = (emitter, args...) ->
   
   s = net.createServer()
 
-  s.on 'connection', (stream) ->
-    emitter.emit 'stream', stream
+  #store connections for destroying later
+  conns = []
+  s.on 'connection', (conn) ->
+    conns.push conn
+    conn.once 'close', ->
+      conns.splice conns.indexOf(conn), 1
+    emitter.emit 'stream', conn
 
   s.listen.apply s, args
 
   s.once 'listening', ->
     emitter.emit 'bound'
     emitter.once 'unbind', ->
+      c.destroy() for c in conns
       s.close()
 
   s.once 'close', ->

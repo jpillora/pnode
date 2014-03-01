@@ -40,7 +40,6 @@ module.exports = RemotePeer = (function(_super) {
     this.ctx.combine(cliconn.ctx);
     this.cliconns.push(cliconn);
     cliconn.once('down', function() {
-      _this.log("LOST CONNECTION (" + _this.uri + ")");
       _this.cliconns.splice(_this.cliconns.indexOf(cliconn), 1);
       return _this.setActive();
     });

@@ -69,7 +69,6 @@ module.exports = Connection = (function(_super) {
     }
     this.id = meta.id, this.guid = meta.guid;
     this.ctx.getMeta(meta);
-    this.log("client events: %j", Object.keys(this.ctx.events));
     this.remote = remote;
     this.emit('remote', remote);
     this.emit('up');

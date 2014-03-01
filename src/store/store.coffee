@@ -53,6 +53,7 @@ module.exports = class Store extends Logger
     return
 
   destroy: ->
+    @removeAllListeners()
     if @opts.publish
       e = {}
       e[@opts.id] = `undefined`

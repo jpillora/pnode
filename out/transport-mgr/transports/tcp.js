@@ -13,18 +13,28 @@ exports.buildUri = function(args) {
 };
 
 exports.bindServer = function() {
-  var args, emitter, s, uri;
+  var args, conns, emitter, s, uri;
   emitter = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
   uri = exports.buildUri(args);
   emitter.emit('uri', uri);
   s = net.createServer();
-  s.on('connection', function(stream) {
-    return emitter.emit('stream', stream);
+  conns = [];
+  s.on('connection', function(conn) {
+    conns.push(conn);
+    conn.once('close', function() {
+      return conns.splice(conns.indexOf(conn), 1);
+    });
+    return emitter.emit('stream', conn);
   });
   s.listen.apply(s, args);
   s.once('listening', function() {
     emitter.emit('bound');
     return emitter.once('unbind', function() {
+      var c, _i, _len;
+      for (_i = 0, _len = conns.length; _i < _len; _i++) {
+        c = conns[_i];
+        c.destroy();
+      }
       return s.close();
     });
   });

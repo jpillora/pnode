@@ -17,11 +17,11 @@ parse = (str) ->
   return args
 
 # args must be in the format:
-#   transport, ...rest
+#   "transport", ...rest
 # or
 #   "transport://host:port", ...rest
-# which will translate to
-#   transport, port, host,   ...rest
+#      which will translate to
+#   "transport", port, host,   ...rest
 
 exports.get = (args) ->
 

@@ -74,6 +74,7 @@ module.exports = Store = (function(_super) {
 
   Store.prototype.destroy = function() {
     var e;
+    this.removeAllListeners();
     if (this.opts.publish) {
       e = {};
       e[this.opts.id] = undefined;
