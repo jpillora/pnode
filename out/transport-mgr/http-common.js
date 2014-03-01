@@ -35,7 +35,7 @@ exports.createServer = function(emitter, type, args, serverOpts) {
     s = args[0];
     filter = typeof args[1] === 'function' ? args[1] : filterRequest;
   } else {
-    s = http.createServer.call(null, serverOpts);
+    s = http.createServer.apply(s, type === 'https' ? [serverOpts] : []);
     filter = filterRequest;
     s.listen.apply(s, args);
   }

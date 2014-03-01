@@ -26,7 +26,7 @@ exports.createServer = (emitter, type, args, serverOpts) ->
     s = args[0]
     filter = if typeof args[1] is 'function' then args[1] else filterRequest
   else
-    s = http.createServer.call null, serverOpts
+    s = http.createServer.apply s, if type is 'https' then [serverOpts] else []
     filter = filterRequest
     s.listen.apply s, args
 
