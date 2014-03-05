@@ -45,6 +45,8 @@ exports.bindClient = (emitter, args...) ->
   
   c = net.connect.apply null, args
   
+  c.uri = uri
+
   emitter.emit 'stream', c
 
   c.once 'connect', ->
@@ -52,8 +54,13 @@ exports.bindClient = (emitter, args...) ->
 
   emitter.once 'unbind', ->
     c.end()
+    # c.destroy()
     
-  c.once 'end', ->
+  # c.once 'end', ->
+  #   emitter.emit 'unbound'
+  #   c.removeAllListeners()
+
+  c.once 'close', (haderr) ->
     emitter.emit 'unbound'
 
   # let pnode handle errors

@@ -23,6 +23,8 @@ module.exports = Connection = (function(_super) {
   function Connection(server, read, write) {
     var _this = this;
     this.server = server;
+    this.read = read;
+    this.write = write;
     this.opts = this.server.opts;
     Object.defineProperty(this, 'uri', {
       get: function() {
@@ -55,6 +57,9 @@ module.exports = Connection = (function(_super) {
       this.d.once('end', cb);
     }
     this.d.end();
+    if (this.read.end) {
+      this.read.end();
+    }
     return this.removeAllListeners();
   };
 

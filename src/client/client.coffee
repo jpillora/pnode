@@ -58,6 +58,7 @@ module.exports = class Client extends Base
         @err new Error "Already spliced read stream" 
       unless helper.isReadable read
         @err new Error "Invalid read stream" 
+
       read.on 'error', @onStreamError
       #extract src ip and port
       @ctx.getAddr read
@@ -69,8 +70,10 @@ module.exports = class Client extends Base
       if @d.splicedWrite
         @err new Error "Already spliced write stream" 
       unless helper.isWritable write
-        @err new Error "Invalid write stream" 
-      write.on 'error', @onStreamError
+        @err new Error "Invalid write stream"
+
+      if @read isnt @write
+        write.on 'error', @onStreamError
       #write from dnode
       @d.splicedWrite = true
       @d.pipe(write)
@@ -90,7 +93,6 @@ module.exports = class Client extends Base
     return
 
   unbind: ->
-    @log "CLIENT UNBIND"
     @count.attempt = Infinity
     super
 
@@ -110,10 +112,9 @@ module.exports = class Client extends Base
 
   connect: ->
     unless @bindArgs and
-           not @bound and
+           @unbound and
            @count.attempt < @opts.maxRetries
       return
-
 
     #server context, exposed to remote api
     @ctx = new RemoteContext
@@ -147,16 +148,16 @@ module.exports = class Client extends Base
   #connection failed
   onStreamError: (err) ->
 
-    return if @unbound or @unbinding
+    if err.code is 'ECONNREFUSED'
+      @log "blocked by server"
+    else
+      @log "stream error: #{err.message}"
     
-    # if err.code is 'ECONNREFUSED'
-    #   @log "blocked by server"
-    # else
+    return if @unbound
 
     #errored must be unbound
-    @tEmitter?.emit 'unbound'
+    # @tEmitter?.emit 'unbound'
 
-    @log "stream error: #{err.message}"
     # @emit "error", err
     @connect()
     return
@@ -209,7 +210,6 @@ module.exports = class Client extends Base
       unless @ctx.events[event]
         @log "server #{@ctx.id} isnt subscribed to #{event}"
         return
-      @log "publishing a #{event}"
       remote._pnode.publish.apply null, args
     return
 

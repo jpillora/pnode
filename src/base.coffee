@@ -75,13 +75,14 @@ module.exports = class Base extends Logger
         if typeof args[0] isnt 'string'
           return self.warn "Invalid 'publish': missing event"
         event = args.shift()
+        # self.log "publishing a #{event}"
         self.pubsub.emit.apply self.pubsub, [event, @].concat args
         cb true if cb
       ping: (cb) ->
         cb true
       events: [->
         e = Object.keys self.pubsub._events
-        self.log "share events: %j", e
+        # self.log "share events: %j", e
         e
       ]
 

@@ -79,7 +79,9 @@ module.exports = Client = (function(_super) {
       if (!helper.isWritable(write)) {
         _this.err(new Error("Invalid write stream"));
       }
-      write.on('error', _this.onStreamError);
+      if (_this.read !== _this.write) {
+        write.on('error', _this.onStreamError);
+      }
       _this.d.splicedWrite = true;
       return _this.d.pipe(write);
     };
@@ -102,7 +104,6 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.unbind = function() {
-    this.log("CLIENT UNBIND");
     this.count.attempt = Infinity;
     return Client.__super__.unbind.apply(this, arguments);
   };
@@ -122,7 +123,7 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.connect = function() {
-    if (!(this.bindArgs && !this.bound && this.count.attempt < this.opts.maxRetries)) {
+    if (!(this.bindArgs && this.unbound && this.count.attempt < this.opts.maxRetries)) {
       return;
     }
     this.ctx = new RemoteContext;
@@ -140,14 +141,14 @@ module.exports = Client = (function(_super) {
   };
 
   Client.prototype.onStreamError = function(err) {
-    var _ref;
-    if (this.unbound || this.unbinding) {
+    if (err.code === 'ECONNREFUSED') {
+      this.log("blocked by server");
+    } else {
+      this.log("stream error: " + err.message);
+    }
+    if (this.unbound) {
       return;
     }
-    if ((_ref = this.tEmitter) != null) {
-      _ref.emit('unbound');
-    }
-    this.log("stream error: " + err.message);
     this.connect();
   };
 
@@ -206,7 +207,6 @@ module.exports = Client = (function(_super) {
         _this.log("server " + _this.ctx.id + " isnt subscribed to " + event);
         return;
       }
-      _this.log("publishing a " + event);
       return remote._pnode.publish.apply(null, args);
     });
   };

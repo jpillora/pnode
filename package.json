@@ -34,7 +34,7 @@
     "url": "https://github.com/jpillora/pnode/issues"
   },
   "dependencies": {
-    "dnode": "~1.0.5",
+    "dnode": "~1.2.0",
     "pem": "~1.2.2",
     "sockjs": "~0.3.7",
     "shoe": "0.0.13",

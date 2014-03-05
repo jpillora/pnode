@@ -53,6 +53,7 @@ exports.bindClient = function() {
   uri = exports.buildUri(args);
   emitter.emit('uri', uri);
   c = net.connect.apply(null, args);
+  c.uri = uri;
   emitter.emit('stream', c);
   c.once('connect', function() {
     return emitter.emit('bound');
@@ -60,7 +61,7 @@ exports.bindClient = function() {
   emitter.once('unbind', function() {
     return c.end();
   });
-  c.once('end', function() {
+  c.once('close', function(haderr) {
     return emitter.emit('unbound');
   });
 };

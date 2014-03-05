@@ -10,7 +10,7 @@ module.exports = class Connection extends Logger
 
   name: 'Connection'
 
-  constructor: (@server, read, write) ->
+  constructor: (@server, @read, @write) ->
 
     @opts = @server.opts
     Object.defineProperty @, 'uri', get: => @server.uri
@@ -45,6 +45,9 @@ module.exports = class Connection extends Logger
   unbind: (cb) ->
     @d.once 'end', cb if cb
     @d.end()
+
+    @read.end() if @read.end
+
     #remove all eventlisteners
     @removeAllListeners()
 
